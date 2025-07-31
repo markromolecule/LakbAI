@@ -1,14 +1,17 @@
 import React, { useState } from 'react';
-import { SafeAreaView, StatusBar, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView, StatusBar, StyleSheet, View } from 'react-native';
+import { Footer } from '../components/common/Footer';
 import { Header } from '../components/common/Header';
-// import { ChatScreen } from '../screens/passenger/ChatScreen';
-// import { FareCalculatorScreen } from '../screens/passenger/FareCalculatorScreen';
-// import { FareMatrixScreen } from '../screens/passenger/FareMatrixScreen';
-import { HomeScreen } from '../screens/passenger/HomeScreen';
-// import { ScannerScreen } from '../screens/passenger/ScannerScreen';
-import { COLORS, SPACING } from '../shared/styles';
+import {
+  ChatScreen,
+  FareCalculatorScreen,
+  FareMatrixScreen,
+  HomeScreen,
+  ScannerScreen,
+  ViewType
+} from '../screens';
+import { COLORS } from '../shared/styles';
 import { globalStyles } from '../shared/styles/globalStyles';
-import { ViewType } from '../shared/types';
 
 const LakbAIPassenger: React.FC = () => {
   const [currentView, setCurrentView] = useState<ViewType>('home');
@@ -17,14 +20,14 @@ const LakbAIPassenger: React.FC = () => {
     switch (currentView) {
       case 'home':
         return <HomeScreen onNavigate={setCurrentView} />;
-      // case 'scanner':
-      //   return <ScannerScreen />;
-      // case 'chat':
-      //   return <ChatScreen />;
-      // case 'fare':
-      //   return <FareCalculatorScreen />;
-      // case 'route':
-      //   return <FareMatrixScreen />;
+      case 'scanner':
+        return <ScannerScreen />;
+      case 'chat':
+        return <ChatScreen />;
+      case 'fare':
+        return <FareCalculatorScreen />;
+      case 'route':
+        return <FareMatrixScreen />;
       default:
         return <HomeScreen onNavigate={setCurrentView} />;
     }
@@ -44,9 +47,7 @@ const LakbAIPassenger: React.FC = () => {
         {renderScreen()}
       </View>
 
-      <View style={styles.footer}>
-        <Text style={styles.footerText}>LakbAI v1.0 - Smart Jeepney Transportation</Text>
-      </View>
+      <Footer />
     </SafeAreaView>
   );
 };
@@ -54,17 +55,6 @@ const LakbAIPassenger: React.FC = () => {
 const styles = StyleSheet.create({
   mainContent: {
     flex: 1,
-  },
-  footer: {
-    backgroundColor: COLORS.white,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.gray200,
-    padding: SPACING.lg,
-    alignItems: 'center',
-  },
-  footerText: {
-    color: COLORS.gray400,
-    fontSize: 12,
   },
 });
 
