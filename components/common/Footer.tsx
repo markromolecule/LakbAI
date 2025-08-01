@@ -8,8 +8,8 @@ interface FooterProps {
 }
 
 export const Footer: React.FC<FooterProps> = ({
-  text = 'Smart Modern Jeepney Transportation',
-  version = 'v1.0'
+  text = 'Modern Jeepney',
+  version = 'V1',
 }) => {
   return (
     <View style={styles.container}>

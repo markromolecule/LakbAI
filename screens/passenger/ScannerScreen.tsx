@@ -53,14 +53,6 @@ export const ScannerScreen: React.FC = () => {
     );
   };
 
-  const handleSimulateQRScan = () => {
-    Alert.alert(
-      'QR Code Scanned!',
-      'Jeepney: LKB-001\nRoute: Tejero - Pala-pala\nCurrent Location: Town Center\nFare from here: ₱15-18\n\nUse the fare calculator for exact fares.',
-      [{ text: 'OK' }]
-    );
-  };
-
   const scannerFeatures = [
     '• Current jeepney location',
     '• Fare information for your destination',
@@ -196,8 +188,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   scanFrame: {
-    width: 200,
-    height: 200,
+    width: 280,
+    height: 280,
     borderWidth: 3,
     borderColor: COLORS.primary,
     borderRadius: 12,
