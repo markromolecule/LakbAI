@@ -1,11 +1,19 @@
 export const CHECKPOINTS = [
-  'Tejero Terminal',
-  'Barangay San Jose',
-  'Town Center',
-  'SM Dasmariñas',
-  'De La Salle University',
-  'Ayala Malls',
-  'Pala-pala Terminal'
+  'Robinson Tejero',
+  'Malabon',
+  'Riverside',
+  'Lancaster New City',
+  'Pascam 1',
+  'Open Canal',
+  'Santiago',
+  'Bella Vista',
+  'San Francisco',
+  'Country Meadow',
+  'Pabahay',
+  'Monterey',
+  'Langkaan',
+  'Tierra Vista',
+  'Robinson Pala-pala'
 ] as const;
 
 export type Checkpoint = typeof CHECKPOINTS[number];

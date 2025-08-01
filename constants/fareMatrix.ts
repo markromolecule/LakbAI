@@ -1,12 +1,40 @@
 import { FareInfo } from '../shared/types';
 
 export const FARE_MATRIX: FareInfo[] = [
-  { from: 'Tejero Terminal', to: 'Barangay San Jose', fare: 12 },
-  { from: 'Tejero Terminal', to: 'Town Center', fare: 15 },
-  { from: 'Tejero Terminal', to: 'SM Dasmariñas', fare: 18 },
-  { from: 'Barangay San Jose', to: 'Town Center', fare: 12 },
-  { from: 'Town Center', to: 'SM Dasmariñas', fare: 15 },
-  { from: 'SM Dasmariñas', to: 'De La Salle University', fare: 12 },
-  { from: 'De La Salle University', to: 'Ayala Malls', fare: 15 },
-  { from: 'Ayala Malls', to: 'Pala-pala Terminal', fare: 18 }
+  { from: 'Robinson Tejero', to: 'Malabon', fare: 12 },
+  { from: 'Malabon', to: 'Riverside', fare: 14 },
+  { from: 'Riverside', to: 'Lancaster New City', fare: 16 },
+  { from: 'Lancaster New City', to: 'Pascam 1', fare: 18 },
+  { from: 'Pascam 1', to: 'Open Canal', fare: 20 },
+  { from: 'Open Canal', to: 'Santiago', fare: 22 },
+  { from: 'Santiago', to: 'Bella Vista', fare: 24 },
+  { from: 'Bella Vista', to: 'San Francisco', fare: 26 },
+  { from: 'San Francisco', to: 'Country Meadow', fare: 28 },
+  { from: 'Country Meadow', to: 'Pabahay', fare: 30 },
+  { from: 'Pabahay', to: 'Monterey', fare: 33 },
+  { from: 'Monterey', to: 'Langkaan', fare: 36 },
+  { from: 'Langkaan', to: 'Tierra Vista', fare: 40 },
+  { from: 'Tierra Vista', to: 'Robinson Pala-pala', fare: 45 },
+  { from: 'Robinson Tejero', to: 'Robinson Pala-pala', fare: 45 },
+  { from: 'Lancaster New City', to: 'Robinson Pala-pala', fare: 30 },
 ];
+
+
+/** 
+Checkpoints
+Robinson Tejero
+Malabon
+Riverside
+Lancaster New City
+Pascam 1
+Open Canal
+Santiago
+Bella Vista
+San Francisco
+Country Meadow
+Pabahay
+Monterey
+Langkaan
+Tierra Vista
+Robinson Pala-pala
+ **/

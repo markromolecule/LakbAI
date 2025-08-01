@@ -9,6 +9,7 @@ interface HeaderProps {
   showBackButton?: boolean;
   onBackPress?: () => void;
   userType?: 'Passenger' | 'Driver';
+  onLogout?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({

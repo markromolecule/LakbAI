@@ -35,7 +35,7 @@ export const useChat = () => {
       } else if (lowerText.includes('time') || lowerText.includes('arrive')) {
         botResponse = 'Based on current traffic, the estimated arrival time is 5-7 minutes.';
       } else if (lowerText.includes('route')) {
-        botResponse = 'This jeepney follows the Tejero - Pala-pala route with stops at Town Center, SM Dasmariñas, and De La Salle University.';
+        botResponse = 'This jeepney follows the Tejero - Pala-pala route';
       } else if (lowerText.includes('emergency')) {
         botResponse = 'Emergency contacts: Police 117, Fire 116, Medical 911. Jeepney dispatch: (046) 123-4567';
       } else {
