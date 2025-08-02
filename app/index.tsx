@@ -13,7 +13,7 @@ import {
 import AuthScreen from '../screens/auth/AuthScreen';
 import { COLORS } from '../shared/styles';
 import { globalStyles } from '../shared/styles/globalStyles';
-import { LoginData, SignUpData } from '../shared/types/auth';
+import { LoginData, SignUpData } from '../shared/types/authentication';
 
 /**
  * Main application component for LakbAI Passenger.

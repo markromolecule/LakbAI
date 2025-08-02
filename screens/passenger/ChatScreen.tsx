@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { View, ScrollView, Text, StyleSheet } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
+import { ChatInput } from '../../components/chat/ChatInput';
 import { ChatMessage } from '../../components/chat/ChatMessage';
 import { QuickQuestions } from '../../components/chat/QuickQuestions';
-import { ChatInput } from '../../components/chat/ChatInput';
-import { useChat } from '../../hooks/useChat';
 import { QUICK_QUESTIONS } from '../../constants/quickQuestions';
-import { COLORS, SPACING } from '../../shared/styles';
+import { useChat } from '../../hooks/useChat';
+import styles from './styles/ChatScreen.styles';
 
 export const ChatScreen: React.FC = () => {
   const { messages, sendMessage } = useChat();
@@ -36,7 +36,7 @@ export const ChatScreen: React.FC = () => {
           questions={QUICK_QUESTIONS}
           onQuestionPress={sendMessage}
         />
-        
+
         <ChatInput
           value={inputText}
           onChangeText={setInputText}
@@ -46,33 +46,3 @@ export const ChatScreen: React.FC = () => {
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  chatHeader: {
-    backgroundColor: COLORS.primary,
-    padding: SPACING.lg,
-  },
-  chatHeaderTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: COLORS.white,
-  },
-  chatHeaderSubtitle: {
-    color: COLORS.blue100,
-    fontSize: 14,
-  },
-  messagesContainer: {
-    flex: 1,
-    backgroundColor: COLORS.gray50,
-    padding: SPACING.lg,
-  },
-  inputContainer: {
-    backgroundColor: COLORS.white,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.gray200,
-    padding: SPACING.lg,
-  },
-});
