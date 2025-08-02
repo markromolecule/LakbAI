@@ -1,0 +1,25 @@
+[debug] [2025-08-02T05:32:04.700Z] ----------------------------------------------------------------------
+[debug] [2025-08-02T05:32:04.704Z] Command:       /Users/joseph/.nvm/versions/node/v22.17.1/bin/node /Users/joseph/.nvm/versions/node/v22.17.1/bin/firebase init
+[debug] [2025-08-02T05:32:04.704Z] CLI Version:   14.11.2
+[debug] [2025-08-02T05:32:04.704Z] Platform:      darwin
+[debug] [2025-08-02T05:32:04.704Z] Node Version:  v22.17.1
+[debug] [2025-08-02T05:32:04.705Z] Time:          Sat Aug 02 2025 13:32:04 GMT+0800 (Philippine Standard Time)
+[debug] [2025-08-02T05:32:04.705Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2025-08-02T05:32:04.707Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2025-08-02T05:32:04.707Z] > authorizing via signed-in user (livadomc@gmail.com)
+[info] 
+     ######## #### ########  ######## ########     ###     ######  ########
+     ##        ##  ##     ## ##       ##     ##  ##   ##  ##       ##
+     ######    ##  ########  ######   ########  #########  ######  ######
+     ##        ##  ##    ##  ##       ##     ## ##     ##       ## ##
+     ##       #### ##     ## ######## ########  ##     ##  ######  ########
+
+You're about to initialize a Firebase project in this directory:
+
+  /Applications/XAMPP/xamppfiles/htdocs/LakbAI
+
+Before we get started, keep in mind:
+
+  * You are currently outside your home directory
+

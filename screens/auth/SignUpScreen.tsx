@@ -11,7 +11,7 @@ import {
   PasswordSection,
   TermsSection,
   UsernameSection,
-} from '../../components/signup/FormSection';
+} from '../../components/register/FormSection';
 import { useSignUpForm } from '../../hooks/useSignUpForm';
 import { SignUpData } from '../../shared/types/authentication';
 import styles from './styles/SignUpScreen.styles';

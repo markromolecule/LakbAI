@@ -143,7 +143,7 @@ export const PasswordSection: React.FC<PasswordSectionProps> = ({
 export const AddressSection: React.FC<FormSectionProps> = ({ signUpData, updateSignUpData }) => (
   <>
     <Text style={styles.sectionSubtitle}>Full Address</Text>
-    
+
     <View style={styles.rowContainer}>
       <View style={[styles.inputGroup, styles.halfWidth]}>
         <Text style={styles.label}>House/Building No. *</Text>
@@ -224,7 +224,7 @@ export const BirthdaySection: React.FC<BirthdaySectionProps> = ({
 }) => (
   <>
     <Text style={styles.sectionSubtitle}>Birthday</Text>
-    
+
     <View style={styles.birthdayContainer}>
       <View style={styles.pickerContainer}>
         <Text style={styles.label}>Month *</Text>
@@ -237,10 +237,10 @@ export const BirthdaySection: React.FC<BirthdaySectionProps> = ({
           </Text>
           <Text style={styles.dropdownArrow}>{showMonthDropdown ? '▲' : '▼'}</Text>
         </TouchableOpacity>
-        
+
         {showMonthDropdown && (
           <View style={styles.monthDropdownList}>
-            <ScrollView 
+            <ScrollView
               style={styles.monthScrollView}
               showsVerticalScrollIndicator={true}
               nestedScrollEnabled={true}
@@ -301,7 +301,7 @@ export const GenderSection: React.FC<GenderSectionProps> = ({ signUpData, update
         <View style={[styles.radio, signUpData.gender === 'male' && styles.radioSelected]} />
         <Text style={styles.genderText}>Male</Text>
       </TouchableOpacity>
-      
+
       <TouchableOpacity
         style={[styles.genderOption, signUpData.gender === 'female' && styles.selectedGender]}
         onPress={() => updateSignUpData('gender', 'female')}
