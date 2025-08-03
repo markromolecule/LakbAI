@@ -1,16 +1,16 @@
 import { StatusBar } from 'expo-status-bar';
 import React, { useState } from 'react';
 import {
-    Alert,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    View
+  Alert,
+  SafeAreaView,
+  ScrollView,
+  Text,
+  View
 } from 'react-native';
-import { LoginData, SignUpData } from '../../shared/types/auth';
+import { LoginData, SignUpData } from '../../shared/types/authentication';
 import LoginScreen from './LoginScreen';
 import SignUpScreen from './SignUpScreen';
+import styles from './styles/AuthScreen.styles';
 
 interface AuthScreenProps {
   onLogin: (data: LoginData) => void;
@@ -67,31 +67,5 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, onSignUp }) => {
     </SafeAreaView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F8FAFC',
-  },
-  scrollView: {
-    flex: 1,
-  },
-  footer: {
-    paddingVertical: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#FFFFFF',
-    borderTopWidth: 1,
-    borderTopColor: '#E2E8F0',
-  },
-  footerText: {
-    fontSize: 14,
-    color: '#64748B',
-  },
-  footerLink: {
-    color: '#3B82F6',
-    fontWeight: '600',
-  },
-});
 
 export default AuthScreen;

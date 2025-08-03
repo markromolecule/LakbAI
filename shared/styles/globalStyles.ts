@@ -1,6 +1,6 @@
-import { StyleSheet } from 'react-native';
-import { COLORS } from './colors';
-import { SPACING } from './spacing';
+import { StyleSheet } from "react-native";
+import { COLORS } from "./colors";
+import { SPACING } from "./spacing";
 
 export const globalStyles = StyleSheet.create({
   safeArea: {
@@ -13,7 +13,7 @@ export const globalStyles = StyleSheet.create({
   },
   pageTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     color: COLORS.gray800,
     marginBottom: SPACING.lg,
   },
@@ -21,7 +21,7 @@ export const globalStyles = StyleSheet.create({
     backgroundColor: COLORS.white,
     borderRadius: SPACING.md,
     padding: SPACING.lg,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -31,14 +31,14 @@ export const globalStyles = StyleSheet.create({
     backgroundColor: COLORS.primary,
     padding: SPACING.lg,
     borderRadius: SPACING.md,
-    alignItems: 'center',
+    alignItems: "center",
   },
   buttonText: {
     color: COLORS.white,
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   disabledButton: {
     backgroundColor: COLORS.gray300,
-  }
+  },
 });

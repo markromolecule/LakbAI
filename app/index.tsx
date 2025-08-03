@@ -1,3 +1,5 @@
+// /Applications/XAMPP/xamppfiles/htdocs/LakbAI/app/index.tsx
+
 import React, { useState } from 'react';
 import { SafeAreaView, StatusBar, StyleSheet, View } from 'react-native';
 import { Footer } from '../components/common/Footer';
@@ -13,7 +15,7 @@ import {
 import AuthScreen from '../screens/auth/AuthScreen';
 import { COLORS } from '../shared/styles';
 import { globalStyles } from '../shared/styles/globalStyles';
-import { LoginData, SignUpData } from '../shared/types/auth';
+import { LoginData, SignUpData } from '../shared/types/authentication';
 
 /**
  * Main application component for LakbAI Passenger.
@@ -34,7 +36,6 @@ const LakbAIPassenger: React.FC = () => {
     }
   };
 
-  
   const handleSignUp = (data: SignUpData) => {
     // Add your signup logic here (API call, validation, etc.)
     console.log('SignUp data:', data);

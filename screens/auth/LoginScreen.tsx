@@ -125,7 +125,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onForgotPassword }) 
                 <View style={styles.logoInner} />
               </View>
             </View>
-            <Text style={styles.appTitle}>SecureApp</Text>
+            <Text style={styles.appTitle}>LakbAI</Text>
             <Text style={styles.subtitle}>Welcome back</Text>
           </View>
 
