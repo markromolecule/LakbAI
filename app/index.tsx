@@ -1,3 +1,5 @@
+// /Applications/XAMPP/xamppfiles/htdocs/LakbAI/app/index.tsx
+
 import React, { useState } from 'react';
 import { SafeAreaView, StatusBar, StyleSheet, View } from 'react-native';
 import { Footer } from '../components/common/Footer';
@@ -34,7 +36,6 @@ const LakbAIPassenger: React.FC = () => {
     }
   };
 
-  
   const handleSignUp = (data: SignUpData) => {
     // Add your signup logic here (API call, validation, etc.)
     console.log('SignUp data:', data);
