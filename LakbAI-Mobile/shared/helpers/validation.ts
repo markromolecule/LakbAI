@@ -1,5 +1,5 @@
 // Validation functions for user input in the SignUpScreen
-import { MONTHS_DATA } from '../../constants/signUpField';
+import { MONTHS_DATA } from '../../constants/registerField';
 
 export const validateEmail = (email: string): boolean => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;

@@ -1,4 +1,3 @@
-// LakbAI-Mobile/route/PassengerRoutes.ts
 import { Href } from "expo-router";
 
 export enum PassengerRoutes {
@@ -9,4 +8,8 @@ export enum PassengerRoutes {
   ROUTE = "/passenger/route"
 }
 
-export type PassengerRouteHref = `${PassengerRoutes}` & Href;
+// Extracts enum values ("/passenger/...")
+export type PassengerRouteValues = `${PassengerRoutes}`;
+
+// Makes sure it's a valid Expo Router href
+export type PassengerRouteHref = PassengerRouteValues;

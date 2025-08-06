@@ -11,23 +11,42 @@ import { LoginData, SignUpData } from '../../../shared/types/authentication';
 import LoginScreen from './LoginScreen';
 import SignUpScreen from './SignUpScreen';
 import styles from '../styles/AuthScreen.styles';
+import { useRouter } from 'expo-router';
 
 interface AuthScreenProps {
-  onLogin: (data: LoginData) => void;
-  onSignUp: (data: SignUpData) => void;
+  onLogin?: (data: LoginData) => void;
+  onSignUp?: (data: SignUpData) => void;
 }
 
 const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, onSignUp }) => {
   const [activeTab, setActiveTab] = useState<'login' | 'signup'>('login');
+  const router = useRouter();
 
   const handleLogin = (data: LoginData) => {
-    Alert.alert('Success', `Welcome back, ${data.username}!`);
-    onLogin(data);
+    const { username, password } = data;
+    // Allow john / john for quick test
+    if (username === 'john' && password === 'john123') {
+      // navigate to passenger home (replace so back button won't return to auth)
+      router.replace('/passenger/home');
+      return;
+    }
+    // here you can call your real auth API
+    Alert.alert('Invalid credentials', 'Try username: john / password: john for testing');
+    
+    // Call the optional prop if provided
+    if (onLogin) {
+      onLogin(data);
+    }
   };
 
   const handleSignUp = (data: SignUpData) => {
-    Alert.alert('Success', `Account created for ${data.firstName} ${data.lastName}!`);
-    onSignUp(data);
+    // For now just show an alert — extend as needed.
+    Alert.alert('Sign up', `Created account for ${data.firstName} ${data.lastName}`);
+    
+    // Call the optional prop if provided
+    if (onSignUp) {
+      onSignUp(data);
+    }
   };
 
   const handleForgotPassword = () => {

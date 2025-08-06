@@ -6,13 +6,9 @@ import { InfoCard } from '../../../components/common/InfoCard';
 import { COLORS } from '../../../shared/styles';
 import { globalStyles } from '../../../shared/styles/globalStyles';
 import styles from '../styles/HomeScreen.styles';
-import { Href, useRouter } from 'expo-router';
-
-type PassengerRoute = 
-  | '/passenger/scanner'
-  | '/passenger/chat'
-  | '/passenger/fare'
-  | '/passenger/route';
+import { useRouter } from 'expo-router';
+import { PassengerRoutes, PassengerRouteHref } from '@/routes/PassengerRoutes';
+import type { Href } from 'expo-router';
 
 const GridItem: React.FC<{
   icon: keyof typeof Ionicons.glyphMap;
@@ -38,39 +34,39 @@ export const HomeScreen: React.FC = () => {
     subtitle: string;
     color: string;
     borderColor: string;
-    route: PassengerRoute;
+    route: PassengerRouteHref;
   }> = [
     {
-      icon: 'qr-code' as const,
+      icon: 'qr-code',
       title: 'Scan QR Code',
       subtitle: 'Get fare info',
       color: COLORS.primary,
       borderColor: COLORS.primaryLight,
-      route: '/passenger/scanner'
+      route: PassengerRoutes.SCANNER 
     },
     {
-      icon: 'chatbubble' as const,
+      icon: 'chatbubble',
       title: 'AI Assistant',
       subtitle: 'Ask questions',
       color: COLORS.success,
       borderColor: COLORS.successLight,
-      route: '/passenger/chat'
+      route: PassengerRoutes.CHAT
     },
     {
-      icon: 'calculator' as const,
+      icon: 'calculator',
       title: 'Fare Calculator',
       subtitle: 'Calculate fares',
       color: COLORS.orange,
       borderColor: COLORS.orangeLight,
-      route: '/passenger/fare'
+      route: PassengerRoutes.FARE
     },
     {
-      icon: 'map' as const,
+      icon: 'map',
       title: 'Routes & Fares',
       subtitle: 'View all fares',
       color: COLORS.purple,
       borderColor: COLORS.purpleLight,
-      route: '/passenger/route'
+      route: PassengerRoutes.ROUTE
     }
   ];
 
@@ -97,7 +93,7 @@ export const HomeScreen: React.FC = () => {
             subtitle={item.subtitle}
             color={item.color}
             borderColor={item.borderColor}
-            onPress={() => router.push({ pathname: item.route } as unknown as Href)}
+            onPress={() => router.push(item.route as Href)}
           />
         ))}
       </View>

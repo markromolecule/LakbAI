@@ -1,16 +1,23 @@
-// LakbAI-Mobile/app/passenger/home.tsx
+// LakbAI-Mobile/app/passenger/scanner.tsx
 import React from 'react';
 import { SafeAreaView, StyleSheet } from 'react-native';
+import { useRouter } from 'expo-router';
 import { Header } from '../../components/common/Header';
 import { Footer } from '../../components/common/Footer';
-import HomeScreen from '../../screens/passenger/views/HomeScreen';
+import { ScannerScreen } from '../../screens/passenger/views/ScannerScreen';
 import { COLORS } from '../../shared/styles';
 
-export default function PassengerHome() {
+export default function PassengerScanner() {
+  const router = useRouter();
+
+  const handleBackPress = () => {
+    router.back();
+  };
+
   return (
     <SafeAreaView style={styles.container}>
-      <Header showBackButton={false} userType="Passenger" />
-      <HomeScreen />
+      <Header showBackButton={true} userType="Passenger" onBackPress={handleBackPress} />
+      <ScannerScreen />
       <Footer />
     </SafeAreaView>
   );

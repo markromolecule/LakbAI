@@ -1,4 +1,4 @@
-import { MONTHS_DATA, PLACEHOLDERS } from '../../constants/signUpField';
+import { MONTHS_DATA, PLACEHOLDERS } from '../../constants/registerField';
 import { SignUpData } from '../types/authentication';
 
 export const getSelectedMonthLabel = (selectedMonth: string): string => {
