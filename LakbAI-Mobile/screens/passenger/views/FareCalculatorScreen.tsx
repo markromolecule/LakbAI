@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text } from 'react-native';
-import { Button } from '../../components/common/Button';
-import { LocationPicker } from '../../components/common/LocationPicker';
-import { FareResult } from '../../components/fare/FareResult';
-import { CHECKPOINTS } from '../../constants/checkpoints';
-import { SPACING } from '../../shared/styles';
-import { globalStyles } from '../../shared/styles/globalStyles';
-import { calculateFare } from '../../shared/utils/fareCalculator';
+import { Button } from '../../../components/common/Button';
+import { LocationPicker } from '../../../components/common/LocationPicker';
+import { FareResult } from '../components/fare/FareResult';
+import { CHECKPOINTS } from '../../../constants/checkpoints';
+import { SPACING } from '../../../shared/styles';
+import { globalStyles } from '../../../shared/styles/globalStyles';
+import { calculateFare } from '../../../shared/utils/fareCalculator';
 
 export const FareCalculatorScreen: React.FC = () => {
   const [fromLocation, setFromLocation] = useState<string>('');

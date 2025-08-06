@@ -1,8 +1,8 @@
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { SPACING } from '../../shared/styles/spacing';
-import { COLORS } from '../../shared/themes/colors';
-import { QuickQuestion } from '../../shared/types';
+import { SPACING } from '../../../../shared/styles/spacing';
+import { COLORS } from '../../../../shared/themes/colors';
+import { QuickQuestion } from '../../../../shared/types';
 
 interface QuickQuestionsProps {
   questions: QuickQuestion[];

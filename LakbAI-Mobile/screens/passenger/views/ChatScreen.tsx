@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';
-import { ChatInput } from '../../components/chat/ChatInput';
-import { ChatMessage } from '../../components/chat/ChatMessage';
-import { QuickQuestions } from '../../components/chat/QuickQuestions';
-import { QUICK_QUESTIONS } from '../../constants/quickQuestions';
-import { useChat } from '../../hooks/useChat';
-import styles from './styles/ChatScreen.styles';
+import { ChatInput } from '../components/chat/ChatInput';
+import { ChatMessage } from '../components/chat/ChatMessage';
+import { QuickQuestions } from '../components/chat/QuickQuestions';
+import { QUICK_QUESTIONS } from '../../../constants/quickQuestions';
+import { useChat } from '../hooks/useChat';
+import styles from '../styles/ChatScreen.styles';
 
 export const ChatScreen: React.FC = () => {
   const { messages, sendMessage } = useChat();

@@ -1,8 +1,8 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { SPACING } from '../../shared/styles/spacing';
-import { COLORS } from '../../shared/themes/colors';
-import { ChatMessage as ChatMessageType } from '../../shared/types';
+import { SPACING } from '../../../../shared/styles/spacing';
+import { COLORS } from '../../../../shared/themes/colors';
+import { ChatMessage as ChatMessageType } from '../../../../shared/types';
 
 interface ChatMessageProps {
   message: ChatMessageType;

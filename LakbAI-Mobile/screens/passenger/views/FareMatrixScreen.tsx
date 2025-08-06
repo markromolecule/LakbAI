@@ -1,10 +1,10 @@
 import React from 'react';
 import { ScrollView, View, Text, StyleSheet } from 'react-native';
-import { FareItem } from '../../components/fare/FareItem';
-import { InfoCard } from '../../components/common/InfoCard';
-import { FARE_MATRIX } from '../../constants/fareMatrix';
-import { COLORS, SPACING } from '../../shared/styles';
-import { globalStyles } from '../../shared/styles/globalStyles';
+import { FareItem } from '../components/fare/FareItem';
+import { InfoCard } from '../../../components/common/InfoCard';
+import { FARE_MATRIX } from '../../../constants/fareMatrix';
+import { COLORS, SPACING } from '../../../shared/styles';
+import { globalStyles } from '../../../shared/styles/globalStyles';
 
 export const FareMatrixScreen: React.FC = () => {
   const routeInfo = [

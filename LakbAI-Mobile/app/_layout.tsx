@@ -1,12 +1,13 @@
-// app/_layout.tsx
 import { Stack } from "expo-router";
+import { StatusBar } from "expo-status-bar";
+import React from "react";
+import { SafeAreaView } from "react-native";
 
 export default function RootLayout() {
   return (
-    <Stack
-      screenOptions={{
-        headerShown: false,
-      }}
-    />
+    <SafeAreaView style={{ flex: 1 }}>
+      <StatusBar style="auto" />
+      <Stack screenOptions={{ headerShown: false }} />
+    </SafeAreaView>
   );
 }

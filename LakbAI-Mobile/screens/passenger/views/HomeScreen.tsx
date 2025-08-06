@@ -1,15 +1,18 @@
+// screens/passenger/views/HomeScreen.tsx
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
-import { InfoCard } from '../../components/common/InfoCard';
-import { COLORS } from '../../shared/styles';
-import { globalStyles } from '../../shared/styles/globalStyles';
-import { ViewType } from '../../shared/types';
-import styles from './styles/HomeScreen.styles';
+import { InfoCard } from '../../../components/common/InfoCard';
+import { COLORS } from '../../../shared/styles';
+import { globalStyles } from '../../../shared/styles/globalStyles';
+import styles from '../styles/HomeScreen.styles';
+import { Href, useRouter } from 'expo-router';
 
-interface HomeScreenProps {
-  onNavigate: (view: ViewType) => void;
-}
+type PassengerRoute = 
+  | '/passenger/scanner'
+  | '/passenger/chat'
+  | '/passenger/fare'
+  | '/passenger/route';
 
 const GridItem: React.FC<{
   icon: keyof typeof Ionicons.glyphMap;
@@ -26,15 +29,24 @@ const GridItem: React.FC<{
   </TouchableOpacity>
 );
 
-export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate }) => {
-  const gridItems = [
+export const HomeScreen: React.FC = () => {
+  const router = useRouter();
+
+  const gridItems: Array<{
+    icon: keyof typeof Ionicons.glyphMap;
+    title: string;
+    subtitle: string;
+    color: string;
+    borderColor: string;
+    route: PassengerRoute;
+  }> = [
     {
       icon: 'qr-code' as const,
       title: 'Scan QR Code',
       subtitle: 'Get fare info',
       color: COLORS.primary,
       borderColor: COLORS.primaryLight,
-      view: 'scanner' as const
+      route: '/passenger/scanner'
     },
     {
       icon: 'chatbubble' as const,
@@ -42,7 +54,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate }) => {
       subtitle: 'Ask questions',
       color: COLORS.success,
       borderColor: COLORS.successLight,
-      view: 'chat' as const
+      route: '/passenger/chat'
     },
     {
       icon: 'calculator' as const,
@@ -50,7 +62,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate }) => {
       subtitle: 'Calculate fares',
       color: COLORS.orange,
       borderColor: COLORS.orangeLight,
-      view: 'fare' as const
+      route: '/passenger/fare'
     },
     {
       icon: 'map' as const,
@@ -58,7 +70,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate }) => {
       subtitle: 'View all fares',
       color: COLORS.purple,
       borderColor: COLORS.purpleLight,
-      view: 'route' as const
+      route: '/passenger/route'
     }
   ];
 
@@ -80,8 +92,12 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate }) => {
         {gridItems.map((item, index) => (
           <GridItem
             key={index}
-            {...item}
-            onPress={() => onNavigate(item.view)}
+            icon={item.icon}
+            title={item.title}
+            subtitle={item.subtitle}
+            color={item.color}
+            borderColor={item.borderColor}
+            onPress={() => router.push({ pathname: item.route } as unknown as Href)}
           />
         ))}
       </View>
@@ -96,11 +112,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate }) => {
         </View>
       </View>
 
-      <InfoCard
-        title="How to use LakbAI:"
-        items={infoItems}
-      />
+      <InfoCard title="How to use LakbAI:" items={infoItems} />
     </ScrollView>
   );
 };
 
+export default HomeScreen;

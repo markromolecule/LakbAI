@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { FareInfo } from '../../shared/types';
-import { COLORS, SPACING } from '../../shared/styles';
+import { FareInfo } from '../../../../shared/types';
+import { COLORS, SPACING } from '../../../../shared/styles';
 
 interface FareItemProps {
   fareInfo: FareInfo;

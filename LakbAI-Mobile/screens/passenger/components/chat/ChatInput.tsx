@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
-import { COLORS, SPACING } from '../../shared/styles';
+import { COLORS, SPACING } from '../../../../shared/styles';
 
 interface ChatInputProps {
   value: string;

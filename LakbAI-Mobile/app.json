@@ -1,11 +1,12 @@
 {
   "expo": {
-    "name": "LakbAI",
-    "slug": "LakbAI",
+    "name": "LakbAI-Mobile",
+    "slug": "LakbAI-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "lakbai",
+    "scheme": "lakbai-mobile",
+    "entryPoint": "expo-router/entry",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {

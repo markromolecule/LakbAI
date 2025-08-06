@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { ChatMessage } from '../shared/types';
+import { ChatMessage } from '../../../shared/types';
 
 const INITIAL_MESSAGE: ChatMessage = {
   type: 'bot',

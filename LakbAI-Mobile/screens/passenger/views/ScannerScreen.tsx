@@ -2,13 +2,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { CameraView } from 'expo-camera';
 import React, { useState } from 'react';
 import { Modal, ScrollView, Text, TouchableOpacity, View } from 'react-native';
-import { Button } from '../../components/common/Button';
-import { InfoCard } from '../../components/common/InfoCard';
-import { useCameraPermissions } from '../../shared/helpers/useCameraPermission';
-import { COLORS } from '../../shared/styles';
-import { globalStyles } from '../../shared/styles/globalStyles';
-import { showAlert } from '../../shared/utils/alertUtils';
-import styles from './styles/ScannerScreen.styles';
+import { Button } from '../../../components/common/Button';
+import { InfoCard } from '../../../components/common/InfoCard';
+import { useCameraPermissions } from '../../../shared/helpers/useCameraPermission';
+import { COLORS } from '../../../shared/styles';
+import { globalStyles } from '../../../shared/styles/globalStyles';
+import { showAlert } from '../../../shared/utils/alertUtils';
+import styles from '../styles/ScannerScreen.styles';
 
 export const ScannerScreen: React.FC = () => {
   const hasPermission = useCameraPermissions();

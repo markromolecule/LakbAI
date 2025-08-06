@@ -12,7 +12,7 @@ import {
     TouchableOpacity,
     View
 } from 'react-native';
-import styles from './styles/LoginScreen.styles';
+import styles from '../styles/LoginScreen.styles';
 
 interface LoginData {
   username: string;

@@ -7,10 +7,10 @@ import {
   Text,
   View
 } from 'react-native';
-import { LoginData, SignUpData } from '../../shared/types/authentication';
+import { LoginData, SignUpData } from '../../../shared/types/authentication';
 import LoginScreen from './LoginScreen';
 import SignUpScreen from './SignUpScreen';
-import styles from './styles/AuthScreen.styles';
+import styles from '../styles/AuthScreen.styles';
 
 interface AuthScreenProps {
   onLogin: (data: LoginData) => void;

@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { COLORS, SPACING } from '../../shared/styles';
+import { COLORS, SPACING } from '../../../../shared/styles';
 
 interface FareResultProps {
   fare: number;

@@ -1,7 +1,7 @@
 // SignUpScreen.tsx
 import React from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
-import TermsModal from '../../components/common/TermsModal';
+import TermsModal from '../../../components/common/TermsModal';
 import {
   AddressSection,
   BirthdaySection,
@@ -11,10 +11,10 @@ import {
   PasswordSection,
   TermsSection,
   UsernameSection,
-} from '../../components/register/FormSection';
-import { useSignUpForm } from '../../hooks/useSignUpForm';
-import { SignUpData } from '../../shared/types/authentication';
-import styles from './styles/SignUpScreen.styles';
+} from '../components/register/FormSection';
+import { useSignUpForm } from '../hooks/useSignUpForm';
+import { SignUpData } from '../../../shared/types/authentication';
+import styles from '../styles/SignUpScreen.styles';
 
 interface SignUpScreenProps {
   onSignUp: (data: SignUpData) => void;

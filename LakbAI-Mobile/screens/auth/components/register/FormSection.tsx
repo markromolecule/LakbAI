@@ -1,10 +1,10 @@
 // components/signup/FormSections.tsx
 import React from 'react';
 import { ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { HELP_TEXTS, MONTHS_DATA, PLACEHOLDERS } from '../../constants/signUpField';
-import styles from '../../screens/auth/styles/SignUpScreen.styles';
-import { getSelectedMonthLabel, selectMonth } from '../../shared/helpers/monthDropdownHelper';
-import { SignUpData } from '../../shared/types/authentication';
+import { HELP_TEXTS, MONTHS_DATA, PLACEHOLDERS } from '../../../../constants/registerField';
+import styles from '../../../../screens/auth/styles/SignUpScreen.styles';
+import { getSelectedMonthLabel, selectMonth } from '../../../../shared/helpers/monthDropdownHelper';
+import { SignUpData } from '../../../../shared/types/authentication';
 
 interface FormSectionProps {
   signUpData: SignUpData;

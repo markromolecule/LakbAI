@@ -1,8 +1,8 @@
 
 import { useState } from 'react';
 import { Alert } from 'react-native';
-import { SignUpData } from '../shared/types/authentication';
-import { validateBirthDate, validateEmail, validatePassword } from '../shared/helpers/validation';
+import { SignUpData } from '../../../shared/types/authentication';
+import { validateBirthDate, validateEmail, validatePassword } from '../../../shared/helpers/validation';
 
 const initialSignUpData: SignUpData = {
   firstName: '',

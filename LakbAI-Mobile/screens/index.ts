@@ -1,9 +1,11 @@
 // Passenger screens
-export { ChatScreen } from './passenger/ChatScreen';
-export { FareCalculatorScreen } from './passenger/FareCalculatorScreen';
-export { FareMatrixScreen } from './passenger/FareMatrixScreen';
-export { HomeScreen } from './passenger/HomeScreen';
-export { ScannerScreen } from './passenger/ScannerScreen';
+export { ChatScreen } from './passenger/views/ChatScreen';
+export { FareCalculatorScreen } from './passenger/views/FareCalculatorScreen';
+export { FareMatrixScreen } from './passenger/views/FareMatrixScreen';
+export { HomeScreen } from './passenger/views/HomeScreen';
+export { ScannerScreen } from './passenger/views/ScannerScreen';
+
+// Driver Screens
 
 // Types
 export type { ViewType } from '../shared/types';
