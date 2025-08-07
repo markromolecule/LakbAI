@@ -3,7 +3,6 @@ import React, { useState } from 'react';
 import {
   Alert,
   SafeAreaView,
-  ScrollView,
   Text,
   View
 } from 'react-native';
@@ -12,26 +11,41 @@ import LoginScreen from './LoginScreen';
 import SignUpScreen from './SignUpScreen';
 import styles from '../styles/AuthScreen.styles';
 import { useRouter } from 'expo-router';
+import { PassengerRoutes } from '../../../routes/PassengerRoutes';
+import { DriverRoutes } from '../../../routes/DriverRoutes';
 
 interface AuthScreenProps {
   onLogin?: (data: LoginData) => void;
   onSignUp?: (data: SignUpData) => void;
+  onGuestContinue?: () => void;
 }
 
-const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, onSignUp }) => {
+const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, onSignUp, onGuestContinue }) => {
   const [activeTab, setActiveTab] = useState<'login' | 'signup'>('login');
   const router = useRouter();
 
   const handleLogin = (data: LoginData) => {
     const { username, password } = data;
-    // Allow john / john for quick test
+    
+    // Allow john / john123 for passenger login
     if (username === 'john' && password === 'john123') {
       // navigate to passenger home (replace so back button won't return to auth)
-      router.replace('/passenger/home');
+      router.replace(PassengerRoutes.HOME);
       return;
     }
+    
+    // Allow livado / livado123 for driver login
+    if (username === 'livado' && password === 'livado123') {
+      // navigate to driver dashboard (replace so back button won't return to auth)
+      router.replace(DriverRoutes.HOME);
+      return;
+    }
+    
     // here you can call your real auth API
-    Alert.alert('Invalid credentials', 'Try username: john / password: john for testing');
+    Alert.alert(
+      'Invalid credentials', 
+      'Try:\n• username: john / password: john123 (Passenger)\n• username: livado / password: livado123 (Driver)'
+    );
     
     // Call the optional prop if provided
     if (onLogin) {
@@ -53,17 +67,27 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, onSignUp }) => {
     Alert.alert('Forgot Password', 'Password reset instructions would be sent to your email.');
   };
 
+  const handleGuestContinue = () => {
+    // Navigate to passenger home as guest
+    router.replace(PassengerRoutes.HOME);
+    
+    // Call the optional prop if provided
+    if (onGuestContinue) {
+      onGuestContinue();
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar style="dark" />
       
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+      <View style={styles.content}>
         {activeTab === 'login' ? (
-          <LoginScreen onLogin={handleLogin} onForgotPassword={handleForgotPassword} />
+          <LoginScreen onLogin={handleLogin} onForgotPassword={handleForgotPassword} onGuestContinue={handleGuestContinue} />
         ) : (
           <SignUpScreen onSignUp={handleSignUp} />
         )}
-      </ScrollView>
+      </View>
 
       {/* Toggle footer */}
       <View style={styles.footer}>

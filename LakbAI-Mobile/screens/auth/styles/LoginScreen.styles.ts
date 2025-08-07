@@ -1,32 +1,33 @@
-import { StyleSheet } from 'react-native';
+import { StyleSheet, Dimensions } from 'react-native';
+
+const { height: screenHeight, width: screenWidth } = Dimensions.get('window');
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
   },
-  scrollContainer: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    minHeight: '100%',
-  },
   content: {
-    flex: 1,
+    flexGrow: 1,
+    width: '100%',
     paddingHorizontal: 32,
-    paddingVertical: 40,
     justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    paddingVertical: 20,
+    minHeight: '100%',
   },
   header: {
     alignItems: 'center',
-    marginBottom: 48,
+    marginBottom: 40,
   },
   logoContainer: {
     marginBottom: 24,
   },
   logo: {
-    width: 72,
-    height: 72,
-    borderRadius: 20,
+    width: 64,
+    height: 64,
+    borderRadius: 16,
     backgroundColor: '#F8F9FF',
     alignItems: 'center',
     justifyContent: 'center',
@@ -58,26 +59,37 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#666666',
     fontWeight: '400',
+    marginBottom: 32,
   },
   formContainer: {
     width: '100%',
+    marginBottom: 32,
+  },
+  buttonsContainer: {
+    marginTop: 24,
+    width: '100%',
+    alignItems: 'center',
   },
   inputGroup: {
-    marginBottom: 24,
+    marginBottom: 20,
   },
   inputContainer: {
     position: 'relative',
+    width: '100%',
   },
   textInput: {
     borderWidth: 1.5,
     borderColor: '#E8E8E8',
-    borderRadius: 16,
-    paddingHorizontal: 56,
-    paddingVertical: 18,
-    fontSize: 16,
+    borderRadius: 20,
+    paddingLeft: 70,
+    paddingRight: 70,
+    paddingVertical: 12,
+    fontSize: 18,
     backgroundColor: '#FAFAFA',
     color: '#1A1A1A',
     fontWeight: '500',
+    height: 56,
+    width: '100%',
   },
   textInputFocused: {
     borderColor: '#007AFF',
@@ -94,10 +106,11 @@ const styles = StyleSheet.create({
   },
   inputIcon: {
     position: 'absolute',
-    left: 20,
+    left: 18,
     top: 0,
     bottom: 0,
     justifyContent: 'center',
+    zIndex: 1,
   },
   userIcon: {
     width: 20,
@@ -108,11 +121,12 @@ const styles = StyleSheet.create({
   },
   passwordToggle: {
     position: 'absolute',
-    right: 20,
+    right: 18,
     top: 0,
     bottom: 0,
     justifyContent: 'center',
     paddingHorizontal: 4,
+    zIndex: 1,
   },
   eyeIcon: {
     width: 20,
@@ -135,21 +149,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 32,
+    marginBottom: 28,
     paddingHorizontal: 4,
+    width: '100%',
   },
   rememberMeContainer: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   rememberMeText: {
-    fontSize: 14,
+    fontSize: 15,
     color: '#666666',
     marginLeft: 8,
     fontWeight: '500',
   },
   forgotPasswordText: {
-    fontSize: 14,
+    fontSize: 15,
     color: '#007AFF',
     fontWeight: '600',
   },
@@ -157,8 +172,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#007AFF',
     paddingVertical: 18,
     paddingHorizontal: 24,
-    borderRadius: 16,
+    borderRadius: 20,
     alignItems: 'center',
+    justifyContent: 'center',
+    width: screenWidth - 64,
+    height: 58,
+    marginBottom: 16,
     shadowColor: '#007AFF',
     shadowOffset: { width: 0, height: 12 },
     shadowOpacity: 0.3,
@@ -171,7 +190,7 @@ const styles = StyleSheet.create({
   },
   loginButtonText: {
     color: '#FFFFFF',
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '700',
     letterSpacing: 0.3,
   },
@@ -179,6 +198,25 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
+  },
+  guestButton: {
+    borderWidth: 1.5,
+    borderColor: '#007AFF',
+    backgroundColor: 'transparent',
+    paddingVertical: 18,
+    paddingHorizontal: 24,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: screenWidth - 64,
+    height: 58,
+    marginBottom: 24,
+  },
+  guestButtonText: {
+    color: '#007AFF',
+    fontSize: 18,
+    fontWeight: '600',
+    letterSpacing: 0.3,
   },
 });
 

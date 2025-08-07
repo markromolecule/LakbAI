@@ -4,8 +4,8 @@ export const FARE_MATRIX: FareInfo[] = [
   { from: 'Robinson Tejero', to: 'Malabon', fare: 12 },
   { from: 'Malabon', to: 'Riverside', fare: 14 },
   { from: 'Riverside', to: 'Lancaster New City', fare: 16 },
-  { from: 'Lancaster New City', to: 'Pascam 1', fare: 18 },
-  { from: 'Pascam 1', to: 'Open Canal', fare: 20 },
+  { from: 'Lancaster New City', to: 'Pasong Camachile I', fare: 18 },
+  { from: 'Pasong Camachile I', to: 'Open Canal', fare: 20 },
   { from: 'Open Canal', to: 'Santiago', fare: 22 },
   { from: 'Santiago', to: 'Bella Vista', fare: 24 },
   { from: 'Bella Vista', to: 'San Francisco', fare: 26 },
@@ -21,12 +21,12 @@ export const FARE_MATRIX: FareInfo[] = [
 
 
 /** 
-Checkpoints
+Checkpoints (matching CHECKPOINTS constant)
 Robinson Tejero
 Malabon
 Riverside
 Lancaster New City
-Pascam 1
+Pasong Camachile I
 Open Canal
 Santiago
 Bella Vista

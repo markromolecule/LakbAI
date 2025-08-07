@@ -30,6 +30,7 @@ export const COLORS = {
   gray700: '#374151',
   gray800: '#1F2937',
   gray900: '#111827',
+  black: '#000000',
   
   blue50: '#EFF6FF',
   blue100: '#DBEAFE',
@@ -37,5 +38,10 @@ export const COLORS = {
   blue800: '#1E40AF',
   
   green50: '#F0FDF4',
-  green600: '#047857'
+  green600: '#047857',
+  
+  // Driver-specific colors
+  driverPrimary: '#22C55E',
+  driverPrimaryLight: '#BBF7D0',
+  driverPrimaryDark: '#16A34A',
 } as const;

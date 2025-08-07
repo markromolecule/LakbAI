@@ -22,9 +22,10 @@ interface LoginData {
 interface LoginScreenProps {
   onLogin: (data: LoginData) => void;
   onForgotPassword: () => void;
+  onGuestContinue?: () => void;
 }
 
-const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onForgotPassword }) => {
+const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onForgotPassword, onGuestContinue }) => {
   const [loginData, setLoginData] = useState<LoginData>({
     username: '',
     password: '',
@@ -35,23 +36,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onForgotPassword }) 
   const [errors, setErrors] = useState<{ username?: string; password?: string }>({});
   const [focusedField, setFocusedField] = useState<string | null>(null);
 
-  const fadeAnim = new Animated.Value(0);
-  const slideAnim = new Animated.Value(50);
 
-  useEffect(() => {
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 1000,
-        useNativeDriver: true,
-      }),
-      Animated.timing(slideAnim, {
-        toValue: 0,
-        duration: 800,
-        useNativeDriver: true,
-      }),
-    ]).start();
-  }, []);
 
   const validateForm = (): boolean => {
     const newErrors: { username?: string; password?: string } = {};
@@ -103,21 +88,14 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onForgotPassword }) 
     <KeyboardAvoidingView 
       style={styles.container} 
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
     >
       <ScrollView 
-        contentContainerStyle={styles.scrollContainer}
+        contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        <Animated.View 
-          style={[
-            styles.content, 
-            { 
-              opacity: fadeAnim,
-              transform: [{ translateY: slideAnim }]
-            }
-          ]}
-        >
+        <View>
           {/* Header Section */}
           <View style={styles.header}>
             <View style={styles.logoContainer}>
@@ -145,6 +123,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onForgotPassword }) 
                   autoCapitalize="none"
                   autoCorrect={false}
                   editable={!isLoading}
+                  textAlignVertical="center"
                 />
                 <View style={styles.inputIcon}>
                   <View style={styles.userIcon} />
@@ -170,6 +149,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onForgotPassword }) 
                   placeholderTextColor="#A0A0A0"
                   secureTextEntry={!showPassword}
                   editable={!isLoading}
+                  textAlignVertical="center"
                 />
                 <TouchableOpacity 
                   style={styles.passwordToggle}
@@ -210,27 +190,42 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onForgotPassword }) 
               </TouchableOpacity>
             </View>
 
-            {/* Login Button */}
-            <TouchableOpacity 
-              style={[
-                styles.loginButton,
-                isLoading && styles.loginButtonDisabled
-              ]} 
-              onPress={handleLogin}
-              disabled={isLoading}
-              activeOpacity={0.8}
-            >
-              {isLoading ? (
-                <View style={styles.loadingContainer}>
-                  <ActivityIndicator color="#FFFFFF" size="small" />
-                  <Text style={styles.loginButtonText}>Signing in...</Text>
-                </View>
-              ) : (
-                <Text style={styles.loginButtonText}>Login</Text>
+            {/* Buttons Section */}
+            <View style={styles.buttonsContainer}>
+              {/* Login Button */}
+              <TouchableOpacity 
+                style={[
+                  styles.loginButton,
+                  isLoading && styles.loginButtonDisabled
+                ]} 
+                onPress={handleLogin}
+                disabled={isLoading}
+                activeOpacity={0.8}
+              >
+                {isLoading ? (
+                  <View style={styles.loadingContainer}>
+                    <ActivityIndicator color="#FFFFFF" size="small" />
+                    <Text style={styles.loginButtonText}>Signing in...</Text>
+                  </View>
+                ) : (
+                  <Text style={styles.loginButtonText}>Login</Text>
+                )}
+              </TouchableOpacity>
+
+              {/* Continue as Guest Button */}
+              {onGuestContinue && (
+                <TouchableOpacity 
+                  style={styles.guestButton} 
+                  onPress={onGuestContinue}
+                  disabled={isLoading}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.guestButtonText}>Continue as Guest</Text>
+                </TouchableOpacity>
               )}
-            </TouchableOpacity>
+            </View>
           </View>
-        </Animated.View>
+        </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );

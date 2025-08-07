@@ -1,16 +1,28 @@
-import { StyleSheet } from "react-native";
+import { StyleSheet, Dimensions } from "react-native";
 import { COLORS } from "../themes/colors";
 import { SPACING } from "./spacing";
 import { theme } from "../themes";
 
+const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+
 export const globalStyles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: COLORS.gray50,
+    backgroundColor: COLORS.white,
+    minHeight: screenHeight,
   },
   container: {
     flex: 1,
-    padding: SPACING.lg,
+    paddingHorizontal: screenWidth > 768 ? SPACING.xl : SPACING.lg,
+    paddingVertical: screenWidth > 768 ? SPACING.lg : SPACING.md,
+    backgroundColor: COLORS.white,
+    minHeight: '100%',
+  },
+  fullScreen: {
+    flex: 1,
+    backgroundColor: COLORS.white,
+    minHeight: screenHeight,
+    width: '100%',
   },
   pageTitle: {
     fontSize: 20,

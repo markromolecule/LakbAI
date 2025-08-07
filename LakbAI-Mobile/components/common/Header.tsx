@@ -18,19 +18,27 @@ export const Header: React.FC<HeaderProps> = ({
   onBackPress,
   userType = 'Passenger'
 }) => {
+
+  // Dynamic colors based on user type
+  const isDriver = userType === 'Driver';
+  const titleColor = isDriver ? COLORS.driverPrimary : COLORS.primary;
+  const backButtonColor = isDriver ? COLORS.driverPrimary : COLORS.gray500;
+  const badgeBackgroundColor = isDriver ? COLORS.driverPrimaryLight : COLORS.primaryLight;
+  const badgeTextColor = isDriver ? COLORS.driverPrimaryDark : COLORS.primaryDark;
+
   return (
     <View style={styles.container}>
       <View style={styles.left}>
         {showBackButton && (
           <TouchableOpacity style={styles.backButton} onPress={onBackPress}>
-            <Ionicons name="close" size={20} color={COLORS.gray500} />
+            <Ionicons name="close" size={20} color={backButtonColor} />
           </TouchableOpacity>
         )}
-        <Text style={styles.title}>{title}</Text>
+        <Text style={[styles.title, { color: titleColor }]}>{title}</Text>
       </View>
       
-      <View style={styles.badge}>
-        <Text style={styles.badgeText}>{userType}</Text>
+      <View style={[styles.badge, { backgroundColor: badgeBackgroundColor }]}>
+        <Text style={[styles.badgeText, { color: badgeTextColor }]}>{userType}</Text>
       </View>
     </View>
   );
@@ -58,16 +66,13 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: COLORS.primary,
   },
   badge: {
-    backgroundColor: COLORS.primaryLight,
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.xs,
     borderRadius: 16,
   },
   badgeText: {
-    color: COLORS.primaryDark,
     fontSize: 12,
     fontWeight: '600',
   },

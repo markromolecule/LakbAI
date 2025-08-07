@@ -1,6 +1,6 @@
 // LakbAI-Mobile/app/passenger/fare.tsx
 import React from 'react';
-import { SafeAreaView, StyleSheet } from 'react-native';
+import { SafeAreaView, StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Header } from '../../components/common/Header';
 import { Footer } from '../../components/common/Footer';
@@ -17,12 +17,20 @@ export default function PassengerFare() {
   return (
     <SafeAreaView style={styles.container}>
       <Header showBackButton={true} userType="Passenger" onBackPress={handleBackPress} />
-      <FareCalculatorScreen />
+      <View style={styles.content}>
+        <FareCalculatorScreen />
+      </View>
       <Footer />
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.white }
+  container: { 
+    flex: 1, 
+    backgroundColor: COLORS.white 
+  },
+  content: {
+    flex: 1
+  }
 });
