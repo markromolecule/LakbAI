@@ -15,7 +15,11 @@ export const FareView: React.FC<FareViewProps> = ({
   fareMatrix
 }) => {
   return (
-    <ScrollView style={driverStyles.container} showsVerticalScrollIndicator={false}>
+    <ScrollView 
+      style={driverStyles.container} 
+      contentContainerStyle={driverStyles.contentContainer}
+      showsVerticalScrollIndicator={false}
+    >
       <Text style={fareStyles.pageTitle}>Fare Matrix</Text>
       
       <View style={fareStyles.fareCard}>

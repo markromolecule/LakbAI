@@ -3,7 +3,7 @@ import React from 'react';
 import { SafeAreaView, StyleSheet, View } from 'react-native';
 import { Header } from '../../components/common/Header';
 import { Footer } from '../../components/common/Footer';
-import HomeScreen from '../../screens/passenger/views/HomeScreen';
+import HomeScreen from '../../screens/passenger/views/HomeView';
 import { COLORS } from '../../shared/styles';
 
 export default function PassengerHome() {

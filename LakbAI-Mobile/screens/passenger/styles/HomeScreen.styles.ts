@@ -7,6 +7,7 @@ const styles = StyleSheet.create({
     padding: SPACING.xl,
     borderRadius: SPACING.md,
     marginBottom: SPACING.xl,
+    marginTop: SPACING.md,
   },
   headerTitle: {
     fontSize: 24,

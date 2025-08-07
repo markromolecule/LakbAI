@@ -4,7 +4,7 @@ import { SafeAreaView, StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Header } from '../../components/common/Header';
 import { Footer } from '../../components/common/Footer';
-import { FareMatrixScreen } from '../../screens/passenger/views/FareMatrixScreen';
+import { FareMatrixScreen } from '../../screens/passenger/views/FareMatrixView';
 import { COLORS } from '../../shared/styles';
 
 export default function PassengerRoute() {

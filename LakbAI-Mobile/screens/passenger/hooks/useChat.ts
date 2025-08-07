@@ -3,7 +3,7 @@ import { ChatMessage } from '../../../shared/types';
 
 const INITIAL_MESSAGE: ChatMessage = {
   type: 'bot',
-  message: "Hello! I'm your LakbAI assistant. How can I help you today?",
+  message: "Hi! I’m Biya, your LakbAI assistant. Need help with routes, fares, or something else?",
   timestamp: new Date()
 };
 

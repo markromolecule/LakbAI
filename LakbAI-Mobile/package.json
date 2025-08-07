@@ -13,6 +13,7 @@
   "dependencies": {
     "@expo/vector-icons": "^14.1.0",
     "@firebasegen/default-connector": "file:dataconnect-generated/js/default-connector",
+    "@react-native-async-storage/async-storage": "^1.24.0",
     "@react-native-firebase/database": "^18.0.0",
     "@react-native-picker/picker": "2.11.1",
     "@react-navigation/bottom-tabs": "^7.3.10",

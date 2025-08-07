@@ -81,12 +81,12 @@ export const DriverScreen: React.FC = () => {
         onBackPress={() => setCurrentView('home')}
         userType="Driver"
       />
-
-      {/* Main Content - Flex container to fill available space */}
-      <View style={{ flex: 1 }}>
+    
+      {/* Main Content Container with proper flex handling */}
+      <View style={driverStyles.mainContent}>
         {renderCurrentView()}
       </View>
-
+      
       <Footer
         text="Professional Transportation"
         version="Driver v1.0"

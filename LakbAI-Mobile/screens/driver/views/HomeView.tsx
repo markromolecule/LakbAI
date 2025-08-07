@@ -82,38 +82,46 @@ export const HomeView: React.FC<HomeViewProps> = ({
 
       {/* Quick Actions */}
       <View style={homeStyles.actionsGrid}>
-        <ActionCard
-          title="QR Scanner"
-          subtitle="Update location"
-          icon={QrCode}
-          iconColor="#22C55E"
-          borderColor="#BBF7D0"
-          onPress={() => onNavigate('scanner')}
-        />
-        <ActionCard
-          title="Fare Matrix"
-          subtitle="View fares"
-          icon={Calculator}
-          iconColor="#3B82F6"
-          borderColor="#BFDBFE"
-          onPress={() => onNavigate('fare')}
-        />
-        <ActionCard
-          title="My Profile"
-          subtitle="Driver details"
-          icon={User}
-          iconColor="#8B5CF6"
-          borderColor="#E9D5FF"
-          onPress={() => onNavigate('profile')}
-        />
-        <ActionCard
-          title="Trip Logs"
-          subtitle="View history"
-          icon={Navigation}
-          iconColor="#F97316"
-          borderColor="#FED7AA"
-          onPress={() => onNavigate('logs')}
-        />
+        <View style={homeStyles.actionCardWrapper}>
+          <ActionCard
+            title="QR Scanner"
+            subtitle="Update location"
+            icon={QrCode}
+            iconColor="#22C55E"
+            borderColor="#BBF7D0"
+            onPress={() => onNavigate('scanner')}
+          />
+        </View>
+        <View style={homeStyles.actionCardWrapper}>
+          <ActionCard
+            title="Fare Matrix"
+            subtitle="View fares"
+            icon={Calculator}
+            iconColor="#3B82F6"
+            borderColor="#BFDBFE"
+            onPress={() => onNavigate('fare')}
+          />
+        </View>
+        <View style={homeStyles.actionCardWrapper}>
+          <ActionCard
+            title="My Profile"
+            subtitle="Driver details"
+            icon={User}
+            iconColor="#8B5CF6"
+            borderColor="#E9D5FF"
+            onPress={() => onNavigate('profile')}
+          />
+        </View>
+        <View style={homeStyles.actionCardWrapper}>
+          <ActionCard
+            title="Trip Logs"
+            subtitle="View history"
+            icon={Navigation}
+            iconColor="#F97316"
+            borderColor="#FED7AA"
+            onPress={() => onNavigate('logs')}
+          />
+        </View>
       </View>
 
       {/* Current Status */}

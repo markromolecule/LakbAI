@@ -15,7 +15,11 @@ export const ScannerView: React.FC<ScannerViewProps> = ({
   onSimulateScan
 }) => {
   return (
-    <ScrollView style={driverStyles.container} showsVerticalScrollIndicator={false}>
+    <ScrollView 
+      style={driverStyles.container} 
+      contentContainerStyle={driverStyles.contentContainer}
+      showsVerticalScrollIndicator={false}
+    >
       <View style={scannerStyles.scannerHeader}>
         <QrCode size={96} color="#22C55E" />
         <Text style={scannerStyles.scannerTitle}>Checkpoint Scanner</Text>

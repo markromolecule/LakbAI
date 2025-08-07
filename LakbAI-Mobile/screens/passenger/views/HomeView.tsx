@@ -46,10 +46,10 @@ export const HomeScreen: React.FC = () => {
     },
     {
       icon: 'chatbubble',
-      title: 'AI Assistant',
+      title: 'BiyaBot',
       subtitle: 'Ask questions',
       color: COLORS.success,
-      borderColor: COLORS.successLight,
+      borderColor: COLORS.successBiya,
       route: PassengerRoutes.CHAT
     },
     {
@@ -98,6 +98,7 @@ export const HomeScreen: React.FC = () => {
         ))}
       </View>
 
+      {/* For notification : Receiver/Print */}
       <View style={styles.arrivalCard}>
         <View style={styles.arrivalContent}>
           <Ionicons name="time" size={20} color={COLORS.warning} />

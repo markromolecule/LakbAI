@@ -21,7 +21,7 @@ export const ChatScreen: React.FC = () => {
   return (
     <View style={styles.container}>
       <View style={styles.chatHeader}>
-        <Text style={styles.chatHeaderTitle}>LakbAI Assistant</Text>
+        <Text style={styles.chatHeaderTitle}>BiyaBot</Text>
         <Text style={styles.chatHeaderSubtitle}>Ask me about fares, routes, and schedules</Text>
       </View>
 

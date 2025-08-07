@@ -1,8 +1,9 @@
 import React from 'react';
-import { ScrollView, View, Text } from 'react-native';
-import { User, Star, Phone } from 'lucide-react-native';
+import { ScrollView, View, Text, TouchableOpacity } from 'react-native';
+import { User, Star, Phone, LogOut } from 'lucide-react-native';
 import { DriverProfile } from '../../../shared/types/driver';
 import { driverStyles, profileStyles, homeStyles } from '../styles';
+import { useLogout } from '../../../shared/utils/authUtils';
 
 interface ProfileViewProps {
   driverProfile: DriverProfile;
@@ -13,6 +14,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   driverProfile,
   isOnDuty
 }) => {
+  const { logout } = useLogout();
+
   return (
     <ScrollView 
       style={driverStyles.container} 
@@ -105,6 +108,26 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
         <Text style={profileStyles.reminderItem}>• Follow traffic rules and speed limits</Text>
         <Text style={profileStyles.reminderItem}>• Be courteous to all passengers</Text>
         <Text style={profileStyles.reminderItem}>• Report any issues immediately</Text>
+      </View>
+
+      {/* Logout Section */}
+      <View style={profileStyles.logoutCard}>
+        <View style={homeStyles.sectionHeader}>
+          <LogOut size={20} color="#DC2626" />
+          <Text style={[homeStyles.sectionTitle, { color: '#DC2626' }]}>Account Settings</Text>
+        </View>
+        <TouchableOpacity 
+          style={profileStyles.logoutButton}
+          onPress={() => logout()}
+          accessibilityLabel="Logout"
+          accessibilityHint="Tap to logout from your driver account"
+        >
+          <View style={profileStyles.logoutContent}>
+            <LogOut size={18} color="#DC2626" />
+            <Text style={profileStyles.logoutText}>Logout</Text>
+          </View>
+          <Text style={profileStyles.logoutSubtext}>Sign out of your account</Text>
+        </TouchableOpacity>
       </View>
     </ScrollView>
   );

@@ -13,6 +13,7 @@ import styles from '../styles/AuthScreen.styles';
 import { useRouter } from 'expo-router';
 import { PassengerRoutes } from '../../../routes/PassengerRoutes';
 import { DriverRoutes } from '../../../routes/DriverRoutes';
+import { storeUserSession } from '../../../shared/utils/authUtils';
 
 interface AuthScreenProps {
   onLogin?: (data: LoginData) => void;
@@ -24,11 +25,13 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, onSignUp, onGuestConti
   const [activeTab, setActiveTab] = useState<'login' | 'signup'>('login');
   const router = useRouter();
 
-  const handleLogin = (data: LoginData) => {
+  const handleLogin = async (data: LoginData) => {
     const { username, password } = data;
     
     // Allow john / john123 for passenger login
     if (username === 'john' && password === 'john123') {
+      // Store passenger session
+      await storeUserSession('passenger', username, true);
       // navigate to passenger home (replace so back button won't return to auth)
       router.replace(PassengerRoutes.HOME);
       return;
@@ -36,6 +39,8 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, onSignUp, onGuestConti
     
     // Allow livado / livado123 for driver login
     if (username === 'livado' && password === 'livado123') {
+      // Store driver session
+      await storeUserSession('driver', username, true);
       // navigate to driver dashboard (replace so back button won't return to auth)
       router.replace(DriverRoutes.HOME);
       return;
@@ -67,7 +72,9 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, onSignUp, onGuestConti
     Alert.alert('Forgot Password', 'Password reset instructions would be sent to your email.');
   };
 
-  const handleGuestContinue = () => {
+  const handleGuestContinue = async () => {
+    // Store guest session
+    await storeUserSession('passenger', 'guest', false);
     // Navigate to passenger home as guest
     router.replace(PassengerRoutes.HOME);
     

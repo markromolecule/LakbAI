@@ -16,7 +16,6 @@ export const globalStyles = StyleSheet.create({
     paddingHorizontal: screenWidth > 768 ? SPACING.xl : SPACING.lg,
     paddingVertical: screenWidth > 768 ? SPACING.lg : SPACING.md,
     backgroundColor: COLORS.white,
-    minHeight: '100%',
   },
   fullScreen: {
     flex: 1,

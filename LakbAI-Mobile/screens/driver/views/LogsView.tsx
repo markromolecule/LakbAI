@@ -14,7 +14,11 @@ export const LogsView: React.FC<LogsViewProps> = ({
   const totalPassengers = recentLogs.reduce((sum, log) => sum + log.passengers, 0);
 
   return (
-    <ScrollView style={driverStyles.container} showsVerticalScrollIndicator={false}>
+    <ScrollView 
+      style={driverStyles.container} 
+      contentContainerStyle={driverStyles.contentContainer}
+      showsVerticalScrollIndicator={false}
+    >
       <Text style={logsStyles.pageTitle}>Trip Logs</Text>
       
       <View style={logsStyles.logsCard}>

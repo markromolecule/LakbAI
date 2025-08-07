@@ -6,6 +6,7 @@ export const COLORS = {
   
   success: '#10B981',
   successLight: '#ECFDF5',
+  successBiya: '#b8ffdeff',
   successBorder: '#BBF7D0',
   successDark: '#059669',
   
