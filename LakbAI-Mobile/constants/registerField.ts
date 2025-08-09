@@ -27,6 +27,7 @@ export const PLACEHOLDERS = {
   FIRST_NAME: 'First name',
   LAST_NAME: 'Last name',
   EMAIL: 'your.email@example.com',
+  PHONE_NUMBER: '0917 123 4567',
   USERNAME: 'Choose a username',
   PASSWORD: 'Create password',
   CONFIRM_PASSWORD: 'Confirm password',
@@ -39,10 +40,11 @@ export const PLACEHOLDERS = {
   BIRTH_DATE: 'DD',
   BIRTH_YEAR: 'YYYY',
   MONTH: 'Month',
-};
+} as const;
 
 export const HELP_TEXTS = {
   USERNAME: 'At least 3 characters, no spaces',
   PASSWORD: 'Password must be at least 8 characters with uppercase, lowercase, and number',
+  PHONE_NUMBER: 'Enter Philippine mobile number (e.g., 0917 123 4567)',
   BIRTH_DATE: 'Enter a valid date (1920-2025)',
 };

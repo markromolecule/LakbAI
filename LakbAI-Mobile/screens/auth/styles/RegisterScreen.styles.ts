@@ -7,7 +7,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    paddingBottom: 40, // Add bottom padding for better scrolling experience
+    paddingBottom: 40,
   },
   container: {
     padding: 20,
@@ -100,6 +100,7 @@ const styles = StyleSheet.create({
   },
   placeholderText: {
     color: '#9CA3AF',
+    fontSize: 16,
   },
   dropdownArrow: {
     fontSize: 12,
@@ -241,6 +242,92 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 18,
     fontWeight: 'bold',
+  },
+  // Fare Discount Section Styles
+  uploadButton: {
+    borderWidth: 2,
+    borderColor: '#3B82F6',
+    borderStyle: 'dashed',
+    borderRadius: 8,
+    paddingVertical: 20,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+    backgroundColor: '#F8FAFC',
+  },
+  uploadButtonText: {
+    color: '#3B82F6',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  documentContainer: {
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    borderRadius: 8,
+    backgroundColor: '#FFFFFF',
+    overflow: 'hidden',
+  },
+  documentInfo: {
+    flexDirection: 'row',
+    padding: 12,
+    alignItems: 'center',
+  },
+  documentPreview: {
+    width: 60,
+    height: 60,
+    borderRadius: 6,
+    marginRight: 12,
+  },
+  pdfIcon: {
+    width: 60,
+    height: 60,
+    borderRadius: 6,
+    backgroundColor: '#F3F4F6',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  pdfIconText: {
+    fontSize: 24,
+  },
+  documentDetails: {
+    flex: 1,
+  },
+  documentName: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1F2937',
+    marginBottom: 2,
+  },
+  documentType: {
+    fontSize: 12,
+    color: '#6B7280',
+  },
+  documentActions: {
+    flexDirection: 'row',
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
+  },
+  replaceButton: {
+    flex: 1,
+    paddingVertical: 12,
+    alignItems: 'center',
+    borderRightWidth: 1,
+    borderRightColor: '#F3F4F6',
+  },
+  replaceButtonText: {
+    color: '#3B82F6',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  removeButton: {
+    flex: 1,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  removeButtonText: {
+    color: '#EF4444',
+    fontSize: 14,
+    fontWeight: '600',
   },
 });
 

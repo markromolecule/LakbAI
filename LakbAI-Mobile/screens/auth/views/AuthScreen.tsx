@@ -8,7 +8,7 @@ import {
 } from 'react-native';
 import { LoginData, SignUpData } from '../../../shared/types/authentication';
 import LoginScreen from './LoginScreen';
-import SignUpScreen from './SignUpScreen';
+import SignUpScreen from './RegisterScreen';
 import styles from '../styles/AuthScreen.styles';
 import { useRouter } from 'expo-router';
 import { PassengerRoutes } from '../../../routes/PassengerRoutes';

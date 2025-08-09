@@ -67,6 +67,14 @@ export const HomeScreen: React.FC = () => {
       color: COLORS.purple,
       borderColor: COLORS.purpleLight,
       route: PassengerRoutes.ROUTE
+    },
+    {
+      icon: 'person',
+      title: 'My Profile',
+      subtitle: 'Account & settings',
+      color: COLORS.gray600,
+      borderColor: COLORS.gray300,
+      route: PassengerRoutes.PROFILE
     }
   ];
 

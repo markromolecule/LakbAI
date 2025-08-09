@@ -6,6 +6,46 @@ export const validateEmail = (email: string): boolean => {
   return emailRegex.test(email);
 };
 
+export const validatePhoneNumber = (phoneNumber: string): boolean => {
+  // Remove all non-digit characters for validation
+  const cleanNumber = phoneNumber.replace(/\D/g, '');
+  
+  // Philippine mobile number formats:
+  // 09XXXXXXXXX (11 digits starting with 09)
+  // +639XXXXXXXXX (13 digits starting with +639)
+  // 639XXXXXXXXX (12 digits starting with 639)
+  
+  if (cleanNumber.length === 11 && cleanNumber.startsWith('09')) {
+    return true;
+  }
+  if (cleanNumber.length === 12 && cleanNumber.startsWith('639')) {
+    return true;
+  }
+  if (cleanNumber.length === 13 && cleanNumber.startsWith('639')) {
+    return true;
+  }
+  
+  return false;
+};
+
+export const formatPhoneNumber = (phoneNumber: string): string => {
+  // Remove all non-digit characters
+  const cleanNumber = phoneNumber.replace(/\D/g, '');
+  
+  // Format as Philippine mobile number
+  if (cleanNumber.length <= 11) {
+    if (cleanNumber.length <= 4) {
+      return cleanNumber;
+    } else if (cleanNumber.length <= 7) {
+      return `${cleanNumber.slice(0, 4)} ${cleanNumber.slice(4)}`;
+    } else {
+      return `${cleanNumber.slice(0, 4)} ${cleanNumber.slice(4, 7)} ${cleanNumber.slice(7, 11)}`;
+    }
+  }
+  
+  return phoneNumber;
+};
+
 export const validatePassword = (password: string): boolean => {
   // At least 8 characters, 1 uppercase, 1 lowercase, 1 number
   const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d@$!%*?&]{8,}$/;

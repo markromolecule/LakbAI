@@ -138,3 +138,4 @@ export const isUserAuthenticated = async (): Promise<boolean> => {
   const session = await getUserSession();
   return session.userType !== null && session.username !== null;
 };
+

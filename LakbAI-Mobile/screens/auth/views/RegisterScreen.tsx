@@ -6,15 +6,17 @@ import {
   AddressSection,
   BirthdaySection,
   EmailSection,
+  FareDiscountSection,
   GenderSection,
   NameSection,
   PasswordSection,
+  PhoneSection,
   TermsSection,
   UsernameSection,
-} from '../components/register/FormSection';
-import { useSignUpForm } from '../hooks/useSignUpForm';
+} from '../components/register';
+import { useRegisterForm } from '../hooks/useRegisterForm';
 import { SignUpData } from '../../../shared/types/authentication';
-import styles from '../styles/SignUpScreen.styles';
+import styles from '../styles/RegisterScreen.styles';
 
 interface SignUpScreenProps {
   onSignUp: (data: SignUpData) => void;
@@ -27,16 +29,21 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({ onSignUp }) => {
     showPassword,
     showConfirmPassword,
     showMonthDropdown,
+    showDiscountDropdown,
     updateSignUpData,
     handleDateInput,
     handleYearInput,
+    handlePhoneInput,
     handleSignUp,
     togglePasswordVisibility,
     toggleConfirmPasswordVisibility,
     toggleMonthDropdown,
+    toggleDiscountDropdown,
+    handleDiscountTypeSelect,
+    handleDocumentUpload,
     setShowTermsModal,
     handleTermsAccept,
-  } = useSignUpForm(onSignUp);
+  } = useRegisterForm(onSignUp);
 
   return (
     <ScrollView
@@ -55,6 +62,12 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({ onSignUp }) => {
         <EmailSection
           signUpData={signUpData}
           updateSignUpData={updateSignUpData}
+        />
+
+        <PhoneSection
+          signUpData={signUpData}
+          updateSignUpData={updateSignUpData}
+          handlePhoneInput={handlePhoneInput}
         />
 
         <UsernameSection
@@ -88,6 +101,15 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({ onSignUp }) => {
         <GenderSection
           signUpData={signUpData}
           updateSignUpData={updateSignUpData}
+        />
+
+        <FareDiscountSection
+          signUpData={signUpData}
+          updateSignUpData={updateSignUpData}
+          showDiscountDropdown={showDiscountDropdown}
+          toggleDiscountDropdown={toggleDiscountDropdown}
+          handleDiscountTypeSelect={handleDiscountTypeSelect}
+          handleDocumentUpload={handleDocumentUpload}
         />
 
         <TermsSection

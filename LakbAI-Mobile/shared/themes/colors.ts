@@ -1,3 +1,5 @@
+import { Background } from "@react-navigation/elements";
+
 export const COLORS = {
   primary: '#3B82F6',
   primaryLight: '#DBEAFE',
@@ -20,6 +22,7 @@ export const COLORS = {
   purple: '#8B5CF6',
   purpleLight: '#E9D5FF',
   
+  background: '#F3F4F6',
   white: '#FFFFFF',
   gray50: '#F9FAFB',
   gray100: '#F3F4F6',

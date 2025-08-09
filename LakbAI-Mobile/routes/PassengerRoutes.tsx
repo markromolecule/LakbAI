@@ -5,7 +5,8 @@ export enum PassengerRoutes {
   SCANNER = "/passenger/scanner",
   CHAT = "/passenger/chat",
   FARE = "/passenger/fare",
-  ROUTE = "/passenger/route"
+  ROUTE = "/passenger/route",
+  PROFILE = "/passenger/profile"
 }
 
 // Extracts enum values ("/passenger/...")

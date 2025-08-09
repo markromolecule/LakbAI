@@ -7,6 +7,7 @@ export interface SignUpData {
   firstName: string;
   lastName: string;
   email: string;
+  phoneNumber: string;
   username: string;
   password: string;
   confirmPassword: string;
@@ -21,4 +22,12 @@ export interface SignUpData {
   birthYear: string;
   gender: 'male' | 'female' | '';
   acceptedTerms: boolean;
+  fareDiscount: {
+    type: 'PWD' | 'Pregnant' | 'Senior Citizen' | 'Student' | '';
+    document: {
+      uri: string;
+      name: string;
+      type: string;
+    } | null;
+  };
 }
