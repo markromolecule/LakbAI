@@ -1,0 +1,25 @@
+/* Auth Page Styles */
+.authPage {
+  background: linear-gradient(135deg, #2c5aa0 0%, #1e3d72 100%);
+  min-height: 100vh;
+  padding: 2rem 0;
+}
+
+.authCard {
+  border: none;
+  border-radius: 20px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.95);
+}
+
+.authTitle {
+  color: #2c3e50;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.authSubtitle {
+  color: #6c757d;
+  margin-bottom: 0;
+}

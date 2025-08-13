@@ -1,0 +1,53 @@
+/* Header Styles */
+.customHeader {
+  border-bottom: 1px solid #e9ecef;
+  background: rgba(255, 255, 255, 0.98) !important;
+  backdrop-filter: blur(10px);
+  z-index: 1000;
+}
+
+.brandText {
+  font-size: 1.5rem;
+  color: #2c5aa0 !important;
+}
+
+.navLinkCustom {
+  color: #6c757d !important;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  padding: 0.5rem 1rem !important;
+  border-radius: 20px;
+}
+
+.navLinkCustom:hover {
+  color: #2c5aa0 !important;
+  background-color: rgba(44, 90, 160, 0.1);
+  transform: translateY(-1px);
+}
+
+.userAvatar {
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, #2c5aa0 0%, #1e3d72 100%) !important;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
+}
+
+.userAvatar:hover {
+  transform: scale(1.1);
+  border-color: #2c5aa0;
+  box-shadow: 0 4px 12px rgba(44, 90, 160, 0.3);
+}
+
+/* Responsive adjustments */
+@media (max-width: 991px) {
+  .navLinkCustom {
+    margin: 0.25rem 0;
+  }
+  
+  .userProfile {
+    margin-top: 1rem;
+    text-align: center;
+  }
+}

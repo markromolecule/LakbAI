@@ -1,0 +1,214 @@
+/* Route Section Styles */
+.jeepneyRoute {
+  padding: 80px 0;
+  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+  position: relative;
+}
+
+.sectionTitle {
+  font-size: clamp(2rem, 4vw, 2.5rem);
+  font-weight: 700;
+  color: #2c3e50;
+  margin-bottom: 1rem;
+}
+
+.sectionSubtitle {
+  font-size: clamp(1rem, 2vw, 1.2rem);
+  color: #6c757d;
+  max-width: 700px;
+  margin: 0 auto 3rem;
+  line-height: 1.6;
+}
+
+.routeContainer {
+  background: #ffffff;
+  border-radius: 25px;
+  padding: 2.5rem;
+  box-shadow: 0 15px 50px rgba(44, 90, 160, 0.1);
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(44, 90, 160, 0.1);
+}
+
+.routeContainer::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 5px;
+  background: linear-gradient(90deg, #2c5aa0, #ffc107, #28a745, #dc3545);
+}
+
+.routeHeader {
+  margin-bottom: 2.5rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 2px solid #f8f9fa;
+}
+
+.routeHeader h4 {
+  color: #2c3e50;
+  font-weight: 600;
+  font-size: 1.5rem;
+}
+
+.routeMarker {
+  width: 50px;
+  height: 50px;
+  background: linear-gradient(135deg, #dc3545, #c82333);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3);
+}
+
+.routeMarker i {
+  font-size: 1.5rem;
+  color: white;
+}
+
+.routeStops {
+  position: relative;
+  background: transparent;
+}
+
+.stopItem {
+  margin-bottom: 1rem;
+  position: relative;
+  z-index: 2;
+}
+
+.stopBtn {
+  border-radius: 25px !important;
+  font-size: 0.9rem !important;
+  font-weight: 500 !important;
+  padding: 10px 20px !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  border: 2px solid transparent !important;
+  position: relative;
+  overflow: hidden;
+}
+
+.stopBtn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transition: left 0.5s;
+}
+
+.stopBtn:hover::before {
+  left: 100%;
+}
+
+.stopBtn:global(.btn-primary) {
+  background: linear-gradient(135deg, #2c5aa0, #1e3d72) !important;
+  border-color: #2c5aa0 !important;
+  box-shadow: 0 4px 15px rgba(44, 90, 160, 0.3);
+}
+
+.stopBtn:global(.btn-warning) {
+  background: linear-gradient(135deg, #ffc107, #e0a800) !important;
+  border-color: #ffc107 !important;
+  color: #000 !important;
+  box-shadow: 0 4px 15px rgba(255, 193, 7, 0.3);
+}
+
+.stopBtn:global(.btn-outline-secondary) {
+  background: #ffffff !important;
+  border-color: #dee2e6 !important;
+  color: #6c757d !important;
+}
+
+.stopBtn:hover {
+  transform: translateY(-3px) scale(1.05) !important;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15) !important;
+}
+
+.stopBtn:global(.btn-primary):hover {
+  background: linear-gradient(135deg, #1e3d72, #2c5aa0) !important;
+  box-shadow: 0 8px 25px rgba(44, 90, 160, 0.4) !important;
+}
+
+.stopBtn:global(.btn-warning):hover {
+  background: linear-gradient(135deg, #e0a800, #ffc107) !important;
+  box-shadow: 0 8px 25px rgba(255, 193, 7, 0.4) !important;
+}
+
+.stopBtn:global(.btn-outline-secondary):hover {
+  background: #f8f9fa !important;
+  border-color: #2c5aa0 !important;
+  color: #2c5aa0 !important;
+  box-shadow: 0 8px 25px rgba(44, 90, 160, 0.2) !important;
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+  .routeContainer {
+    padding: 2rem;
+    margin: 0 15px;
+  }
+}
+
+@media (max-width: 992px) {
+  .jeepneyRoute {
+    padding: 60px 0;
+  }
+  
+  .routeContainer {
+    padding: 1.5rem;
+    margin: 0 10px;
+  }
+  
+  .stopBtn {
+    font-size: 0.85rem !important;
+    padding: 8px 12px !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .routeContainer {
+    padding: 1.5rem;
+    border-radius: 20px;
+    margin: 0 10px;
+  }
+  
+  .routeHeader {
+    text-align: center;
+    flex-direction: column;
+  }
+  
+  .routeMarker {
+    margin: 0 auto 1rem;
+  }
+  
+  .stopBtn {
+    font-size: 0.8rem !important;
+    padding: 8px 12px !important;
+  }
+}
+
+@media (max-width: 576px) {
+  .jeepneyRoute {
+    padding: 50px 0;
+  }
+  
+  .routeContainer {
+    padding: 1rem;
+    border-radius: 15px;
+    margin: 0 5px;
+  }
+  
+  .stopItem {
+    margin-bottom: 0.75rem;
+  }
+  
+  .stopBtn {
+    font-size: 0.75rem !important;
+    padding: 6px 10px !important;
+  }
+}
