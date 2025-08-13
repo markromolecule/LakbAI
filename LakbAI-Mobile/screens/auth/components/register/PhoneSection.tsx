@@ -21,3 +21,8 @@ export const PhoneSection: React.FC<PhoneSectionProps> = ({ signUpData, updateSi
     <Text style={styles.helpText}>{HELP_TEXTS.PHONE_NUMBER}</Text>
   </View>
 );
+
+
+
+
+

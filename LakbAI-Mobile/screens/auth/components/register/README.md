@@ -75,3 +75,8 @@ All components receive at minimum:
 - `updateSignUpData`: Function to update form fields
 
 Some components have additional props for specific functionality (e.g., dropdown toggles, handlers).
+
+
+
+
+

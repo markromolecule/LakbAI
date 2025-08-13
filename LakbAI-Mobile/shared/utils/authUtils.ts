@@ -14,7 +14,7 @@ const SESSION_KEYS = {
   LOGIN_TIME: '@login_time',
 };
 
-export type UserType = 'passenger' | 'driver' | null;
+export type UserType = 'passenger' | 'driver' | 'guest' | null;
 
 /**
  * Store user session data securely
@@ -137,5 +137,13 @@ export const useLogout = () => {
 export const isUserAuthenticated = async (): Promise<boolean> => {
   const session = await getUserSession();
   return session.userType !== null && session.username !== null;
+};
+
+/**
+ * Check if current session is a guest session
+ */
+export const isGuestSession = async (): Promise<boolean> => {
+  const session = await getUserSession();
+  return session.userType === 'guest' || session.username === 'guest';
 };
 

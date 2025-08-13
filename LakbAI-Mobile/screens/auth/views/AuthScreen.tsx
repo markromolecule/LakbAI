@@ -74,7 +74,7 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, onSignUp, onGuestConti
 
   const handleGuestContinue = async () => {
     // Store guest session
-    await storeUserSession('passenger', 'guest', false);
+    await storeUserSession('guest', 'guest', false);
     // Navigate to passenger home as guest
     router.replace(PassengerRoutes.HOME);
     

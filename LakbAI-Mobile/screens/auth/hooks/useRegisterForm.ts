@@ -129,7 +129,7 @@ export const useRegisterForm = (onSignUp: (data: SignUpData) => void) => {
 
   const toggleDiscountDropdown = () => setShowDiscountDropdown(!showDiscountDropdown);
 
-  const handleDiscountTypeSelect = (type: 'PWD' | 'Pregnant' | 'Senior Citizen' | 'Student' | '') => {
+  const handleDiscountTypeSelect = (type: 'PWD' | 'Senior Citizen' | 'Student' | '') => {
     updateSignUpData('fareDiscount', {
       ...signUpData.fareDiscount,
       type,

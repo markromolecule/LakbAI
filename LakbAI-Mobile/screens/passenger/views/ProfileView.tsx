@@ -57,7 +57,9 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             <Text style={profileStyles.profileName}>
               {passengerProfile.firstName} {passengerProfile.lastName}
             </Text>
-            <Text style={profileStyles.profileTitle}>LakbAI Passenger</Text>
+            <Text style={profileStyles.profileTitle}>
+              {passengerProfile.username === 'guest' ? 'Guest' : 'LakbAI Passenger'}
+            </Text>
           </View>
         </View>
 

@@ -19,3 +19,8 @@ export const UsernameSection: React.FC<FormSectionProps> = ({ signUpData, update
     <Text style={styles.helpText}>{HELP_TEXTS.USERNAME}</Text>
   </View>
 );
+
+
+
+
+

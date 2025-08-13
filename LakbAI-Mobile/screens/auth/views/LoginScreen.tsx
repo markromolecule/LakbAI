@@ -10,7 +10,8 @@ import {
     Text,
     TextInput,
     TouchableOpacity,
-    View
+    View,
+    Image
 } from 'react-native';
 import styles from '../styles/LoginScreen.styles';
 
@@ -98,12 +99,16 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onForgotPassword, on
         <View>
           {/* Header Section */}
           <View style={styles.header}>
+            {/* Implement main logo design */}
             <View style={styles.logoContainer}>
               <View style={styles.logo}>
-                <View style={styles.logoInner} />
+                <Image
+                  source={require('../../../assets/images/logofinal.png')}
+                  style={styles.logoImage}
+                  accessibilityLabel="LakbAI logo"
+                />
               </View>
             </View>
-            <Text style={styles.appTitle}>LakbAI</Text>
             <Text style={styles.subtitle}>Welcome back</Text>
           </View>
 

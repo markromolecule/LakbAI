@@ -46,6 +46,5 @@ export interface EmergencyContact {
 export type DriverView = 'home' | 'scanner' | 'fare' | 'profile' | 'logs';
 
 // Export passenger types
-export * from './passenger';
 export * from './authentication';
 

@@ -25,3 +25,8 @@ export const GenderSection: React.FC<FormSectionProps> = ({ signUpData, updateSi
     </View>
   </>
 );
+
+
+
+
+

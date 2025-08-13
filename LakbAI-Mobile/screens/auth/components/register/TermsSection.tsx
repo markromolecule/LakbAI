@@ -19,3 +19,8 @@ export const TermsSection: React.FC<TermsSectionProps> = ({ signUpData, updateSi
     </TouchableOpacity>
   </View>
 );
+
+
+
+
+

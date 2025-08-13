@@ -31,6 +31,11 @@ export interface TermsSectionProps extends FormSectionProps {
 export interface FareDiscountSectionProps extends FormSectionProps {
   showDiscountDropdown: boolean;
   toggleDiscountDropdown: () => void;
-  handleDiscountTypeSelect: (type: 'PWD' | 'Pregnant' | 'Senior Citizen' | 'Student' | '') => void;
+  handleDiscountTypeSelect: (type: 'PWD' | 'Senior Citizen' | 'Student' | '') => void;
   handleDocumentUpload: (document: { uri: string; name: string; type: string } | null) => void;
 }
+
+
+
+
+

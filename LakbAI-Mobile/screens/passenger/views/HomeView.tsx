@@ -1,7 +1,7 @@
 // screens/passenger/views/HomeScreen.tsx
 import { Ionicons } from '@expo/vector-icons';
-import React from 'react';
-import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import React, { useCallback, useEffect, useState } from 'react';
+import { Alert, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { InfoCard } from '../../../components/common/InfoCard';
 import { COLORS } from '../../../shared/styles';
 import { globalStyles } from '../../../shared/styles/globalStyles';
@@ -9,6 +9,8 @@ import styles from '../styles/HomeScreen.styles';
 import { useRouter } from 'expo-router';
 import { PassengerRoutes, PassengerRouteHref } from '@/routes/PassengerRoutes';
 import type { Href } from 'expo-router';
+import { getUserSession, isGuestSession } from '../../../shared/utils/authUtils';
+import { useFocusEffect } from '@react-navigation/native';
 
 const GridItem: React.FC<{
   icon: keyof typeof Ionicons.glyphMap;
@@ -27,6 +29,19 @@ const GridItem: React.FC<{
 
 export const HomeScreen: React.FC = () => {
   const router = useRouter();
+  const [guest, setGuest] = useState(false);
+
+  useEffect(() => {
+    const load = async () => setGuest(await isGuestSession());
+    load();
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      const load = async () => setGuest(await isGuestSession());
+      load();
+    }, [])
+  );
 
   const gridItems: Array<{
     icon: keyof typeof Ionicons.glyphMap;
@@ -34,23 +49,56 @@ export const HomeScreen: React.FC = () => {
     subtitle: string;
     color: string;
     borderColor: string;
-    route: PassengerRouteHref;
+    route?: PassengerRouteHref;
+    onPress?: () => void;
   }> = [
     {
       icon: 'qr-code',
       title: 'Scan QR Code',
-      subtitle: 'Get fare info',
+      subtitle: guest ? 'Login required' : 'Get fare info',
       color: COLORS.primary,
       borderColor: COLORS.primaryLight,
-      route: PassengerRoutes.SCANNER 
+      onPress: () => {
+        if (guest) {
+          Alert.alert(
+            'Login required',
+            'Please log in first to use Scan QR Code.',
+            [
+              {
+                text: 'OK',
+                onPress: () => router.replace('/'),
+              },
+            ],
+            { cancelable: false }
+          );
+          return;
+        }
+        router.push(PassengerRoutes.SCANNER as Href);
+      }
     },
     {
       icon: 'chatbubble',
       title: 'BiyaBot',
-      subtitle: 'Ask questions',
+      subtitle: guest ? 'Login required' : 'Ask questions',
       color: COLORS.success,
       borderColor: COLORS.successBiya,
-      route: PassengerRoutes.CHAT
+      onPress: () => {
+        if (guest) {
+          Alert.alert(
+            'Restricted',
+            'Please log in to use BiyaBot.',
+            [
+              {
+                text: 'OK',
+                onPress: () => router.replace('/'),
+              },
+            ],
+            { cancelable: false }
+          );
+          return;
+        }
+        router.push(PassengerRoutes.CHAT as Href);
+      }
     },
     {
       icon: 'calculator',
@@ -60,6 +108,7 @@ export const HomeScreen: React.FC = () => {
       borderColor: COLORS.orangeLight,
       route: PassengerRoutes.FARE
     },
+
     {
       icon: 'map',
       title: 'Routes & Fares',
@@ -101,7 +150,7 @@ export const HomeScreen: React.FC = () => {
             subtitle={item.subtitle}
             color={item.color}
             borderColor={item.borderColor}
-            onPress={() => router.push(item.route as Href)}
+            onPress={item.onPress || (() => router.push(item.route as Href))}
           />
         ))}
       </View>

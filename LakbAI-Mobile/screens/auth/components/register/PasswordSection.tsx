@@ -59,3 +59,8 @@ export const PasswordSection: React.FC<PasswordSectionProps> = ({
     <Text style={styles.helpText}>{HELP_TEXTS.PASSWORD}</Text>
   </>
 );
+
+
+
+
+

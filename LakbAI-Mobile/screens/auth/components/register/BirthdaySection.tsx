@@ -82,3 +82,8 @@ export const BirthdaySection: React.FC<BirthdaySectionProps> = ({
     <Text style={styles.helpText}>{HELP_TEXTS.BIRTH_DATE}</Text>
   </>
 );
+
+
+
+
+

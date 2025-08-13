@@ -48,6 +48,12 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 4,
   },
+  logoImage: {
+    width: 120,
+    height: 120,
+    borderRadius: 12,
+    resizeMode: 'contain',
+  },
   appTitle: {
     fontSize: 32,
     fontWeight: '800',

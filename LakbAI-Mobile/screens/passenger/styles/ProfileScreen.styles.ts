@@ -349,3 +349,4 @@ export const homeStyles = StyleSheet.create({
     marginLeft: 8,
   },
 });
+
