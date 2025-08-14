@@ -6,9 +6,11 @@ const RegisterForm = () => {
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
-    email: '',
+    username: '',
     password: '',
     confirmPassword: ''
+    // Include all necessary fields for registration
+    // e.g., email, phone number, etc. as needed
   });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);

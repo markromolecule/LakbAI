@@ -5,13 +5,13 @@ import styles from './Header.module.css';
 
 const Header = () => {
   return (
-    <Navbar bg="white" expand="lg" className={`${styles.customHeader} shadow-sm py-3 sticky-top`}>
+    <Navbar bg="white" expand="lg" className={`${styles.customHeader} shadow-sm py-2 sticky-top`}>
       <Container>
         <Navbar.Brand as={Link} to="/" className="d-flex align-items-center">
           <img
             src="/image/logofinal.png"
-            width="50"
-            height="50"
+            width="40"
+            height="40"
             className="d-inline-block align-top me-2"
             alt="LakbAI Logo"
           />

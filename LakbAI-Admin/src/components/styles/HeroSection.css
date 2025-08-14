@@ -58,7 +58,6 @@
   padding: 12px 30px !important;
   font-weight: 500 !important;
   transition: all 0.3s ease !important;
-  border: none !important;
   position: relative;
   overflow: hidden;
 }
@@ -86,6 +85,7 @@
 .btn-warning.hero-btn {
   background: linear-gradient(45deg, #ffc107, #ffb300) !important;
   color: #000 !important;
+  border: none !important;
 }
 
 .btn-outline-light.hero-btn {
@@ -94,8 +94,22 @@
 }
 
 .btn-outline-light.hero-btn:hover {
-  background: rgba(255, 255, 255, 0.1) !important;
-  border-color: #fff !important;
+  background: #ffffff !important;
+  border-color: #ffffff !important;
+  color: #000000 !important;
+}
+
+/* Ensure outline-warning shows as outline by default and fills on hover */
+.btn-outline-warning.hero-btn {
+  border: 2px solid rgba(255, 193, 7, 0.9) !important;
+  color: #ffc107 !important;
+  background: transparent !important;
+}
+
+.btn-outline-warning.hero-btn:hover {
+  background: #ffc107 !important;
+  border-color: #ffc107 !important;
+  color: #000000 !important;
 }
 
 /* Hero Image Section */

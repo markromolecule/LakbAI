@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 const LoginForm = () => {
   // State management - keep intact for team to use
   const [formData, setFormData] = useState({
-    email: '',
+    username: '',
     password: ''
   });
   const [errors, setErrors] = useState({});
@@ -46,7 +46,7 @@ const LoginForm = () => {
     <div>
       {/* Empty container for team to design login form */}
       {/* Available props/state for team:
-          - formData: { email, password }
+          - formData: { username, password }
           - errors: object with error messages
           - loading: boolean
           - handleChange: function for input changes

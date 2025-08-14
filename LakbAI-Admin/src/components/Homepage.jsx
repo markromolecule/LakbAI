@@ -25,11 +25,7 @@ const Homepage = () => {
                   Student-led Digital Jeepney System for Dasmariñas
                 </p>
                 <div className="hero-buttons">
-                  <Button variant="warning" size="lg" className="hero-btn">
-                    <i className="bi bi-qr-code-scan me-2"></i>
-                    Scan QR Code
-                  </Button>
-                  <Button variant="outline-light" size="lg" className="hero-btn">
+                  <Button variant="outline-warning" size="lg" className="hero-btn">
                     <i className="bi bi-box-arrow-in-right me-2"></i>
                     Log In
                   </Button>

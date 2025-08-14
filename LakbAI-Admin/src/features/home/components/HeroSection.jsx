@@ -19,12 +19,8 @@ const HeroSection = () => {
                   Student-led Digital Jeepney System for Dasmariñas
                 </p>
                 <div className={styles.heroButtons}>
-                  <Button variant="warning" size="lg" className={styles.heroBtn}>
-                    <i className="bi bi-qr-code-scan me-2"></i>
-                    Scan QR Code
-                  </Button>
                   <Link to="/login">
-                    <Button variant="outline-light" size="lg" className={styles.heroBtn}>
+                    <Button variant="outline-warning" size="lg" className={styles.heroBtn}>
                       <i className="bi bi-box-arrow-in-right me-2"></i>
                       Log In
                     </Button>

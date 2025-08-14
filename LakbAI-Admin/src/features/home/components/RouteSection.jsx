@@ -8,7 +8,7 @@ const RouteSection = () => {
     { name: 'Malabon', variant: 'outline-secondary' },
     { name: 'Riverside', variant: 'outline-secondary' },
     { name: 'Lancaster New City', variant: 'outline-secondary' },
-    { name: 'Pascan 1', variant: 'outline-secondary' },
+    { name: 'Pasong Camachile I', variant: 'outline-secondary' },
     { name: 'Open Canal', variant: 'outline-secondary' },
     { name: 'Santiago', variant: 'outline-secondary' },
     { name: 'Bella Vista', variant: 'outline-secondary' },
