@@ -35,3 +35,6 @@ export const NameSection: React.FC<FormSectionProps> = ({ signUpData, updateSign
 
 
 
+
+
+

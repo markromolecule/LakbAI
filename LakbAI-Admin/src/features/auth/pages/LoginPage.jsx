@@ -1,11 +1,10 @@
 import React from 'react';
 import { LoginForm } from '../components';
+import styles from '../styles/AuthPage.module.css';
 
 const LoginPage = () => {
   return (
-    <div>
-      {/* Empty container for team to design login page layout */}
-      {/* LoginForm component available with all logic intact */}
+    <div className={styles.authPage}>
       <LoginForm />
     </div>
   );

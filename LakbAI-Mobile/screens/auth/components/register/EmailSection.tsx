@@ -23,3 +23,6 @@ export const EmailSection: React.FC<FormSectionProps> = ({ signUpData, updateSig
 
 
 
+
+
+

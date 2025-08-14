@@ -15,8 +15,7 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.anonymous.LakbAI",
-      "googleServicesFile": "./GoogleService-Info.plist"
+      "bundleIdentifier": "com.anonymous.LakbAI"
     },
     "android": {
       "adaptiveIcon": {
@@ -26,7 +25,9 @@
       "edgeToEdgeEnabled": true,
       "permissions": [
         "android.permission.CAMERA",
-        "android.permission.CAMERA"
+        "android.permission.RECORD_AUDIO",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION"
       ],
       "package": "com.anonymous.LakbAI"
     },
@@ -46,8 +47,21 @@
           "backgroundColor": "#ffffff"
         }
       ],
-      "expo-barcode-scanner",
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow LakbAI to access your camera for QR scanning"
+        }
+      ],
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "Allow LakbAI to access your photos.",
+          "savePhotosPermission": "Allow LakbAI to save photos.",
+          "isAccessMediaLocationEnabled": true
+        }
+      ]
     ]
   }
 }

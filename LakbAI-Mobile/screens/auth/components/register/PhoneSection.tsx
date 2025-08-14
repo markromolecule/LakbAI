@@ -26,3 +26,6 @@ export const PhoneSection: React.FC<PhoneSectionProps> = ({ signUpData, updateSi
 
 
 
+
+
+

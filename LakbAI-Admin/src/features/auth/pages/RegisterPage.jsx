@@ -1,11 +1,10 @@
 import React from 'react';
 import { RegisterForm } from '../components';
+import styles from '../styles/AuthPage.module.css';
 
 const RegisterPage = () => {
   return (
-    <div>
-      {/* Empty container for team to design register page layout */}
-      {/* RegisterForm component available with all logic intact */}
+    <div className={styles.authPage}>
       <RegisterForm />
     </div>
   );

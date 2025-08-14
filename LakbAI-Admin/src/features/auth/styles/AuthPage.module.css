@@ -2,7 +2,23 @@
 .authPage {
   background: linear-gradient(135deg, #2c5aa0 0%, #1e3d72 100%);
   min-height: 100vh;
-  padding: 2rem 0;
+  padding: 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.authPage::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    radial-gradient(circle at 20% 80%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 40% 40%, rgba(255, 193, 7, 0.1) 0%, transparent 50%);
+  pointer-events: none;
 }
 
 .authCard {
@@ -22,4 +38,33 @@
 .authSubtitle {
   color: #6c757d;
   margin-bottom: 0;
+}
+
+/* Mobile responsive adjustments */
+@media (max-width: 768px) {
+  .authPage {
+    padding: 0;
+  }
+}
+
+@media (max-width: 576px) {
+  .authPage {
+    padding: 0;
+  }
+}
+
+/* Ensure forms are properly styled on mobile */
+@media (max-width: 575px) {
+  .authPage .container-fluid {
+    padding-left: 10px !important;
+    padding-right: 10px !important;
+  }
+  
+  .authPage .card {
+    border-radius: 15px !important;
+  }
+  
+  .authPage .card-body {
+    padding: 1.5rem !important;
+  }
 }

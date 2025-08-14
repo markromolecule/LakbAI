@@ -194,7 +194,7 @@
 
 @media (max-width: 576px) {
   .jeepneyRoute {
-    padding: 50px 0;
+    padding: 40px 0;
   }
   
   .routeContainer {
@@ -208,7 +208,56 @@
   }
   
   .stopBtn {
+    font-size: 0.8rem !important;
+    padding: 8px 12px !important;
+    min-height: 40px !important; /* Touch-friendly size */
+  }
+  
+  .routeHeader h4 {
+    font-size: 1.25rem;
+  }
+  
+  .routeMarker {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .routeMarker i {
+    font-size: 1.2rem;
+  }
+}
+
+@media (max-width: 400px) {
+  .routeContainer {
+    padding: 0.75rem;
+    margin: 0;
+    border-radius: 12px;
+  }
+  
+  .sectionTitle {
+    font-size: 1.75rem;
+  }
+  
+  .sectionSubtitle {
+    font-size: 0.95rem;
+  }
+  
+  .stopBtn {
     font-size: 0.75rem !important;
     padding: 6px 10px !important;
+    min-height: 38px !important;
+  }
+  
+  .routeHeader h4 {
+    font-size: 1.1rem;
+  }
+  
+  .routeMarker {
+    width: 35px;
+    height: 35px;
+  }
+  
+  .routeMarker i {
+    font-size: 1rem;
   }
 }
