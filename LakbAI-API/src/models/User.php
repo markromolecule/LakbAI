@@ -92,48 +92,6 @@ class User {
         return false;
     }
 
-    // Check if email exists
-    public function emailExists() {
-        $query = "SELECT id, username, password, user_type FROM " . $this->table_name . " WHERE email = ? LIMIT 0,1";
-        $stmt = $this->conn->prepare($query);
-        $stmt->bind_param("s", $this->email);
-        $stmt->execute();
-
-        $result = $stmt->get_result();
-        if($result->num_rows > 0) {
-            $row = $result->fetch_assoc();
-            $this->id = $row['id'];
-            $this->username = $row['username'];
-            $this->password = $row['password'];
-            $this->user_type = $row['user_type'];
-            return true;
-        }
-
-        return false;
-    }
-
-    // Check if username exists
-    public function usernameExists() {
-        $query = "SELECT id FROM " . $this->table_name . " WHERE username = ? LIMIT 0,1";
-        $stmt = $this->conn->prepare($query);
-        $stmt->bind_param("s", $this->username);
-        $stmt->execute();
-
-        $result = $stmt->get_result();
-        return $result->num_rows > 0;
-    }
-
-    // Check if phone exists
-    public function phoneExists() {
-        $query = "SELECT id FROM " . $this->table_name . " WHERE phone_number = ? LIMIT 0,1";
-        $stmt = $this->conn->prepare($query);
-        $stmt->bind_param("s", $this->phone_number);
-        $stmt->execute();
-
-        $result = $stmt->get_result();
-        return $result->num_rows > 0;
-    }
-
     // Get user by ID with discount info
     public function getById() {
         $query = "SELECT * FROM " . $this->table_name . " WHERE id = ? LIMIT 0,1";
@@ -149,18 +107,19 @@ class User {
         return false;
     }
 
-    // Get discount percentage based on type
-    public function getDiscountPercentage() {
-        switch($this->discount_type) {
-            case 'PWD':
-                return 20; // 20% discount for PWD
-            case 'Senior Citizen':
-                return 20; // 20% discount for seniors
-            case 'Student':
-                return 10; // 10% discount for students
-            default:
-                return 0; // No discount
+    // Get user by email for login purposes
+    public function getByEmail() {
+        $query = "SELECT * FROM " . $this->table_name . " WHERE email = ? LIMIT 0,1";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bind_param("s", $this->email);
+        $stmt->execute();
+
+        $result = $stmt->get_result();
+        if($result->num_rows > 0) {
+            return $result->fetch_assoc();
         }
+
+        return false;
     }
 }
 ?>

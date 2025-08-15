@@ -1,7 +1,8 @@
 import { SignUpData, LoginData } from '../types/authentication';
+import { API_CONFIG } from '../../config/apiConfig';
 
-// API Configuration
-const API_BASE_URL = 'http://localhost/LakbAI/LakbAI-API/routes/api.php';
+// Use dynamic API configuration
+const API_BASE_URL = API_CONFIG.BASE_URL;
 
 interface ApiResponse<T = any> {
   status: 'success' | 'error';
@@ -26,8 +27,9 @@ class AuthService {
         ...options,
       };
 
-      console.log('Making API request to:', url);
-      console.log('Request options:', defaultOptions);
+      if (__DEV__) {
+        console.log('API Request:', url);
+      }
 
       const response = await fetch(url, defaultOptions);
       
@@ -36,8 +38,6 @@ class AuthService {
       }
       
       const data = await response.json();
-      console.log('API response:', data);
-      
       return data;
     } catch (error) {
       console.error('API request failed:', error);

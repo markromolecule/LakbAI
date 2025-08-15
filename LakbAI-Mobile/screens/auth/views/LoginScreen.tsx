@@ -64,18 +64,6 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onForgotPassword, on
     
     setIsLoading(true);
     
-    // Check for hardcoded test credentials first
-    if ((loginData.username === 'john' && loginData.password === 'john123') ||
-        (loginData.username === 'livado' && loginData.password === 'livado123')) {
-      setIsLoading(false);
-      Alert.alert(
-        'Success', 
-        'Login successful!',
-        [{ text: 'OK', onPress: () => onLogin(loginData) }]
-      );
-      return;
-    }
-    
     try {
       console.log('Attempting to login user:', loginData);
       const response = await authService.login(loginData);
