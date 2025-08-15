@@ -7,7 +7,6 @@ class AuthController {
         $this->conn = $dbConn;
     }
 
-
     public function register($data) {
         $required = ['full_name','age','birthday','gender','address','email','password'];
         foreach ($required as $field) {
@@ -42,7 +41,6 @@ class AuthController {
             return ["status"=>"error","message"=>$stmt->error];
         }
     }
-
 
     public function login($data) {
         if (empty($data['email']) || empty($data['password'])) {

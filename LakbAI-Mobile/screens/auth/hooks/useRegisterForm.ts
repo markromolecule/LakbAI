@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Alert } from 'react-native';
 import { SignUpData } from '../../../shared/types/authentication';
 import { validateBirthDate, validateEmail, validatePassword, validatePhoneNumber, formatPhoneNumber } from '../../../shared/helpers/validation';
+import { authService } from '../../../shared/services';
 
 const initialSignUpData: SignUpData = {
   firstName: '',
@@ -112,9 +113,25 @@ export const useRegisterForm = (onSignUp: (data: SignUpData) => void) => {
     return true;
   };
 
-  const handleSignUp = () => {
+  const handleSignUp = async () => {
     if (validateForm()) {
-      onSignUp(signUpData);
+      try {
+        console.log('Attempting to register user:', signUpData);
+        const response = await authService.register(signUpData);
+        
+        if (response.status === 'success') {
+          Alert.alert(
+            'Success', 
+            'Account created successfully! Please log in.',
+            [{ text: 'OK', onPress: () => onSignUp(signUpData) }]
+          );
+        } else {
+          Alert.alert('Registration Failed', response.message || 'Please try again');
+        }
+      } catch (error) {
+        console.error('Registration error:', error);
+        Alert.alert('Error', 'Network error occurred. Please check your connection and try again.');
+      }
     }
   };
 
