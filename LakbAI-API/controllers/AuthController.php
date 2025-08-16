@@ -1,69 +1,149 @@
 <?php
 
+require_once __DIR__ . '/../src/providers/AppServiceProvider.php';
+
 class AuthController {
-    private $conn;
+    private $authService;
+    private $appProvider;
 
-    public function __construct($dbConn) {
-        $this->conn = $dbConn;
+    public function __construct($dbConnection) {
+        $this->appProvider = new AppServiceProvider($dbConnection);
+        $this->authService = $this->appProvider->get('AuthService');
     }
 
+    /**
+     * Handle user registration
+     */
     public function register($data) {
-        $required = ['full_name','age','birthday','gender','address','email','password'];
-        foreach ($required as $field) {
-            if (empty($data[$field])) {
-                return ["status"=>"error","message"=>"$field is required"];
+        try {
+            // Create and validate request
+            $request = $this->appProvider->createRegisterRequest($data);
+            
+            if (!$request->validate()) {
+                return $this->validationErrorResponse($request->getErrors());
             }
-        }
 
-        $hashedPassword = password_hash($data['password'], PASSWORD_BCRYPT);
-        $userType = isset($data['user_type']) ? $data['user_type'] : 'passenger';
+            // Get validated data for user creation
+            $userData = $request->getCreateData();
 
-        $stmt = $this->conn->prepare("
-            INSERT INTO users (full_name, age, birthday, address, email, password, user_type, gender)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        ");
+            // Register user through service
+            return $this->authService->register($userData);
 
-        $stmt->bind_param(
-            "ssssssss",
-            $data['full_name'],
-            $data['age'],
-            $data['birthday'],
-            $data['address'],
-            $data['email'],
-            $hashedPassword,
-            $userType,
-            $data['gender']
-        );
-
-        if ($stmt->execute()) {
-            return ["status"=>"success","message"=>"User registered successfully"];
-        } else {
-            return ["status"=>"error","message"=>$stmt->error];
+        } catch (Exception $e) {
+            return $this->errorResponse('Registration failed: ' . $e->getMessage());
         }
     }
 
+    /**
+     * Handle user login
+     */
     public function login($data) {
-        if (empty($data['email']) || empty($data['password'])) {
-            return ["status"=>"error","message"=>"Email and password required"];
-        }
+        try {
+            // Create and validate request
+            $request = $this->appProvider->createLoginRequest($data);
+            
+            if (!$request->validate()) {
+                return $this->validationErrorResponse($request->getErrors());
+            }
 
-        $stmt = $this->conn->prepare("SELECT * FROM users WHERE email = ?");
-        $stmt->bind_param("s",$data['email']);
-        $stmt->execute();
-        $result = $stmt->get_result();
+            // Login user through service
+            return $this->authService->login(
+                $request->getLoginIdentifier(),
+                $request->getPassword(),
+                $request->isEmailLogin()
+            );
 
-        if ($result->num_rows === 0) {
-            return ["status"=>"error","message"=>"User not found"];
-        }
-
-        $user = $result->fetch_assoc();
-        if (password_verify($data['password'], $user['password'])) {
-            unset($user['password']);
-            return ["status"=>"success","message"=>"Login successful","user"=>$user];
-        } else {
-            return ["status"=>"error","message"=>"Incorrect password"];
+        } catch (Exception $e) {
+            return $this->errorResponse('Login failed: ' . $e->getMessage());
         }
     }
 
+    /**
+     * Get user profile
+     */
+    public function getProfile($userId) {
+        try {
+            if (empty($userId)) {
+                return $this->errorResponse('User ID is required');
+            }
 
+            return $this->authService->getProfile($userId);
+
+        } catch (Exception $e) {
+            return $this->errorResponse('Failed to get profile: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Update user profile
+     */
+    public function updateProfile($userId, $data) {
+        try {
+            if (empty($userId)) {
+                return $this->errorResponse('User ID is required');
+            }
+
+            return $this->authService->updateProfile($userId, $data);
+
+        } catch (Exception $e) {
+            return $this->errorResponse('Failed to update profile: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Check if user exists
+     */
+    public function checkUserExists($field, $value) {
+        try {
+            $exists = $this->authService->checkUserExists($field, $value);
+            
+            return [
+                'status' => 'success',
+                'exists' => $exists
+            ];
+
+        } catch (Exception $e) {
+            return $this->errorResponse('Failed to check user existence: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Get users by type (admin function)
+     */
+    public function getUsersByType($userType) {
+        try {
+            return $this->authService->getUsersByType($userType);
+
+        } catch (Exception $e) {
+            return $this->errorResponse('Failed to get users: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Format validation errors for response
+     */
+    private function validationErrorResponse($errors) {
+        $messages = [];
+        foreach ($errors as $field => $fieldErrors) {
+            $messages[] = implode(', ', $fieldErrors);
+        }
+
+        return [
+            'status' => 'error',
+            'message' => 'Validation failed',
+            'errors' => $errors,
+            'details' => implode('; ', $messages)
+        ];
+    }
+
+    /**
+     * Standard error response
+     */
+    private function errorResponse($message) {
+        return [
+            'status' => 'error',
+            'message' => $message
+        ];
+    }
 }
+?>

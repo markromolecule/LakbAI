@@ -1,0 +1,14 @@
+# Allow access from all IPs for mobile development
+<RequireAll>
+    Require all granted
+</RequireAll>
+
+# CORS headers for mobile app
+Header always set Access-Control-Allow-Origin "*"
+Header always set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
+Header always set Access-Control-Allow-Headers "Content-Type, Authorization"
+
+# Handle preflight requests
+RewriteEngine On
+RewriteCond %{REQUEST_METHOD} OPTIONS
+RewriteRule ^(.*)$ $1 [R=200,L]

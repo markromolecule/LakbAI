@@ -14,6 +14,7 @@ import { useRouter } from 'expo-router';
 import { PassengerRoutes } from '../../../routes/PassengerRoutes';
 import { DriverRoutes } from '../../../routes/DriverRoutes';
 import { storeUserSession } from '../../../shared/utils/authUtils';
+import { authService } from '../../../shared/services/authService';
 
 interface AuthScreenProps {
   onLogin?: (data: LoginData) => void;
@@ -26,35 +27,29 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, onSignUp, onGuestConti
   const router = useRouter();
 
   const handleLogin = async (data: LoginData) => {
-    const { username, password } = data;
-    
-    // Allow john / john123 for passenger login
-    if (username === 'john' && password === 'john123') {
-      // Store passenger session
-      await storeUserSession('passenger', username, true);
-      // navigate to passenger home (replace so back button won't return to auth)
-      router.replace(PassengerRoutes.HOME);
-      return;
-    }
-    
-    // Allow livado / livado123 for driver login
-    if (username === 'livado' && password === 'livado123') {
-      // Store driver session
-      await storeUserSession('driver', username, true);
-      // navigate to driver dashboard (replace so back button won't return to auth)
-      router.replace(DriverRoutes.HOME);
-      return;
-    }
-    
-    // here you can call your real auth API
-    Alert.alert(
-      'Invalid credentials', 
-      'Try:\n• username: john / password: john123 (Passenger)\n• username: livado / password: livado123 (Driver)'
-    );
-    
-    // Call the optional prop if provided
-    if (onLogin) {
-      onLogin(data);
+    try {
+      console.log('Attempting to login user:', data);
+      const response = await authService.login(data);
+      
+      if (response.status === 'success' && response.user) {
+        const user = response.user;
+        const userType = user.user_type || 'passenger'; // Default to passenger if not specified
+        
+        // Store user session with actual user data
+        await storeUserSession(userType, user.username, true);
+        
+        // Navigate based on user type
+        if (userType === 'driver') {
+          router.replace(DriverRoutes.HOME);
+        } else {
+          router.replace(PassengerRoutes.HOME);
+        }
+      } else {
+        Alert.alert('Login Failed', response.message || 'Please check your credentials and try again');
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      Alert.alert('Error', 'Network error occurred. Please check your connection and try again.');
     }
   };
 

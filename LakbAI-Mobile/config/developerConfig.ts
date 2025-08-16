@@ -1,0 +1,51 @@
+/**
+ * Simple Developer Configuration
+ * Each developer should update this file with their own IP address
+ */
+
+// 🔧 CHANGE THIS TO YOUR LOCAL IP ADDRESS
+export const DEVELOPER_IP = '192.168.254.102:8000'; // Joseph's IP
+
+// 📝 Instructions for co-developers:
+// 1. Find your computer's IP address:
+//    - Mac: System Settings > Network > WiFi > Details > TCP/IP
+//    - Windows: cmd > ipconfig (look for IPv4 Address)
+//    - Linux: ifconfig (look for inet)
+// 
+// 2. Make sure XAMPP/PHP server is running with:
+//    php -S 0.0.0.0:8000 -t /path/to/LakbAI
+//
+// 3. Update DEVELOPER_IP above with your IP:8000
+//
+// 4. Both devices must be on the same WiFi network
+
+// Alternative configuration for different developers
+export const DEVELOPER_IPS = {
+  joseph: '192.168.254.102:8000',
+  // Add your name and IP here:
+  // maria: '192.168.1.105:8000',
+  // john: '10.0.0.23:8000',
+};
+
+// Set which developer to use (change this to your name)
+export const CURRENT_DEVELOPER = 'joseph';
+
+// Get the current developer's IP
+export const getCurrentDeveloperIP = (): string => {
+  return DEVELOPER_IPS[CURRENT_DEVELOPER] || DEVELOPER_IP;
+};
+
+// Build the complete API URL
+export const buildApiUrl = (): string => {
+  const ip = getCurrentDeveloperIP();
+  return `http://${ip}/LakbAI-API/routes/api.php`;
+};
+
+// Helper to log current configuration
+export const logCurrentConfig = (): void => {
+  console.log('🔧 Current Developer Config:');
+  console.log('Developer:', CURRENT_DEVELOPER);
+  console.log('IP:', getCurrentDeveloperIP());
+  console.log('API URL:', buildApiUrl());
+  console.log('📱 Make sure both devices are on the same WiFi!');
+};
