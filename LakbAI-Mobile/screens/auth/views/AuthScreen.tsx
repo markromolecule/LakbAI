@@ -54,8 +54,16 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, onSignUp, onGuestConti
   };
 
   const handleSignUp = (data: SignUpData) => {
-    // For now just show an alert — extend as needed.
-    Alert.alert('Sign up', `Created account for ${data.firstName} ${data.lastName}`);
+    // Show congratulation message and redirect to login
+    Alert.alert('Congratulation', 'Account created successfully!', [
+      { 
+        text: 'OK', 
+        onPress: () => {
+          // Switch to login tab
+          setActiveTab('login');
+        }
+      }
+    ]);
     
     // Call the optional prop if provided
     if (onSignUp) {

@@ -120,11 +120,8 @@ export const useRegisterForm = (onSignUp: (data: SignUpData) => void) => {
         const response = await authService.register(signUpData);
         
         if (response.status === 'success') {
-          Alert.alert(
-            'Success', 
-            'Account created successfully! Please log in.',
-            [{ text: 'OK', onPress: () => onSignUp(signUpData) }]
-          );
+          // No popup - directly call onSignUp to redirect to login
+          onSignUp(signUpData);
         } else {
           Alert.alert('Registration Failed', response.message || 'Please try again');
         }

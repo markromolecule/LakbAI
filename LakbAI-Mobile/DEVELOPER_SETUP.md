@@ -82,10 +82,10 @@ expo start
 
 ### 🌐 Network Requirements
 
-- ✅ **Same WiFi Network:** Both computer and mobile device must be connected to the same WiFi
-- ✅ **PHP Server Running:** Must use `0.0.0.0:8000` not `localhost:8000`
-- ✅ **Firewall:** May need to allow incoming connections on port 8000
-- ✅ **IP Address:** Use your computer's actual IP, not 127.0.0.1 or localhost
+- **Same WiFi Network:** Both computer and mobile device must be connected to the same WiFi
+- **PHP Server Running:** Must use `0.0.0.0:8000` not `localhost:8000`
+- **Firewall:** May need to allow incoming connections on port 8000
+- **IP Address:** Use your computer's actual IP, not 127.0.0.1 or localhost
 
 ### 📱 Multiple Developers
 
