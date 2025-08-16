@@ -1,7 +1,5 @@
 # LakbAI API - Clean Architecture
 
-This API has been refactored to follow clean architecture principles with proper separation of concerns.
-
 ## 📁 Folder Structure
 
 ```

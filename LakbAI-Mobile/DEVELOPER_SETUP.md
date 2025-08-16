@@ -94,9 +94,7 @@ Each developer should add their configuration to `config/developerConfig.ts`:
 ```typescript
 export const DEVELOPER_IPS = {
   joseph: '192.168.254.102:8000',    // Original developer
-  maria: '192.168.1.105:8000',       // Co-developer 1
-  john: '10.0.0.23:8000',            // Co-developer 2
-  alex: '192.168.0.15:8000',         // Co-developer 3
+  melthon: '192.168.1.105:8000',       // Co-developer 1
 };
 
 // Each person sets their name here:
