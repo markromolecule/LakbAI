@@ -1,4 +1,4 @@
-# 🚀 Developer Setup Guide
+# Developer Setup Guide
 
 ## For Co-Developers: Setting Up the API Connection
 
@@ -93,7 +93,7 @@ Each developer should add their configuration to `config/developerConfig.ts`:
 
 ```typescript
 export const DEVELOPER_IPS = {
-  joseph: '192.168.254.102:8000',    // Original developer
+  joseph: '192.168.254.103:8000',    // Original developer
   melthon: '192.168.1.105:8000',       // Co-developer 1
 };
 

@@ -2,6 +2,7 @@ import React from 'react';
 import { Container, Button, Row, Col, Card } from 'react-bootstrap';
 import { Header, Footer } from '../../../components/common';
 import { HeroSection, HowItWorks, RouteSection } from '../components';
+import { BiyaBot } from '../../../components/ui';
 import styles from '../styles/HomePage.module.css';
 
 const HomePage = () => {
@@ -12,6 +13,9 @@ const HomePage = () => {
       <HowItWorks />
       <RouteSection />
       <Footer />
+      
+      {/* BiyaBot Chat Widget */}
+      <BiyaBot />
     </div>
   );
 };

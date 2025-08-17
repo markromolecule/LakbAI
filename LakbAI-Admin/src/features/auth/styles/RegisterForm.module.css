@@ -1,41 +1,541 @@
 /* Register Form Styles */
-.registerForm {
+.registerFormContainer {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 30px;
+  background: white;
+  border-radius: 15px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  position: relative;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  min-height: 500px;
+}
+
+.registerCard {
   width: 100%;
 }
 
-.formInput {
-  border-radius: 10px;
+.backButton {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  color: #6c757d;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  z-index: 10;
+}
+
+.backButton:hover {
+  background: #e9ecef;
+  color: #495057;
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.logoContainer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+
+.logo {
+  margin-right: 12px;
+}
+
+.logoText {
+  text-align: left;
+}
+
+.brandName {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #2c5aa0;
+}
+
+.brandTagline {
+  margin: 0;
+  font-size: 0.875rem;
+  color: #6c757d;
+}
+
+.formTitle {
+  margin: 0 0 8px 0;
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.formSubtitle {
+  margin: 0;
+  color: #6c757d;
+  font-size: 0.95rem;
+}
+
+.tabNavigation {
+  display: flex;
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 4px;
+  margin-bottom: 20px;
+  width: 100%;
+  min-width: 400px;
+}
+
+.tabButton {
+  flex: 1;
+  padding: 12px 16px;
+  background: none;
+  border: none;
+  border-radius: 6px;
+  color: #6c757d;
+  font-weight: 500;
+  text-decoration: none;
+  text-align: center;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.tabButton.active {
+  background: #2c5aa0;
+  color: white;
+}
+
+.tabButton:hover:not(.active) {
+  background: #e9ecef;
+  color: #495057;
+}
+
+.registerForm {
+  width: 100%;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.sectionTitle {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #2c3e50;
+  margin: 20px 0 12px 0;
+  padding-bottom: 6px;
+  border-bottom: 2px solid #f8f9fa;
+}
+
+.formRow {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+/* Birthday Section Specific Styling */
+.birthdayRow {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.birthdayRow .formGroup {
+  flex: 1;
+  min-width: 0; /* Allows flex items to shrink below content size */
+}
+
+.birthdayRow .formGroup:first-child {
+  flex: 2; /* Month dropdown gets more space */
+}
+
+.birthdayRow .formGroup:nth-child(2) {
+  flex: 1; /* Day dropdown */
+}
+
+.birthdayRow .formGroup:last-child {
+  flex: 1.5; /* Year dropdown gets slightly more space */
+}
+
+.formGroup {
+  flex: 1;
+  margin-bottom: 16px;
+}
+
+.formLabel {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 600;
+  color: #2c3e50;
+  font-size: 0.875rem;
+}
+
+.required {
+  color: #dc3545;
+  margin-left: 2px;
+}
+
+.formControl {
+  width: 100%;
   padding: 12px 16px;
   border: 2px solid #e9ecef;
+  border-radius: 8px;
+  font-size: 0.95rem;
   transition: all 0.3s ease;
+  background: #fff;
+  color: #2c3e50;
+  box-sizing: border-box;
 }
 
-.formInput:focus {
+/* Enhanced Select Field Styles */
+.formControl select {
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 16px;
+  padding-right: 40px;
+}
+
+.formControl select:focus {
+  outline: none;
   border-color: #2c5aa0;
-  box-shadow: 0 0 0 0.2rem rgba(44, 90, 160, 0.25);
+  box-shadow: 0 0 0 3px rgba(44, 90, 160, 0.1);
 }
 
-.submitBtn {
-  background: linear-gradient(135deg, #2c5aa0 0%, #1e3d72 100%);
-  border: none;
-  border-radius: 10px;
-  padding: 12px;
-  font-weight: 600;
+.formControl select option {
+  padding: 8px 12px;
+  color: #2c3e50;
+  background: white;
+}
+
+.formControl select option:first-child {
+  color: #6c757d;
+  font-style: italic;
+}
+
+/* Ensure dropdown menu background is white */
+.formControl select {
+  background-color: white !important;
+}
+
+/* For webkit browsers (Chrome, Safari, Edge) */
+.formControl select::-webkit-listbox {
+  background-color: white;
+}
+
+/* For Firefox */
+.formControl select {
+  background-color: white;
+}
+
+/* Additional styling for better dropdown appearance */
+.formControl select:focus {
+  background-color: white;
+}
+
+.formControl select:hover {
+  background-color: white;
+}
+
+.formControl::placeholder {
+  color: #6c757d;
+  opacity: 0.7;
+}
+
+.formControl:focus {
+  outline: none;
+  border-color: #2c5aa0;
+  box-shadow: 0 0 0 3px rgba(44, 90, 160, 0.1);
+}
+
+.formControl.invalid {
+  border-color: #dc3545;
+}
+
+.errorMessage {
+  margin-top: 4px;
+  color: #dc3545;
+  font-size: 0.8rem;
+}
+
+.errorAlert {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: #f8d7da;
+  color: #721c24;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  font-size: 0.9rem;
+}
+
+/* File Upload Styles */
+.fileUpload {
+  position: relative;
+}
+
+.fileInput {
+  position: absolute;
+  opacity: 0;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+}
+
+.fileLabel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 30px 20px;
+  border: 2px dashed #d1ecf1;
+  border-radius: 8px;
+  background: #f8f9fa;
+  cursor: pointer;
   transition: all 0.3s ease;
+  min-height: 120px;
 }
 
-.submitBtn:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(44, 90, 160, 0.3);
+.fileLabel:hover {
+  border-color: #2c5aa0;
+  background: #f0f8ff;
 }
 
-.loginLink {
+.fileLabel.invalid {
+  border-color: #dc3545;
+  background: #fff5f5;
+}
+
+.fileLabel i {
+  font-size: 2rem;
   color: #2c5aa0;
-  text-decoration: none;
-  font-weight: 600;
+  margin-bottom: 8px;
 }
 
-.loginLink:hover {
-  color: #1e3d72;
-  text-decoration: underline;
+.uploadText {
+  font-weight: 600;
+  color: #2c3e50;
+  margin-bottom: 4px;
+  text-align: center;
+}
+
+.uploadSubtext {
+  font-size: 0.8rem;
+  color: #6c757d;
+  text-align: center;
+}
+
+.submitButton {
+  width: 100%;
+  padding: 16px 24px;
+  background: #2c5aa0;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 15px;
+}
+
+.submitButton:hover:not(:disabled) {
+  background: #1e3d72;
+  transform: translateY(-1px);
+}
+
+.submitButton:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid transparent;
+  border-top: 2px solid white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Large Screen Adjustments */
+@media (min-width: 1400px) {
+  .registerFormContainer {
+    padding: 40px;
+  }
+  
+  .formTitle {
+    font-size: 2rem;
+  }
+  
+  .formControl {
+    padding: 16px 20px;
+    font-size: 1rem;
+  }
+  
+  .submitButton {
+    padding: 20px 32px;
+    font-size: 1.1rem;
+  }
+  
+  .sectionTitle {
+    font-size: 1.1rem;
+  }
+}
+
+@media (min-width: 1600px) {
+  .registerFormContainer {
+    padding: 50px;
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .registerFormContainer {
+    padding: 20px;
+    margin: 0;
+    border-radius: 12px;
+  }
+  
+  .formTitle {
+    font-size: 1.5rem;
+  }
+  
+  .logoContainer {
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 10px;
+  }
+  
+  .logo {
+    margin-right: 0;
+  }
+  
+  .logoText {
+    text-align: center;
+  }
+  
+  .header {
+    margin-bottom: 15px;
+  }
+  
+  .tabNavigation {
+    margin-bottom: 15px;
+  }
+  
+  .sectionTitle {
+    margin: 15px 0 10px 0;
+    font-size: 0.95rem;
+  }
+  
+  .formRow {
+    flex-direction: column;
+    gap: 0;
+    margin-bottom: 12px;
+  }
+  
+  .birthdayRow {
+    flex-direction: column;
+    gap: 0;
+    margin-bottom: 12px;
+  }
+  
+  .birthdayRow .formGroup {
+    flex: none;
+  }
+  
+  .formGroup {
+    margin-bottom: 12px;
+  }
+  
+  .fileLabel {
+    padding: 15px;
+    min-height: 80px;
+  }
+  
+  .fileLabel i {
+    font-size: 1.3rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .registerFormContainer {
+    padding: 15px;
+    margin: 0;
+    overflow: hidden;
+  }
+  
+  .backButton {
+    top: 12px;
+    left: 12px;
+    width: 35px;
+    height: 35px;
+  }
+  
+  .formTitle {
+    font-size: 1.3rem;
+  }
+  
+  .sectionTitle {
+    font-size: 0.9rem;
+    margin: 12px 0 8px 0;
+  }
+  
+  .formLabel {
+    font-size: 0.8rem;
+  }
+  
+  .formControl {
+    padding: 8px 12px;
+    font-size: 0.9rem;
+  }
+  
+  .formGroup {
+    margin-bottom: 10px;
+  }
+  
+  .formRow {
+    margin-bottom: 8px;
+  }
+}
+
+/* Custom Scrollbar */
+.registerFormContainer::-webkit-scrollbar {
+  width: 6px;
+}
+
+.registerFormContainer::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.registerFormContainer::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.registerFormContainer::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
 }
