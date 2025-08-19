@@ -147,3 +147,22 @@ export const isGuestSession = async (): Promise<boolean> => {
   return session.userType === 'guest' || session.username === 'guest';
 };
 
+/**
+ * Check if current session is the test driver user
+ */
+export const isTestDriverSession = async (): Promise<boolean> => {
+  const session = await getUserSession();
+  return session.userType === 'driver' && session.username === 'livado';
+};
+
+/**
+ * Get test user credentials for debugging
+ */
+export const getTestUserCredentials = () => {
+  return {
+    username: 'livado',
+    password: 'livado123',
+    userType: 'driver' as const
+  };
+};
+

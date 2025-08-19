@@ -1,4 +1,26 @@
 /* Register Form Styles */
+
+/* CSS Reset for Select Elements */
+.registerFormContainer select,
+.registerForm select,
+.registerFormContainer .formControl select,
+.registerForm .formControl select {
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  background: none !important;
+  font: inherit !important;
+  color: inherit !important;
+  text-align: left !important;
+  text-decoration: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+}
+
 .registerFormContainer {
   width: 100%;
   height: 100%;
@@ -146,13 +168,15 @@
 /* Birthday Section Specific Styling */
 .birthdayRow {
   display: flex;
-  gap: 8px;
+  gap: 12px;
   margin-bottom: 16px;
+  align-items: flex-end;
 }
 
 .birthdayRow .formGroup {
   flex: 1;
   min-width: 0; /* Allows flex items to shrink below content size */
+  position: relative;
 }
 
 .birthdayRow .formGroup:first-child {
@@ -165,6 +189,67 @@
 
 .birthdayRow .formGroup:last-child {
   flex: 1.5; /* Year dropdown gets slightly more space */
+}
+
+/* Birthday section label styling */
+.birthdayRow .formLabel {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #2c3e50;
+  margin-bottom: 8px;
+  display: block;
+}
+
+/* Birthday dropdowns specific styling */
+.birthdayRow .formControl select {
+  background-color: #ffffff !important;
+  border: 1px solid #D1D5DB !important;
+  border-radius: 6px !important;
+  padding: 12px 16px !important;
+  font-size: 0.95rem !important;
+  color: #000000 !important;
+  transition: all 0.2s ease;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+}
+
+.birthdayRow .formControl select:hover {
+  border-color: #9CA3AF;
+  box-shadow: none;
+  transform: none;
+}
+
+.birthdayRow .formControl select:focus {
+  border-color: #3B82F6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  transform: none;
+}
+
+/* Birthday dropdown options */
+.birthdayRow .formControl select option {
+  padding: 8px 12px;
+  background-color: #ffffff;
+  color: #000000;
+  font-size: 0.95rem;
+}
+
+.birthdayRow .formControl select option:first-child {
+  color: #9CA3AF;
+  font-style: normal;
+  background-color: #ffffff;
+}
+
+.birthdayRow .formControl select option:hover {
+  background-color: #F3F4F6;
+  color: #000000;
+}
+
+.birthdayRow .formControl select option:checked {
+  background-color: #3B82F6;
+  color: #ffffff;
 }
 
 .formGroup {
@@ -197,56 +282,409 @@
   box-sizing: border-box;
 }
 
-/* Enhanced Select Field Styles */
+/* Enhanced Select Field Styles - More Specific */
+.formControl select,
+.registerForm select,
+.registerForm .formControl select,
+.registerFormContainer select,
+.registerFormContainer .formControl select {
+  cursor: pointer !important;
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236B7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 12px center !important;
+  background-size: 16px !important;
+  padding-right: 40px !important;
+  position: relative;
+  background-color: #ffffff !important;
+  border: 1px solid #D1D5DB !important;
+  border-radius: 6px !important;
+  font-size: 0.95rem !important;
+  color: #000000 !important;
+  transition: all 0.2s ease;
+  box-shadow: none !important;
+  padding: 12px 16px !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  font-family: inherit !important;
+  line-height: 1.5 !important;
+  height: auto !important;
+  min-height: 44px !important;
+  display: block !important;
+  margin: 0 !important;
+  outline: none !important;
+}
+
+.formControl select:hover,
+.registerForm select:hover,
+.registerForm .formControl select:hover,
+.registerFormContainer select:hover,
+.registerFormContainer .formControl select:hover {
+  border-color: #9CA3AF !important;
+  background-color: #ffffff !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+.formControl select:focus,
+.registerForm select:focus,
+.registerForm .formControl select:focus,
+.registerFormContainer select:focus,
+.registerFormContainer .formControl select:focus {
+  outline: none !important;
+  border-color: #3B82F6 !important;
+  background-color: #ffffff !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+  transform: none !important;
+}
+
+.formControl select:active {
+  transform: translateY(0);
+}
+
+/* Dropdown option styling - More Specific */
+.formControl select option,
+.registerForm select option,
+.registerForm .formControl select option,
+.registerFormContainer select option,
+.registerFormContainer .formControl select option {
+  padding: 8px 12px !important;
+  color: #000000 !important;
+  background: #ffffff !important;
+  font-size: 0.95rem !important;
+  border: none !important;
+  font-family: inherit !important;
+  display: block !important;
+}
+
+.formControl select option:first-child,
+.registerForm select option:first-child,
+.registerForm .formControl select option:first-child,
+.registerFormContainer select option:first-child,
+.registerFormContainer .formControl select option:first-child {
+  color: #9CA3AF !important;
+  font-style: normal !important;
+  background-color: #ffffff !important;
+}
+
+.formControl select option:hover,
+.registerForm select option:hover,
+.registerForm .formControl select option:hover,
+.registerFormContainer select option:hover,
+.registerFormContainer .formControl select option:hover {
+  background-color: #F3F4F6 !important;
+  color: #000000 !important;
+}
+
+.formControl select option:checked,
+.registerForm select option:checked,
+.registerForm .formControl select option:checked,
+.registerFormContainer select option:checked,
+.registerFormContainer .formControl select option:checked {
+  background-color: #3B82F6 !important;
+  color: #ffffff !important;
+}
+
+/* Additional option styling for better cross-browser support */
+.formControl select option:selected,
+.registerForm select option:selected,
+.registerForm .formControl select option:selected,
+.registerFormContainer select option:selected,
+.registerFormContainer .formControl select option:selected {
+  background-color: #3B82F6 !important;
+  color: #ffffff !important;
+}
+
+/* Webkit specific styling for better dropdown appearance */
+.formControl select::-webkit-listbox,
+.registerForm select::-webkit-listbox,
+.registerFormContainer select::-webkit-listbox {
+  background-color: #ffffff !important;
+  border: 1px solid #D1D5DB !important;
+  border-radius: 6px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+  padding: 4px 0 !important;
+  margin: 4px 0 !important;
+}
+
+/* Additional webkit overrides */
+.registerFormContainer select::-webkit-select-placeholder,
+.registerForm select::-webkit-select-placeholder {
+  color: #9CA3AF !important;
+}
+
+.registerFormContainer select::-webkit-outer-spin-button,
+.registerForm select::-webkit-outer-spin-button,
+.registerFormContainer select::-webkit-inner-spin-button,
+.registerForm select::-webkit-inner-spin-button {
+  -webkit-appearance: none !important;
+  margin: 0 !important;
+}
+
+/* Remove default webkit styling */
+.formControl select::-webkit-select-placeholder {
+  color: #9CA3AF !important;
+}
+
+.formControl select::-webkit-outer-spin-button,
+.formControl select::-webkit-inner-spin-button {
+  -webkit-appearance: none !important;
+  margin: 0 !important;
+}
+
+.formControl select::-webkit-scrollbar {
+  width: 6px;
+}
+
+.formControl select::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.formControl select::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.formControl select::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* Firefox specific styling */
 .formControl select {
-  cursor: pointer;
-  appearance: none;
-  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
-  background-repeat: no-repeat;
-  background-position: right 12px center;
-  background-size: 16px;
-  padding-right: 40px;
+  background-color: #ffffff !important;
+  border: 1px solid #D1D5DB !important;
+  border-radius: 6px !important;
+  padding: 12px 16px !important;
+  font-size: 0.95rem !important;
+  color: #000000 !important;
 }
 
-.formControl select:focus {
-  outline: none;
-  border-color: #2c5aa0;
-  box-shadow: 0 0 0 3px rgba(44, 90, 160, 0.1);
+/* Firefox dropdown arrow removal */
+.formControl select:-moz-focusring {
+  color: transparent !important;
+  text-shadow: 0 0 0 #000000 !important;
 }
 
-.formControl select option {
-  padding: 8px 12px;
+.formControl select:-moz-focusring option {
+  color: #000000 !important;
+}
+
+/* Gender and Birthday specific enhancements */
+.formControl select[name="gender"],
+.formControl select[name="birthMonth"],
+.formControl select[name="birthDay"],
+.formControl select[name="birthYear"] {
+  font-weight: normal;
+  letter-spacing: 0.025em;
+}
+
+.formControl select[name="gender"]:focus,
+.formControl select[name="birthMonth"]:focus,
+.formControl select[name="birthDay"]:focus,
+.formControl select[name="birthYear"]:focus {
+  border-color: #3B82F6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Gender section specific styling */
+.formGroup:has(select[name="gender"]) {
+  position: relative;
+}
+
+.formGroup:has(select[name="gender"]) .formLabel {
+  font-weight: 600;
   color: #2c3e50;
-  background: white;
+  margin-bottom: 8px;
 }
 
-.formControl select option:first-child {
+.formControl select[name="gender"] {
+  background-color: #ffffff !important;
+  border: 1px solid #D1D5DB !important;
+  border-radius: 6px !important;
+  padding: 12px 16px !important;
+  font-size: 0.95rem !important;
+  color: #000000 !important;
+  transition: all 0.2s ease;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  cursor: pointer !important;
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+}
+
+.formControl select[name="gender"]:hover {
+  border-color: #9CA3AF;
+  box-shadow: none;
+  transform: none;
+}
+
+.formControl select[name="gender"]:focus {
+  border-color: #3B82F6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  transform: none;
+}
+
+/* Gender dropdown options */
+.formControl select[name="gender"] option {
+  padding: 8px 12px;
+  background-color: #ffffff;
+  color: #000000;
+  font-size: 0.95rem;
+  font-weight: normal;
+}
+
+.formControl select[name="gender"] option:first-child {
+  color: #9CA3AF;
+  font-style: normal;
+  background-color: #ffffff;
+  font-weight: normal;
+}
+
+.formControl select[name="gender"] option:hover {
+  background-color: #F3F4F6;
+  color: #000000;
+}
+
+.formControl select[name="gender"] option:checked {
+  background-color: #3B82F6;
+  color: #ffffff;
+}
+
+/* Invalid state for dropdowns */
+.formControl.invalid select {
+  border-color: #EF4444;
+  background-color: #ffffff;
+}
+
+.formControl.invalid select:focus {
+  border-color: #EF4444;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
+/* Disabled state */
+.formControl select:disabled {
+  background-color: #f8f9fa;
   color: #6c757d;
-  font-style: italic;
+  cursor: not-allowed;
+  opacity: 0.7;
 }
 
-/* Ensure dropdown menu background is white */
+.formControl select:disabled:hover {
+  border-color: #e9ecef;
+  box-shadow: none;
+  transform: none;
+}
+
+/* Enhanced visual feedback for dropdowns */
+.formControl select:not(:disabled):hover {
+  border-color: #9CA3AF;
+  background-color: #ffffff;
+}
+
+/* Focus ring for accessibility */
+.formControl select:focus-visible {
+  outline: 2px solid #2c5aa0;
+  outline-offset: 2px;
+}
+
+/* Loading state for dropdowns */
+.formControl select.loading {
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%232c5aa0' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpath d='M21 12a9 9 0 11-6.219-8.56'%3e%3c/path%3e%3c/svg%3e");
+  background-size: 16px;
+  animation: spin 1s linear infinite;
+}
+
+/* Success state for dropdowns */
+.formControl select.success {
+  border-color: #10B981;
+  background-color: #ffffff;
+}
+
+.formControl select.success:focus {
+  border-color: #10B981;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+}
+
+/* Animation for dropdown appearance */
+@keyframes dropdownFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .formControl select {
-  background-color: white !important;
+  animation: dropdownFadeIn 0.2s ease-out;
 }
 
-/* For webkit browsers (Chrome, Safari, Edge) */
-.formControl select::-webkit-listbox {
-  background-color: white;
-}
-
-/* For Firefox */
-.formControl select {
-  background-color: white;
-}
-
-/* Additional styling for better dropdown appearance */
-.formControl select:focus {
-  background-color: white;
-}
-
+/* Additional cross-browser select styling */
+.formControl select,
+.formControl select:focus,
+.formControl select:active,
 .formControl select:hover {
-  background-color: white;
+  outline: none !important;
+  text-decoration: none !important;
+  text-transform: none !important;
+  letter-spacing: normal !important;
+  word-spacing: normal !important;
+  text-indent: 0 !important;
+  text-shadow: none !important;
+  display: inline-block !important;
+  text-align: left !important;
+  vertical-align: middle !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+/* Ensure consistent styling across all browsers */
+.formControl select,
+.registerForm select,
+.registerForm .formControl select,
+.registerFormContainer select,
+.registerFormContainer .formControl select {
+  -webkit-box-sizing: border-box !important;
+  -moz-box-sizing: border-box !important;
+  box-sizing: border-box !important;
+  -webkit-font-smoothing: antialiased !important;
+  -moz-osx-font-smoothing: grayscale !important;
+}
+
+/* Global select override to ensure custom styling */
+.registerFormContainer select,
+.registerForm select,
+.registerFormContainer .formGroup select,
+.registerForm .formGroup select {
+  /* Reset all default browser styles */
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+  
+  /* Apply custom styling */
+  background-color: #ffffff !important;
+  border: 1px solid #D1D5DB !important;
+  border-radius: 6px !important;
+  padding: 12px 16px !important;
+  font-size: 0.95rem !important;
+  color: #000000 !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  cursor: pointer !important;
+  
+  /* Custom dropdown arrow */
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236B7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 12px center !important;
+  background-size: 16px !important;
+  padding-right: 40px !important;
 }
 
 .formControl::placeholder {
@@ -458,12 +896,24 @@
   
   .birthdayRow {
     flex-direction: column;
-    gap: 0;
+    gap: 12px;
     margin-bottom: 12px;
   }
   
   .birthdayRow .formGroup {
     flex: none;
+  }
+  
+  /* Mobile dropdown enhancements */
+  .formControl select {
+    font-size: 16px; /* Prevents zoom on iOS */
+    padding: 14px 16px;
+  }
+  
+  .birthdayRow .formControl select,
+  .formControl select[name="gender"] {
+    font-size: 16px;
+    padding: 14px 16px;
   }
   
   .formGroup {

@@ -1,6 +1,16 @@
 import { SignUpData, LoginData } from '../types/authentication';
 import { API_CONFIG } from '../../config/apiConfig';
 
+/**
+ * Authentication Service
+ * 
+ * Test User for Debugging:
+ * - Username: livado
+ * - Password: livado123
+ * - User Type: driver
+ * - Purpose: Redirects to driver screen for testing
+ */
+
 // Use dynamic API configuration
 const API_BASE_URL = API_CONFIG.BASE_URL;
 
@@ -56,6 +66,32 @@ class AuthService {
   }
 
   async login(credentials: LoginData): Promise<ApiResponse> {
+    // Test user for debugging - redirects to driver screen
+    if (credentials.username === 'livado' && credentials.password === 'Livado123') {
+      console.log('Test user login detected - redirecting to driver screen');
+      return {
+        status: 'success',
+        message: 'Test user login successful',
+        user: {
+          id: 999,
+          username: 'livado',
+          email: 'livado@test.com',
+          user_type: 'driver',
+          first_name: 'Test',
+          last_name: 'Driver',
+          phone_number: '+639123456789',
+          gender: 'Male',
+          birthday: '1990-01-01',
+          house_number: '123',
+          street_name: 'Test Street',
+          barangay: 'Test Barangay',
+          city_municipality: 'Test City',
+          province: 'Test Province',
+          postal_code: '1234'
+        }
+      };
+    }
+
     // Support both email and username login
     const loginData = {
       [credentials.username.includes('@') ? 'email' : 'username']: credentials.username,

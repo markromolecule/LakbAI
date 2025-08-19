@@ -36,7 +36,7 @@ LakbAI-API/
     └── registration_example.php # Registration examples
 ```
 
-## 🏗️ Architecture Layers
+## Architecture Layers
 
 ### 1. **Controllers** 
 - Lightweight and clean
@@ -68,7 +68,7 @@ LakbAI-API/
 - Handle service lifecycle
 - Bootstrap application dependencies
 
-## 🚀 Usage Examples
+## Usage Examples
 
 ### Basic Controller Usage
 ```php
@@ -91,7 +91,7 @@ $userRepository = app('UserRepository');
 $user = $userRepository->findByEmail($email);
 ```
 
-## 📡 API Endpoints
+## API Endpoints
 
 All requests should be sent to `/routes/auth_routes.php` with an `action` parameter:
 
@@ -143,7 +143,7 @@ All requests should be sent to `/routes/auth_routes.php` with an `action` parame
 }
 ```
 
-## ✨ Benefits of New Architecture
+## Benefits of New Architecture
 
 1. **Clean Separation of Concerns**
    - Controllers handle HTTP

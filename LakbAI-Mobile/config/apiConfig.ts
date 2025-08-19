@@ -2,11 +2,11 @@ import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 
 // Network configuration for different developers
-const DEVELOPER_CONFIGS = {
+const DEVELOPER_CONFIGS: { [key: string]: string } = {
   // Add each developer's IP address here
-  joseph: '192.168.254.103:8000',  // Joseph's current IP
-  // codev: '192.168.1.105:8000',     // Co-developer can add their IP here
-  // maria: '10.0.0.23:8000',         // Another developer's IP
+  joseph: '192.168.172.111:8000',  // Joseph's current IP
+  // codev: '192.168.1.105:8000',  // Co-developer can add their IP here
+  // maria: '10.0.0.23:8000',      // Another developer's IP
 };
 
 // Auto-detect developer based on device/environment
@@ -43,20 +43,20 @@ const getApiBaseUrl = (): string => {
 // Export the configuration
 export const API_CONFIG = {
   BASE_URL: getApiBaseUrl(),
-  TIMEOUT: 10000, // 10 seconds
+  TIMEOUT: 10000,
   RETRY_ATTEMPTS: 3,
 };
 
 // Helper function for co-developers to easily set their IP
 export const setDeveloperIP = (developerName: string, ipAddress: string): void => {
   DEVELOPER_CONFIGS[developerName] = ipAddress;
-  console.log(`✅ Developer ${developerName} IP set to: ${ipAddress}`);
+  console.log(`Developer ${developerName} IP set to: ${ipAddress}`);
 };
 
 // Debug function to show current configuration (development only)
 export const debugApiConfig = (): void => {
   if (__DEV__) {
-    console.log('🔧 API Configuration:', API_CONFIG.BASE_URL);
+    console.log('API Configuration:', API_CONFIG.BASE_URL);
   }
 };
 

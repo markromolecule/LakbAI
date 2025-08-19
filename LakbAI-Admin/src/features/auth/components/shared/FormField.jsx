@@ -18,12 +18,15 @@ const FormField = ({
   accept,
   className = '',
   required = false,
+  disabled = false,
+  loading = false,
+  success = false,
   ...props
 }) => {
   const isSelect = type === 'select';
   const isFile = type === 'file';
   
-  const baseClassName = `${styles.formControl} ${error ? styles.invalid : ''} ${className}`;
+  const baseClassName = `${styles.formControl} ${error ? styles.invalid : ''} ${loading ? styles.loading : ''} ${success ? styles.success : ''} ${className}`;
 
   const renderInput = () => {
     if (isSelect) {
@@ -34,10 +37,15 @@ const FormField = ({
           name={name}
           value={value}
           onChange={onChange}
+          disabled={disabled}
           {...props}
         >
           {options.map(option => (
-            <option key={option.value} value={option.value}>
+            <option 
+              key={option.value} 
+              value={option.value}
+              disabled={option.disabled}
+            >
               {option.label}
             </option>
           ))}
