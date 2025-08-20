@@ -223,19 +223,20 @@ body:has(.authPageContainer) {
   }
 }
 
+/* Large Phone Screens (768px and below) */
 @media (max-width: 768px) {
   .authPageContainer {
     height: auto;
     min-height: 100vh;
     align-items: flex-start;
-    padding: 10px 0;
+    padding: 12px 0;
   }
   
   .authContent {
-    width: calc(100vw - 16px);
+    width: calc(100vw - 20px);
     max-height: none;
-    min-height: calc(100vh - 20px);
-    padding: 8px;
+    min-height: calc(100vh - 24px);
+    padding: 10px;
   }
   
   .desktopLayout {
@@ -247,14 +248,14 @@ body:has(.authPageContainer) {
   }
   
   .mobileTabNavigation {
-    margin-bottom: 10px;
-    padding: 3px;
+    margin-bottom: 12px;
+    padding: 4px;
     flex-shrink: 0;
   }
   
   .mobileTab {
-    padding: clamp(8px, 2vw, 12px) clamp(12px, 3vw, 16px);
-    font-size: clamp(0.85rem, 2.2vw, 0.95rem);
+    padding: clamp(10px, 2.5vw, 14px) clamp(16px, 4vw, 20px);
+    font-size: clamp(0.9rem, 2.5vw, 1rem);
   }
   
   .mobileContent {
@@ -263,16 +264,41 @@ body:has(.authPageContainer) {
   }
 }
 
+/* Mid-size Phone Screens (576px and below) */
 @media (max-width: 576px) {
   .authPageContainer {
-    padding: 5px 0;
+    padding: 8px 0;
   }
   
   .authContent {
-    width: calc(100vw - 10px);
+    width: calc(100vw - 12px);
     max-height: none;
-    min-height: calc(100vh - 10px);
-    padding: 5px;
+    min-height: calc(100vh - 16px);
+    padding: 6px;
+  }
+  
+  .mobileTabNavigation {
+    margin-bottom: 10px;
+    padding: 3px;
+  }
+  
+  .mobileTab {
+    padding: clamp(8px, 2vw, 12px) clamp(12px, 3vw, 16px);
+    font-size: clamp(0.85rem, 2.2vw, 0.95rem);
+  }
+}
+
+/* Small Phone Screens (480px and below) */
+@media (max-width: 480px) {
+  .authPageContainer {
+    padding: 6px 0;
+  }
+  
+  .authContent {
+    width: calc(100vw - 8px);
+    max-height: none;
+    min-height: calc(100vh - 12px);
+    padding: 4px;
   }
   
   .mobileTabNavigation {
@@ -286,15 +312,16 @@ body:has(.authPageContainer) {
   }
 }
 
-@media (max-width: 480px) {
+/* Extra Small Phone Screens (360px and below) */
+@media (max-width: 360px) {
   .authPageContainer {
-    padding: 3px 0;
+    padding: 4px 0;
   }
   
   .authContent {
     width: calc(100vw - 6px);
     max-height: none;
-    min-height: calc(100vh - 6px);
+    min-height: calc(100vh - 8px);
     padding: 3px;
   }
   
