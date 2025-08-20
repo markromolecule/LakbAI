@@ -105,7 +105,6 @@
   }
 }
 
-/* Ensure dropdown container has proper positioning */
 .dropdown {
   position: relative !important;
 }
@@ -127,7 +126,6 @@
   z-index: 9999 !important;
 }
 
-/* Make sure dropdown container doesn't get clipped */
 .dropdown {
   z-index: 9998 !important;
   position: relative !important;
