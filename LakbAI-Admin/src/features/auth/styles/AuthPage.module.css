@@ -48,7 +48,7 @@ body:has(.authPageContainer) {
   padding: 0;
   margin: 0;
   box-sizing: border-box;
-  overflow: hidden;
+  overflow: auto;
   position: fixed;
   top: 0;
   left: 0;
@@ -56,12 +56,14 @@ body:has(.authPageContainer) {
 
 .authContent {
   width: calc(100vw - 20px);
-  height: calc(100vh - 20px);
+  max-height: calc(100vh - 20px);
+  min-height: 400px;
   max-width: 1400px;
   display: flex;
   flex-direction: column;
   padding: 10px;
   box-sizing: border-box;
+  overflow: visible;
 }
 
 /* Desktop Layout - Side by Side */
@@ -222,10 +224,18 @@ body:has(.authPageContainer) {
 }
 
 @media (max-width: 768px) {
+  .authPageContainer {
+    height: auto;
+    min-height: 100vh;
+    align-items: flex-start;
+    padding: 10px 0;
+  }
+  
   .authContent {
-    width: calc(100vw - 8px);
-    height: calc(100vh - 8px);
-    padding: 4px;
+    width: calc(100vw - 16px);
+    max-height: none;
+    min-height: calc(100vh - 20px);
+    padding: 8px;
   }
   
   .desktopLayout {
@@ -237,49 +247,65 @@ body:has(.authPageContainer) {
   }
   
   .mobileTabNavigation {
+    margin-bottom: 10px;
+    padding: 3px;
+    flex-shrink: 0;
+  }
+  
+  .mobileTab {
+    padding: clamp(8px, 2vw, 12px) clamp(12px, 3vw, 16px);
+    font-size: clamp(0.85rem, 2.2vw, 0.95rem);
+  }
+  
+  .mobileContent {
+    overflow-y: auto;
+    flex: 1;
+  }
+}
+
+@media (max-width: 576px) {
+  .authPageContainer {
+    padding: 5px 0;
+  }
+  
+  .authContent {
+    width: calc(100vw - 10px);
+    max-height: none;
+    min-height: calc(100vh - 10px);
+    padding: 5px;
+  }
+  
+  .mobileTabNavigation {
+    margin-bottom: 8px;
+    padding: 2px;
+  }
+  
+  .mobileTab {
+    padding: clamp(6px, 1.5vw, 10px) clamp(8px, 2vw, 12px);
+    font-size: clamp(0.8rem, 2vw, 0.9rem);
+  }
+}
+
+@media (max-width: 480px) {
+  .authPageContainer {
+    padding: 3px 0;
+  }
+  
+  .authContent {
+    width: calc(100vw - 6px);
+    max-height: none;
+    min-height: calc(100vh - 6px);
+    padding: 3px;
+  }
+  
+  .mobileTabNavigation {
     margin-bottom: 6px;
     padding: 2px;
   }
   
   .mobileTab {
-    padding: clamp(6px, 1.5vw, 10px) clamp(10px, 2.5vw, 14px);
-    font-size: clamp(0.8rem, 2vw, 0.9rem);
-  }
-}
-
-@media (max-width: 576px) {
-  .authContent {
-    width: calc(100vw - 4px);
-    height: calc(100vh - 4px);
-    padding: 2px;
-  }
-  
-  .mobileTabNavigation {
-    margin-bottom: 4px;
-    padding: 1px;
-  }
-  
-  .mobileTab {
     padding: clamp(5px, 1.2vw, 8px) clamp(6px, 1.5vw, 10px);
     font-size: clamp(0.75rem, 1.8vw, 0.85rem);
-  }
-}
-
-@media (max-width: 480px) {
-  .authContent {
-    width: calc(100vw - 2px);
-    height: calc(100vh - 2px);
-    padding: 1px;
-  }
-  
-  .mobileTabNavigation {
-    margin-bottom: 2px;
-    padding: 1px;
-  }
-  
-  .mobileTab {
-    padding: clamp(4px, 1vw, 6px) clamp(4px, 1vw, 8px);
-    font-size: clamp(0.7rem, 1.6vw, 0.8rem);
   }
 }
 

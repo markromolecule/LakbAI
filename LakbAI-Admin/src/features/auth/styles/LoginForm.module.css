@@ -12,7 +12,8 @@
   flex-direction: column;
   overflow-y: auto;
   box-sizing: border-box;
-  min-height: 500px;
+  min-height: 400px;
+  max-height: 100%;
 }
 
 .loginCard {
@@ -340,12 +341,14 @@
 .contactLink {
   display: flex;
   align-items: center;
-  gap: 6px;
+  justify-content: center;
+  gap: 8px;
   color: #2c5aa0;
   text-decoration: none;
   font-size: 0.8rem;
   font-weight: 500;
   transition: all 0.3s ease;
+  white-space: nowrap;
 }
 
 .contactLink:hover {
@@ -529,8 +532,9 @@
   }
   
   .contactInfo {
-    flex-direction: column;
-    gap: clamp(6px, 1.5vh, 8px);
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: clamp(12px, 3vw, 20px);
     justify-content: center;
     align-items: center;
     text-align: center;
@@ -539,6 +543,10 @@
   .contactLink {
     justify-content: center;
     text-align: center;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
   }
   
   .socialLogin {
@@ -553,8 +561,9 @@
     margin: 0;
     overflow-y: auto;
     overflow-x: hidden;
-    max-height: 100%;
-    min-height: auto;
+    max-height: calc(100vh - 40px);
+    min-height: 350px;
+    height: auto;
   }
   
   .backButton {
@@ -599,8 +608,9 @@
   }
   
   .contactInfo {
-    flex-direction: column;
-    gap: clamp(6px, 1.5vh, 8px);
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: clamp(10px, 2.5vw, 16px);
     justify-content: center;
     align-items: center;
     text-align: center;
@@ -610,6 +620,10 @@
     font-size: clamp(0.65rem, 1.8vw, 0.75rem);
     justify-content: center;
     text-align: center;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
   }
   
   .socialButton {
@@ -624,14 +638,16 @@
   
   .loginFormContainer {
     padding: clamp(10px, 3vw, 20px);
-    min-height: 400px;
+    min-height: 350px;
+    max-height: calc(100vh - 30px);
   }
 }
 
 @media (max-width: 480px) {
   .loginFormContainer {
     padding: clamp(8px, 2.5vw, 15px);
-    min-height: 350px;
+    min-height: 320px;
+    max-height: calc(100vh - 20px);
   }
   
   .backButton {
