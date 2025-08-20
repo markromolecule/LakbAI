@@ -1,68 +1,219 @@
-:root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
-
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+/* Global Responsive CSS */
+* {
+  box-sizing: border-box;
 }
 
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+  -ms-text-size-adjust: 100%;
 }
 
 body {
   margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  line-height: 1.6;
+  overflow-x: hidden;
 }
 
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
+/* Fluid Typography */
+html {
+  font-size: clamp(14px, 1vw, 16px);
 }
 
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+/* Responsive Images */
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
+/* Responsive Tables */
+table {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  display: block;
+}
+
+/* Responsive Videos and Embeds */
+video, iframe, embed, object {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Touch-friendly minimum sizes */
+button, input, select, textarea, a {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Responsive Container */
+.container-fluid {
+  padding-left: clamp(15px, 3vw, 30px);
+  padding-right: clamp(15px, 3vw, 30px);
+}
+
+/* Responsive Grid System */
+.row {
+  margin-left: clamp(-10px, -1.5vw, -15px);
+  margin-right: clamp(-10px, -1.5vw, -15px);
+}
+
+.col, [class*="col-"] {
+  padding-left: clamp(10px, 1.5vw, 15px);
+  padding-right: clamp(10px, 1.5vw, 15px);
+}
+
+/* Responsive Spacing */
+.m-0 { margin: 0 !important; }
+.m-1 { margin: clamp(0.25rem, 1vh, 0.5rem) !important; }
+.m-2 { margin: clamp(0.5rem, 1.5vh, 1rem) !important; }
+.m-3 { margin: clamp(1rem, 2.5vh, 1.5rem) !important; }
+.m-4 { margin: clamp(1.5rem, 3.5vh, 2rem) !important; }
+.m-5 { margin: clamp(3rem, 5vh, 3rem) !important; }
+
+.p-0 { padding: 0 !important; }
+.p-1 { padding: clamp(0.25rem, 1vh, 0.5rem) !important; }
+.p-2 { padding: clamp(0.5rem, 1.5vh, 1rem) !important; }
+.p-3 { padding: clamp(1rem, 2.5vh, 1.5rem) !important; }
+.p-4 { padding: clamp(1.5rem, 3.5vh, 2rem) !important; }
+.p-5 { padding: clamp(3rem, 5vh, 3rem) !important; }
+
+/* Responsive Text Sizes */
+.text-xs { font-size: clamp(0.75rem, 1.8vw, 0.875rem) !important; }
+.text-sm { font-size: clamp(0.875rem, 2vw, 1rem) !important; }
+.text-base { font-size: clamp(1rem, 2.2vw, 1.125rem) !important; }
+.text-lg { font-size: clamp(1.125rem, 2.5vw, 1.25rem) !important; }
+.text-xl { font-size: clamp(1.25rem, 3vw, 1.5rem) !important; }
+.text-2xl { font-size: clamp(1.5rem, 3.5vw, 1.875rem) !important; }
+.text-3xl { font-size: clamp(1.875rem, 4vw, 2.25rem) !important; }
+.text-4xl { font-size: clamp(2.25rem, 5vw, 3rem) !important; }
+.text-5xl { font-size: clamp(3rem, 6vw, 4rem) !important; }
+
+/* Responsive Line Heights */
+.leading-tight { line-height: 1.2 !important; }
+.leading-normal { line-height: 1.5 !important; }
+.leading-relaxed { line-height: 1.6 !important; }
+.leading-loose { line-height: 2 !important; }
+
+/* Responsive Breakpoints */
+@media (max-width: 480px) {
+  html {
+    font-size: 14px;
   }
-  a:hover {
-    color: #747bff;
+  
+  .container-fluid {
+    padding-left: 15px;
+    padding-right: 15px;
   }
-  button {
-    background-color: #f9f9f9;
+}
+
+@media (min-width: 481px) and (max-width: 768px) {
+  html {
+    font-size: 15px;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+  html {
+    font-size: 16px;
+  }
+}
+
+@media (min-width: 1025px) and (max-width: 1440px) {
+  html {
+    font-size: 16px;
+  }
+}
+
+@media (min-width: 1441px) {
+  html {
+    font-size: 18px;
+  }
+}
+
+/* Landscape orientation adjustments */
+@media (max-height: 500px) and (orientation: landscape) {
+  .container-fluid {
+    padding-top: clamp(10px, 2vh, 20px);
+    padding-bottom: clamp(10px, 2vh, 20px);
+  }
+}
+
+/* High DPI displays */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  body {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/* Reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  /* Add dark mode styles if needed */
+}
+
+/* Print styles */
+@media print {
+  * {
+    background: transparent !important;
+    color: black !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+  
+  a, a:visited {
+    text-decoration: underline;
+  }
+  
+  a[href]:after {
+    content: " (" attr(href) ")";
+  }
+  
+  abbr[title]:after {
+    content: " (" attr(title) ")";
+  }
+  
+  pre, blockquote {
+    border: 1px solid #999;
+    page-break-inside: avoid;
+  }
+  
+  thead {
+    display: table-header-group;
+  }
+  
+  tr, img {
+    page-break-inside: avoid;
+  }
+  
+  img {
+    max-width: 100% !important;
+  }
+  
+  p, h2, h3 {
+    orphans: 3;
+    widows: 3;
+  }
+  
+  h2, h3 {
+    page-break-after: avoid;
   }
 }

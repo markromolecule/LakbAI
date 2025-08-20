@@ -1,33 +1,35 @@
 /* Route Section Styles */
 .jeepneyRoute {
-  padding: 80px 0;
+  padding: clamp(50px, 10vh, 80px) 0;
   background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
   position: relative;
 }
 
 .sectionTitle {
-  font-size: clamp(2rem, 4vw, 2.5rem);
+  font-size: clamp(1.8rem, 4.5vw, 2.5rem);
   font-weight: 700;
   color: #2c3e50;
-  margin-bottom: 1rem;
+  margin-bottom: clamp(0.75rem, 2vh, 1rem);
+  line-height: 1.2;
 }
 
 .sectionSubtitle {
-  font-size: clamp(1rem, 2vw, 1.2rem);
+  font-size: clamp(0.95rem, 2.2vw, 1.2rem);
   color: #6c757d;
-  max-width: 700px;
-  margin: 0 auto 3rem;
+  max-width: min(700px, 90vw);
+  margin: 0 auto clamp(2rem, 5vh, 3rem);
   line-height: 1.6;
 }
 
 .routeContainer {
   background: #ffffff;
-  border-radius: 25px;
-  padding: 2.5rem;
+  border-radius: clamp(15px, 3vw, 25px);
+  padding: clamp(1.5rem, 4vw, 2.5rem);
   box-shadow: 0 15px 50px rgba(44, 90, 160, 0.1);
   position: relative;
   overflow: hidden;
   border: 1px solid rgba(44, 90, 160, 0.1);
+  margin: 0 clamp(5px, 1vw, 15px);
 }
 
 .routeContainer::before {
@@ -41,30 +43,37 @@
 }
 
 .routeHeader {
-  margin-bottom: 2.5rem;
-  padding-bottom: 1.5rem;
+  margin-bottom: clamp(1.5rem, 4vh, 2.5rem);
+  padding-bottom: clamp(1rem, 2.5vh, 1.5rem);
   border-bottom: 2px solid #f8f9fa;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: clamp(0.5rem, 1vw, 1rem);
 }
 
 .routeHeader h4 {
   color: #2c3e50;
   font-weight: 600;
-  font-size: 1.5rem;
+  font-size: clamp(1.2rem, 3vw, 1.5rem);
+  margin: 0;
+  line-height: 1.3;
 }
 
 .routeMarker {
-  width: 50px;
-  height: 50px;
+  width: clamp(40px, 10vw, 50px);
+  height: clamp(40px, 10vw, 50px);
   background: linear-gradient(135deg, #dc3545, #c82333);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3);
+  flex-shrink: 0;
 }
 
 .routeMarker i {
-  font-size: 1.5rem;
+  font-size: clamp(1.2rem, 3vw, 1.5rem);
   color: white;
 }
 
@@ -74,20 +83,27 @@
 }
 
 .stopItem {
-  margin-bottom: 1rem;
+  margin-bottom: clamp(0.5rem, 1.5vh, 1rem);
   position: relative;
   z-index: 2;
 }
 
 .stopBtn {
-  border-radius: 25px !important;
-  font-size: 0.9rem !important;
+  border-radius: clamp(15px, 3vw, 25px) !important;
+  font-size: clamp(0.75rem, 2vw, 0.9rem) !important;
   font-weight: 500 !important;
-  padding: 10px 20px !important;
+  padding: clamp(8px, 2vw, 10px) clamp(12px, 3vw, 20px) !important;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
   border: 2px solid transparent !important;
   position: relative;
   overflow: hidden;
+  min-height: clamp(36px, 8vw, 44px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  white-space: nowrap;
+  width: 100%;
 }
 
 .stopBtn::before {
@@ -146,118 +162,202 @@
   box-shadow: 0 8px 25px rgba(44, 90, 160, 0.2) !important;
 }
 
-/* Responsive Design */
+/* Enhanced Responsive Design */
 @media (max-width: 1200px) {
   .routeContainer {
-    padding: 2rem;
-    margin: 0 15px;
+    padding: clamp(1.25rem, 3vw, 2rem);
+    margin: 0 clamp(10px, 1.5vw, 15px);
+  }
+  
+  .routeHeader {
+    margin-bottom: clamp(1.25rem, 3vh, 2rem);
   }
 }
 
 @media (max-width: 992px) {
   .jeepneyRoute {
-    padding: 60px 0;
+    padding: clamp(40px, 7vh, 60px) 0;
   }
   
   .routeContainer {
-    padding: 1.5rem;
-    margin: 0 10px;
+    padding: clamp(1rem, 2.5vw, 1.5rem);
+    margin: 0 clamp(8px, 1vw, 10px);
   }
   
   .stopBtn {
-    font-size: 0.85rem !important;
-    padding: 8px 12px !important;
-  }
-}
-
-@media (max-width: 768px) {
-  .routeContainer {
-    padding: 1.5rem;
-    border-radius: 20px;
-    margin: 0 10px;
+    font-size: clamp(0.7rem, 1.8vw, 0.85rem) !important;
+    padding: clamp(6px, 1.5vw, 8px) clamp(8px, 2vw, 12px) !important;
   }
   
   .routeHeader {
     text-align: center;
     flex-direction: column;
+    align-items: center;
   }
   
   .routeMarker {
-    margin: 0 auto 1rem;
+    margin: 0 auto clamp(0.5rem, 1vh, 1rem);
+  }
+}
+
+@media (max-width: 768px) {
+  .routeContainer {
+    padding: clamp(0.75rem, 2vw, 1.5rem);
+    border-radius: clamp(12px, 2.5vw, 20px);
+    margin: 0 clamp(5px, 1vw, 10px);
+  }
+  
+  .routeHeader {
+    text-align: center;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: clamp(1rem, 2.5vh, 1.5rem);
+  }
+  
+  .routeMarker {
+    margin: 0 auto clamp(0.5rem, 1vh, 1rem);
   }
   
   .stopBtn {
-    font-size: 0.8rem !important;
-    padding: 8px 12px !important;
+    font-size: clamp(0.65rem, 1.6vw, 0.8rem) !important;
+    padding: clamp(5px, 1.2vw, 8px) clamp(6px, 1.5vw, 12px) !important;
+    min-height: clamp(32px, 7vw, 40px);
+  }
+  
+  .routeHeader h4 {
+    font-size: clamp(1rem, 2.5vw, 1.25rem);
+  }
+  
+  .routeMarker {
+    width: clamp(35px, 8vw, 40px);
+    height: clamp(35px, 8vw, 40px);
+  }
+  
+  .routeMarker i {
+    font-size: clamp(1rem, 2.5vw, 1.2rem);
   }
 }
 
 @media (max-width: 576px) {
   .jeepneyRoute {
-    padding: 40px 0;
+    padding: clamp(30px, 5vh, 50px) 0;
   }
   
   .routeContainer {
-    padding: 1rem;
-    border-radius: 15px;
-    margin: 0 5px;
+    padding: clamp(0.5rem, 1.5vw, 1rem);
+    border-radius: clamp(10px, 2vw, 15px);
+    margin: 0 clamp(3px, 0.5vw, 5px);
   }
   
   .stopItem {
-    margin-bottom: 0.75rem;
+    margin-bottom: clamp(0.25rem, 1vh, 0.75rem);
   }
   
   .stopBtn {
-    font-size: 0.8rem !important;
-    padding: 8px 12px !important;
-    min-height: 40px !important; /* Touch-friendly size */
+    font-size: clamp(0.6rem, 1.4vw, 0.8rem) !important;
+    padding: clamp(4px, 1vw, 8px) clamp(5px, 1.2vw, 12px) !important;
+    min-height: clamp(30px, 6vw, 40px);
+    border-radius: clamp(12px, 2.5vw, 20px) !important;
   }
   
   .routeHeader h4 {
-    font-size: 1.25rem;
+    font-size: clamp(0.9rem, 2.2vw, 1.1rem);
   }
   
   .routeMarker {
-    width: 40px;
-    height: 40px;
+    width: clamp(30px, 7vw, 35px);
+    height: clamp(30px, 7vw, 35px);
   }
   
   .routeMarker i {
-    font-size: 1.2rem;
+    font-size: clamp(0.9rem, 2.2vw, 1rem);
   }
 }
 
 @media (max-width: 400px) {
   .routeContainer {
-    padding: 0.75rem;
+    padding: clamp(0.25rem, 1vw, 0.75rem);
     margin: 0;
-    border-radius: 12px;
+    border-radius: clamp(8px, 1.5vw, 12px);
   }
   
   .sectionTitle {
-    font-size: 1.75rem;
+    font-size: clamp(1.5rem, 4vw, 1.75rem);
   }
   
   .sectionSubtitle {
-    font-size: 0.95rem;
+    font-size: clamp(0.85rem, 2vw, 0.95rem);
   }
   
   .stopBtn {
-    font-size: 0.75rem !important;
-    padding: 6px 10px !important;
-    min-height: 38px !important;
+    font-size: clamp(0.55rem, 1.2vw, 0.75rem) !important;
+    padding: clamp(3px, 0.8vw, 6px) clamp(4px, 1vw, 10px) !important;
+    min-height: clamp(28px, 5vw, 38px);
   }
   
   .routeHeader h4 {
-    font-size: 1.1rem;
+    font-size: clamp(0.8rem, 2vw, 1rem);
   }
   
   .routeMarker {
-    width: 35px;
-    height: 35px;
+    width: clamp(25px, 6vw, 30px);
+    height: clamp(25px, 6vw, 30px);
   }
   
   .routeMarker i {
-    font-size: 1rem;
+    font-size: clamp(0.8rem, 2vw, 0.9rem);
+  }
+}
+
+/* Tablet Landscape */
+@media (min-width: 768px) and (max-width: 1024px) and (orientation: landscape) {
+  .jeepneyRoute {
+    padding: clamp(25px, 4vh, 40px) 0;
+  }
+  
+  .routeContainer {
+    padding: clamp(0.75rem, 1.5vw, 1.25rem);
+  }
+}
+
+/* Large Desktop */
+@media (min-width: 1440px) {
+  .jeepneyRoute {
+    padding: clamp(60px, 12vh, 100px) 0;
+  }
+  
+  .routeContainer {
+    padding: clamp(2rem, 5vw, 3rem);
+    margin: 0 clamp(15px, 2vw, 25px);
+  }
+  
+  .stopBtn {
+    font-size: clamp(0.9rem, 2.5vw, 1.1rem) !important;
+    padding: clamp(10px, 2.5vw, 12px) clamp(15px, 3.5vw, 25px) !important;
+  }
+}
+
+/* Ultra-wide screens */
+@media (min-width: 1920px) {
+  .jeepneyRoute {
+    padding: clamp(80px, 15vh, 120px) 0;
+  }
+  
+  .routeContainer {
+    padding: clamp(2.5rem, 6vw, 3.5rem);
+    margin: 0 clamp(20px, 3vw, 30px);
+  }
+  
+  .stopBtn {
+    font-size: clamp(1rem, 3vw, 1.3rem) !important;
+    padding: clamp(12px, 3vw, 15px) clamp(18px, 4vw, 30px) !important;
+  }
+}
+
+/* High DPI displays */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .jeepneyRoute {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 }

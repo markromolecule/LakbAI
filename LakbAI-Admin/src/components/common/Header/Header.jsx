@@ -21,22 +21,28 @@ const Header = () => {
         <Navbar.Toggle aria-controls="basic-navbar-nav" />
         
         <Navbar.Collapse id="basic-navbar-nav">
-          <Nav className="ms-auto me-4">
+          <Nav className={`${styles.navRight} ms-auto`}>
             <Nav.Link href="#biyabot" className={`${styles.navLinkCustom} me-4`}>
               <i className="bi bi-robot me-1"></i>
               BiyaBot
             </Nav.Link>
-            <Nav.Link href="#about" className={styles.navLinkCustom}>
+            <Nav.Link href="#about" className={`${styles.navLinkCustom} me-4`}>
               <i className="bi bi-info-circle me-1"></i>
               About Us
             </Nav.Link>
-          </Nav>
-          
-          <div className={styles.userProfile}>
-            <div className={`${styles.userAvatar} bg-primary rounded-circle d-flex align-items-center justify-content-center`}>
-              <i className="bi bi-person-fill text-white"></i>
+            
+            {/* Profile as navigation link for mobile */}
+            <Nav.Link href="#profile" className={`${styles.navLinkCustom} d-lg-none`}>
+              <i className="bi bi-person-fill me-1"></i>
+              Profile
+            </Nav.Link>
+            
+            {/* Text-based profile for desktop */}
+            <div className={`${styles.userProfileText} d-none d-lg-flex align-items-center`}>
+              <i className="bi bi-person-fill me-2"></i>
+              <span>Profile</span>
             </div>
-          </div>
+          </Nav>
         </Navbar.Collapse>
       </Container>
     </Navbar>

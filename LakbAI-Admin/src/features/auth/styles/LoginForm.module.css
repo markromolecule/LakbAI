@@ -3,7 +3,7 @@
   width: 100%;
   height: 100%;
   margin: 0;
-  padding: 30px;
+  padding: clamp(15px, 4vw, 30px);
   background: white;
   border-radius: 15px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
@@ -331,8 +331,10 @@
 .contactInfo {
   display: flex;
   justify-content: center;
+  align-items: center;
   gap: 20px;
   flex-wrap: wrap;
+  text-align: center;
 }
 
 .contactLink {
@@ -476,13 +478,17 @@
 /* Responsive Design */
 @media (max-width: 768px) {
   .loginFormContainer {
-    padding: 20px;
+    padding: clamp(15px, 4vw, 20px);
     margin: 0;
     border-radius: 12px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    max-height: 100%;
+    min-height: auto;
   }
   
   .formTitle {
-    font-size: 1.5rem;
+    font-size: clamp(1.2rem, 4vw, 1.5rem);
   }
   
   .logoContainer {
@@ -508,90 +514,170 @@
   }
   
   .sectionTitle {
-    margin: 15px 0 10px 0;
-    font-size: 0.95rem;
+    margin: clamp(10px, 3vh, 15px) 0 clamp(8px, 2vh, 10px) 0;
+    font-size: clamp(0.85rem, 2.5vw, 0.95rem);
   }
   
   .formRow {
     flex-direction: column;
     gap: 0;
-    margin-bottom: 12px;
+    margin-bottom: clamp(8px, 2vh, 12px);
   }
   
   .formGroup {
-    margin-bottom: 12px;
+    margin-bottom: clamp(8px, 2vh, 12px);
   }
   
   .contactInfo {
     flex-direction: column;
-    gap: 8px;
+    gap: clamp(6px, 1.5vh, 8px);
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+  }
+  
+  .contactLink {
+    justify-content: center;
+    text-align: center;
   }
   
   .socialLogin {
     flex-direction: column;
-    gap: 8px;
+    gap: clamp(6px, 1.5vh, 8px);
   }
 }
 
 @media (max-width: 480px) {
   .loginFormContainer {
-    padding: 15px;
+    padding: clamp(10px, 3vw, 15px);
     margin: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    max-height: 100%;
+    min-height: auto;
   }
   
   .backButton {
-    top: 12px;
-    left: 12px;
-    width: 35px;
-    height: 35px;
+    top: clamp(8px, 2vw, 12px);
+    left: clamp(8px, 2vw, 12px);
+    width: clamp(28px, 7vw, 35px);
+    height: clamp(28px, 7vw, 35px);
   }
   
   .formTitle {
-    font-size: 1.3rem;
+    font-size: clamp(1rem, 3.5vw, 1.3rem);
   }
   
   .sectionTitle {
-    font-size: 0.9rem;
-    margin: 12px 0 8px 0;
+    font-size: clamp(0.75rem, 2.2vw, 0.9rem);
+    margin: clamp(8px, 2vh, 12px) 0 clamp(6px, 1.5vh, 8px) 0;
   }
   
   .formLabel {
-    font-size: 0.8rem;
+    font-size: clamp(0.7rem, 2vw, 0.8rem);
   }
   
   .formControl {
-    padding: 8px 12px;
-    font-size: 0.9rem;
+    padding: clamp(6px, 1.5vw, 8px) clamp(8px, 2vw, 12px);
+    font-size: clamp(0.8rem, 2.2vw, 0.9rem);
   }
   
   .formGroup {
-    margin-bottom: 10px;
+    margin-bottom: clamp(6px, 1.5vh, 10px);
   }
   
   .formRow {
-    margin-bottom: 8px;
+    margin-bottom: clamp(5px, 1vh, 8px);
   }
   
   .helpTitle {
-    font-size: 0.9rem;
+    font-size: clamp(0.8rem, 2.2vw, 0.9rem);
   }
   
   .helpText {
-    font-size: 0.8rem;
+    font-size: clamp(0.7rem, 2vw, 0.8rem);
+  }
+  
+  .contactInfo {
+    flex-direction: column;
+    gap: clamp(6px, 1.5vh, 8px);
+    justify-content: center;
+    align-items: center;
+    text-align: center;
   }
   
   .contactLink {
-    font-size: 0.75rem;
+    font-size: clamp(0.65rem, 1.8vw, 0.75rem);
+    justify-content: center;
+    text-align: center;
   }
   
   .socialButton {
-    padding: 8px 12px;
-    font-size: 0.8rem;
+    padding: clamp(6px, 1.5vw, 8px) clamp(8px, 2vw, 12px);
+    font-size: clamp(0.7rem, 2vw, 0.8rem);
   }
   
   .formFooter {
-    margin-top: 20px;
-    padding-top: 15px;
+    margin-top: clamp(12px, 3vh, 20px);
+    padding-top: clamp(10px, 2.5vh, 15px);
+  }
+  
+  .loginFormContainer {
+    padding: clamp(10px, 3vw, 20px);
+    min-height: 400px;
+  }
+}
+
+@media (max-width: 480px) {
+  .loginFormContainer {
+    padding: clamp(8px, 2.5vw, 15px);
+    min-height: 350px;
+  }
+  
+  .backButton {
+    top: clamp(8px, 2vw, 12px);
+    left: clamp(8px, 2vw, 12px);
+    width: clamp(28px, 7vw, 35px);
+    height: clamp(28px, 7vw, 35px);
+  }
+  
+  .formTitle {
+    font-size: clamp(1rem, 3.5vw, 1.3rem);
+  }
+  
+  .formLabel {
+    font-size: clamp(0.7rem, 2vw, 0.8rem);
+  }
+  
+  .formControl {
+    padding: clamp(6px, 1.5vw, 8px) clamp(8px, 2vw, 12px);
+    font-size: clamp(0.8rem, 2.2vw, 0.9rem);
+  }
+  
+  .formGroup {
+    margin-bottom: clamp(6px, 1.5vh, 10px);
+  }
+  
+  .helpTitle {
+    font-size: clamp(0.8rem, 2.2vw, 0.9rem);
+  }
+  
+  .helpText {
+    font-size: clamp(0.7rem, 2vw, 0.8rem);
+  }
+  
+  .contactLink {
+    font-size: clamp(0.65rem, 1.8vw, 0.75rem);
+  }
+  
+  .socialButton {
+    padding: clamp(6px, 1.5vw, 8px) clamp(8px, 2vw, 12px);
+    font-size: clamp(0.7rem, 2vw, 0.8rem);
+  }
+  
+  .formFooter {
+    margin-top: clamp(12px, 3vh, 20px);
+    padding-top: clamp(10px, 2.5vh, 15px);
   }
 }
 

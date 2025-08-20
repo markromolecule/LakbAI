@@ -25,16 +25,18 @@
   width: 100%;
   height: 100%;
   margin: 0;
-  padding: 30px;
+  padding: clamp(15px, 4vw, 30px);
   background: white;
   border-radius: 15px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
   position: relative;
   overflow-y: auto;
+  overflow-x: hidden;
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
   min-height: 500px;
+  max-height: 100%;
 }
 
 .registerCard {
@@ -171,12 +173,16 @@
   gap: 12px;
   margin-bottom: 16px;
   align-items: flex-end;
+  justify-content: space-between;
 }
 
 .birthdayRow .formGroup {
   flex: 1;
   min-width: 0; /* Allows flex items to shrink below content size */
   position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
 }
 
 .birthdayRow .formGroup:first-child {
@@ -852,13 +858,17 @@
 /* Responsive Design */
 @media (max-width: 768px) {
   .registerFormContainer {
-    padding: 20px;
+    padding: clamp(15px, 4vw, 20px);
     margin: 0;
     border-radius: 12px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    max-height: 100%;
+    min-height: auto;
   }
   
   .formTitle {
-    font-size: 1.5rem;
+    font-size: clamp(1.2rem, 4vw, 1.5rem);
   }
   
   .logoContainer {
@@ -884,90 +894,99 @@
   }
   
   .sectionTitle {
-    margin: 15px 0 10px 0;
-    font-size: 0.95rem;
+    margin: clamp(10px, 3vh, 15px) 0 clamp(8px, 2vh, 10px) 0;
+    font-size: clamp(0.85rem, 2.5vw, 0.95rem);
   }
   
   .formRow {
     flex-direction: column;
     gap: 0;
-    margin-bottom: 12px;
+    margin-bottom: clamp(8px, 2vh, 12px);
   }
   
   .birthdayRow {
     flex-direction: column;
-    gap: 12px;
-    margin-bottom: 12px;
+    gap: clamp(8px, 2vh, 12px);
+    margin-bottom: clamp(8px, 2vh, 12px);
+    align-items: stretch;
   }
   
   .birthdayRow .formGroup {
     flex: none;
+    width: 100%;
   }
   
   /* Mobile dropdown enhancements */
   .formControl select {
     font-size: 16px; /* Prevents zoom on iOS */
-    padding: 14px 16px;
+    padding: clamp(10px, 3vw, 14px) clamp(12px, 3vw, 16px);
   }
   
   .birthdayRow .formControl select,
   .formControl select[name="gender"] {
     font-size: 16px;
-    padding: 14px 16px;
+    padding: clamp(10px, 3vw, 14px) clamp(12px, 3vw, 16px);
   }
   
   .formGroup {
-    margin-bottom: 12px;
+    margin-bottom: clamp(8px, 2vh, 12px);
   }
   
   .fileLabel {
-    padding: 15px;
-    min-height: 80px;
+    padding: clamp(12px, 3vw, 15px);
+    min-height: clamp(60px, 15vh, 80px);
   }
   
   .fileLabel i {
-    font-size: 1.3rem;
+    font-size: clamp(1.1rem, 3vw, 1.3rem);
   }
 }
 
 @media (max-width: 480px) {
   .registerFormContainer {
-    padding: 15px;
+    padding: clamp(10px, 3vw, 15px);
     margin: 0;
-    overflow: hidden;
+    overflow-y: auto;
+    overflow-x: hidden;
+    max-height: 100%;
+    min-height: auto;
   }
   
   .backButton {
-    top: 12px;
-    left: 12px;
-    width: 35px;
-    height: 35px;
+    top: clamp(8px, 2vw, 12px);
+    left: clamp(8px, 2vw, 12px);
+    width: clamp(28px, 7vw, 35px);
+    height: clamp(28px, 7vw, 35px);
   }
   
   .formTitle {
-    font-size: 1.3rem;
+    font-size: clamp(1rem, 3.5vw, 1.3rem);
   }
   
   .sectionTitle {
-    font-size: 0.9rem;
-    margin: 12px 0 8px 0;
+    font-size: clamp(0.75rem, 2.2vw, 0.9rem);
+    margin: clamp(8px, 2vh, 12px) 0 clamp(6px, 1.5vh, 8px) 0;
   }
   
   .formLabel {
-    font-size: 0.8rem;
+    font-size: clamp(0.7rem, 2vw, 0.8rem);
   }
   
   .formControl {
-    padding: 8px 12px;
-    font-size: 0.9rem;
+    padding: clamp(6px, 1.5vw, 8px) clamp(8px, 2vw, 12px);
+    font-size: clamp(0.8rem, 2.2vw, 0.9rem);
   }
   
   .formGroup {
-    margin-bottom: 10px;
+    margin-bottom: clamp(6px, 1.5vh, 10px);
   }
   
   .formRow {
-    margin-bottom: 8px;
+    margin-bottom: clamp(5px, 1vh, 8px);
+  }
+  
+  .registerFormContainer {
+    min-height: 400px;
   }
 }
 
