@@ -1,8 +1,11 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import styles from '../styles/LoginForm.module.css';
+import AuthService from '../../../services/authService';
 
 const LoginForm = () => {
+  const navigate = useNavigate();
+  
   // State management - keep intact for team to use
   const [formData, setFormData] = useState({
     email: '',
@@ -33,13 +36,19 @@ const LoginForm = () => {
     e.preventDefault();
     try {
       setLoading(true);
-      // TODO: Implement login logic
-      console.log('Login data:', formData);
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      alert('Login successful!');
+      setErrors({});
+      
+      // Use AuthService for login
+      const result = await AuthService.login(formData.email, formData.password);
+      
+      if (result.success) {
+        // Redirect to admin dashboard
+        navigate('/admin/dashboard');
+      } else {
+        setErrors({ general: result.error });
+      }
     } catch (error) {
-      setErrors({ general: 'Invalid email or password' });
+      setErrors({ general: 'An error occurred during login' });
     } finally {
       setLoading(false);
     }
