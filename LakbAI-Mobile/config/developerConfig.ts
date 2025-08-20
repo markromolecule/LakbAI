@@ -45,7 +45,7 @@ export const buildApiUrl = (): string => {
 
 // Helper to log current configuration
 export const logCurrentConfig = (): void => {
-  console.log('🔧 Current Developer Config:');
+  console.log('Current Developer Config:');
   console.log('Developer:', CURRENT_DEVELOPER);
   console.log('IP:', getCurrentDeveloperIP());
   console.log('API URL:', buildApiUrl());
