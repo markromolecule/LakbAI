@@ -19,8 +19,11 @@ export const isValidEmail = (email) => {
  * @returns {boolean} True if phone is valid
  */
 export const isValidPhoneNumber = (phone) => {
-  const phoneRegex = /^(\+63|0)9\d{9}$/;
-  return phoneRegex.test(phone.replace(/\s/g, ''));
+  // Accept Philippine phone numbers with or without whitespace
+  // Format: 09xx xxx xxxx or 09xxxxxxxxx
+  const cleanPhone = phone.replace(/\s/g, '');
+  const phoneRegex = /^09\d{9}$/;
+  return phoneRegex.test(cleanPhone);
 };
 
 /**
@@ -33,7 +36,6 @@ export const validatePassword = (password) => {
   const hasUpperCase = /[A-Z]/.test(password);
   const hasLowerCase = /[a-z]/.test(password);
   const hasNumbers = /\d/.test(password);
-  const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
 
   if (password.length < minLength) {
     return { isValid: false, message: 'Password must be at least 8 characters long' };
@@ -45,10 +47,6 @@ export const validatePassword = (password) => {
   
   if (!hasNumbers) {
     return { isValid: false, message: 'Password must contain at least one number' };
-  }
-  
-  if (!hasSpecialChar) {
-    return { isValid: false, message: 'Password must contain at least one special character' };
   }
 
   return { isValid: true, message: '' };
@@ -72,7 +70,7 @@ export const isValidPostalCode = (postalCode) => {
 export const validateRegistrationForm = (formData) => {
   const errors = {};
 
-  // Personal Information
+    // Personal Information
   if (!formData.firstName?.trim()) {
     errors.firstName = 'First name is required';
   } else if (formData.firstName.length < 2) {
@@ -145,22 +143,30 @@ export const validateRegistrationForm = (formData) => {
   }
 
   // Birthday validation
-  if (!formData.birthMonth) {
-    errors.birthMonth = 'Birth month is required';
+  if (!formData.birthMonth || !formData.birthDay || !formData.birthYear) {
+    if (!formData.birthMonth) errors.birthMonth = 'Birth month is required';
+    if (!formData.birthDay) errors.birthDay = 'Birth day is required';
+    if (!formData.birthYear) errors.birthYear = 'Birth year is required';
+  } else {
+    // Convert to numbers if they're strings
+    const month = parseInt(formData.birthMonth);
+    const day = parseInt(formData.birthDay);
+    const year = parseInt(formData.birthYear);
+    
+    // Validate age (must be at least 18 for drivers)
+    const birthDate = new Date(year, month - 1, day);
+    const today = new Date();
+    const age = today.getFullYear() - birthDate.getFullYear();
+    
+    if (age < 18) {
+      errors.birthYear = 'Driver must be at least 18 years old';
+    }
   }
 
-  if (!formData.birthDay) {
-    errors.birthDay = 'Birth day is required';
+  // Driver's license validation (required for drivers)
+  if (formData.userType === 'driver' && !formData.driversLicense) {
+    errors.driversLicense = 'Driver\'s license is required for driver accounts';
   }
-
-  if (!formData.birthYear) {
-    errors.birthYear = 'Birth year is required';
-  }
-
-  // Driver's license validation
-  if (!formData.driversLicense) {
-    errors.driversLicense = 'Driver\'s license is required';
-  }
-
+  
   return errors;
 };

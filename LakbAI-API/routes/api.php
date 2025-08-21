@@ -1,14 +1,19 @@
 <?php
+// Enhanced CORS headers
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type, Authorization, Accept');
-header('Access-Control-Allow-Credentials: true');
-header('Content-Type: application/json');
-header('Cache-Control: no-cache');
+header('Access-Control-Allow-Headers: Content-Type, Authorization, Accept, X-Requested-With');
+header('Access-Control-Allow-Credentials: false');
+header('Access-Control-Max-Age: 86400');
+header('Content-Type: application/json; charset=utf-8');
+header('Cache-Control: no-cache, no-store, must-revalidate');
+header('Pragma: no-cache');
+header('Expires: 0');
 
 // Handle preflight OPTIONS request
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
+    echo json_encode(['status' => 'success', 'message' => 'CORS preflight OK']);
     exit;
 }
 
@@ -27,6 +32,18 @@ $authController = new AuthController($app->get('Database'));
 $method = $_SERVER['REQUEST_METHOD'];
 $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 $pathParts = explode('/', trim($path, '/'));
+
+// Remove the base path parts (LakbAI/LakbAI-API) to get the actual API path
+$apiBaseParts = ['LakbAI', 'LakbAI-API'];
+$actualPathParts = array_slice($pathParts, count($apiBaseParts));
+
+// Debug logging (remove in production)
+error_log("API Request - Method: $method, Path: $path");
+error_log("PathParts: " . json_encode($pathParts));
+error_log("ActualPathParts: " . json_encode($actualPathParts));
+
+// Use the actual path parts for routing
+$pathParts = $actualPathParts;
 
 // Get request data
 $input = [];
@@ -101,8 +118,16 @@ function transformMobileRegistrationData($mobileData) {
 try {
     // Auth routes
     if (end($pathParts) === 'register' && $method === 'POST') {
-        // Transform mobile data format to API format
-        $transformedData = transformMobileRegistrationData($input);
+        // Check if this is web registration (already in correct format) or mobile
+        $isWebRegistration = isset($input['first_name']) && isset($input['last_name']) && isset($input['phone_number']);
+        
+        if ($isWebRegistration) {
+            // Web registration - data is already in correct format
+            $transformedData = $input;
+        } else {
+            // Mobile registration - transform data format
+            $transformedData = transformMobileRegistrationData($input);
+        }
         
         $result = $authController->register($transformedData);
         echo json_encode($result);
@@ -125,6 +150,20 @@ try {
         }
         
         $result = $authController->getProfile($userId);
+        echo json_encode($result);
+        exit;
+    }
+
+    // Get discount status for mobile users
+    if (end($pathParts) === 'discount-status' && $method === 'GET') {
+        $userId = $_GET['user_id'] ?? null;
+        if (!$userId) {
+            http_response_code(400);
+            echo json_encode(['status' => 'error', 'message' => 'User ID required']);
+            exit;
+        }
+        
+        $result = $authController->getDiscountStatus($userId);
         echo json_encode($result);
         exit;
     }
@@ -164,11 +203,129 @@ try {
             'status' => 'success',
             'message' => 'LakbAI API is working with clean architecture!',
             'timestamp' => date('Y-m-d H:i:s'),
-            'version' => '2.0'
+            'version' => '2.0',
+            'debug' => [
+                'method' => $method,
+                'path' => $path,
+                'pathParts' => $pathParts
+            ]
+        ]);
+        exit;
+    }
+
+    // Health check route
+    if (empty($pathParts) || $pathParts[0] === '' && $method === 'GET') {
+        echo json_encode([
+            'status' => 'success',
+            'message' => 'LakbAI API is running',
+            'timestamp' => date('Y-m-d H:i:s'),
+            'endpoints' => [
+                'GET /test' => 'API test endpoint',
+                'GET /admin/users' => 'Get all users (admin)',
+                'GET /admin/pending-approvals' => 'Get pending approvals',
+                'POST /register' => 'User registration',
+                'POST /login' => 'User login'
+            ]
         ]);
         exit;
     }
     
+    // Admin user management routes
+    if ($pathParts[0] === 'admin' && count($pathParts) >= 2) {
+        // Get all users with filtering
+        if ($pathParts[1] === 'users' && $method === 'GET') {
+            $userType = $_GET['user_type'] ?? null;
+            $discountStatus = $_GET['discount_status'] ?? null;
+            $page = $_GET['page'] ?? 1;
+            $limit = $_GET['limit'] ?? 10;
+            
+            $result = $authController->getUsers($userType, $discountStatus, $page, $limit);
+            echo json_encode($result);
+            exit;
+        }
+        
+        // Update user (admin action)
+        if ($pathParts[1] === 'users' && isset($pathParts[2]) && $method === 'PUT') {
+            $userId = $pathParts[2];
+            $result = $authController->adminUpdateUser($userId, $input);
+            echo json_encode($result);
+            exit;
+        }
+        
+        // Delete user (admin action)
+        if ($pathParts[1] === 'users' && isset($pathParts[2]) && $method === 'DELETE') {
+            $userId = $pathParts[2];
+            $result = $authController->deleteUser($userId);
+            echo json_encode($result);
+            exit;
+        }
+        
+        // Approve discount application
+        if ($pathParts[1] === 'approve-discount' && $method === 'POST') {
+            $userId = $input['user_id'] ?? null;
+            $approved = $input['approved'] ?? false;
+            $result = $authController->approveDiscount($userId, $approved);
+            echo json_encode($result);
+            exit;
+        }
+
+        // Approve driver license
+        if ($pathParts[1] === 'approve-license' && $method === 'POST') {
+            $userId = $input['user_id'] ?? null;
+            $approved = $input['approved'] ?? false;
+            $result = $authController->approveDriverLicense($userId, $approved);
+            echo json_encode($result);
+            exit;
+        }
+        
+        // Get pending approvals
+        if ($pathParts[1] === 'pending-approvals' && $method === 'GET') {
+            $result = $authController->getPendingApprovals();
+            echo json_encode($result);
+            exit;
+        }
+
+        // Get all discount applications
+        if ($pathParts[1] === 'discount-applications' && $method === 'GET') {
+            $result = $authController->getAllDiscountApplications();
+            echo json_encode($result);
+            exit;
+        }
+
+        // Serve documents
+        if ($pathParts[1] === 'documents' && isset($pathParts[2]) && $method === 'GET') {
+            $documentPath = $pathParts[2];
+            $fullPath = __DIR__ . '/../uploads/' . $documentPath;
+            
+            if (file_exists($fullPath) && is_readable($fullPath)) {
+                $fileInfo = pathinfo($fullPath);
+                $extension = strtolower($fileInfo['extension']);
+                
+                // Set appropriate content type
+                $contentTypes = [
+                    'jpg' => 'image/jpeg',
+                    'jpeg' => 'image/jpeg',
+                    'png' => 'image/png',
+                    'pdf' => 'application/pdf'
+                ];
+                
+                $contentType = $contentTypes[$extension] ?? 'application/octet-stream';
+                
+                header('Content-Type: ' . $contentType);
+                header('Content-Disposition: inline; filename="' . $fileInfo['basename'] . '"');
+                header('Content-Length: ' . filesize($fullPath));
+                header('Cache-Control: public, max-age=3600');
+                
+                readfile($fullPath);
+                exit;
+            } else {
+                http_response_code(404);
+                echo json_encode(['status' => 'error', 'message' => 'Document not found']);
+                exit;
+            }
+        }
+    }
+
     // Route not found
     http_response_code(404);
     echo json_encode([
@@ -180,8 +337,13 @@ try {
             'GET /profile?user_id=X' => 'Get user profile',
             'PUT /profile' => 'Update user profile',
             'POST /check-exists' => 'Check if user exists',
-            'GET /test' => 'API test endpoint',
-            'POST /debug' => 'Debug endpoint'
+            'GET /admin/users' => 'Get all users (admin)',
+            'PUT /admin/users/{id}' => 'Update user (admin)',
+            'DELETE /admin/users/{id}' => 'Delete user (admin)',
+            'POST /admin/approve-discount' => 'Approve discount application',
+            'POST /admin/approve-license' => 'Approve driver license',
+            'GET /admin/pending-approvals' => 'Get pending approvals',
+            'GET /test' => 'API test endpoint'
         ]
     ]);
     

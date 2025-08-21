@@ -3,10 +3,7 @@ import Constants from 'expo-constants';
 
 // Network configuration for different developers
 const DEVELOPER_CONFIGS: { [key: string]: string } = {
-  // Add each developer's IP address here
-  joseph: '192.168.254.100:8000',  // Joseph's current IP
-  // codev: '192.168.1.105:8000',  // Co-developer can add their IP here
-  // maria: '10.0.0.23:8000',      // Another developer's IP
+  joseph: '192.168.254.105:8000',  // Local server ko
 };
 
 // Auto-detect developer based on device/environment
