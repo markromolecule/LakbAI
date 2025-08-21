@@ -12,6 +12,8 @@ export const useRegisterForm = () => {
   const [formData, setFormData] = useState(INITIAL_FORM_STATE);
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
+  
+
 
   /**
    * Handle input change for text fields and selects
@@ -116,6 +118,8 @@ export const useRegisterForm = () => {
     });
   };
 
+
+
   /**
    * Set general error (for API errors, etc.)
    * @param {string} error - Error message
@@ -141,16 +145,59 @@ export const useRegisterForm = () => {
 
     try {
       setLoading(true);
-      setErrors({}); // Clear any previous errors
+      // Clear ALL errors including general error
+      setErrors({});
+      
+      // Set user type to driver for web registration and format data for API
+      const driverData = {
+        username: formData.firstName.toLowerCase() + formData.lastName.toLowerCase(),
+        email: formData.email,
+        password: formData.password,
+        first_name: formData.firstName,
+        last_name: formData.lastName,
+        phone_number: formData.phoneNumber.replace(/\s/g, ''), // Remove whitespace
+        birthday: `${formData.birthYear}-${formData.birthMonth.toString().padStart(2, '0')}-${formData.birthDay.toString().padStart(2, '0')}`,
+        gender: formData.gender.charAt(0).toUpperCase() + formData.gender.slice(1), // Capitalize first letter
+        house_number: formData.houseNumber,
+        street_name: formData.streetName,
+        barangay: formData.barangay,
+        city_municipality: formData.city,
+        province: formData.province,
+        postal_code: formData.postalCode,
+        user_type: 'driver',
+        is_verified: false,
+        discount_type: null,
+        discount_verified: false,
+        drivers_license: formData.driversLicense ? formData.driversLicense.name : null,
+        drivers_license_path: formData.driversLicense ? formData.driversLicense.name : null,
+        drivers_license_verified: false
+      };
       
       if (onSubmit) {
-        await onSubmit(formData);
+        await onSubmit(driverData);
       } else {
-        // Default submission logic
-        console.log('Registration data:', formData);
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        alert('Registration successful!');
+        // Default submission logic - send to API
+        const response = await fetch('/api/register', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(driverData),
+        });
+        
+        const result = await response.json();
+        
+        if (result.status === 'success') {
+          alert('Driver account created successfully! Please wait for admin verification before logging in.');
+          // Reset form
+          setFormData(INITIAL_FORM_STATE);
+          setErrors({}); // Ensure errors are cleared
+          
+          // Redirect to login page after successful registration
+          window.location.href = '/login';
+        } else {
+          setGeneralError(result.message || 'Registration failed');
+        }
       }
     } catch (error) {
       console.error('Registration error:', error);
@@ -179,7 +226,8 @@ export const useRegisterForm = () => {
       'firstName', 'lastName', 'email', 'phoneNumber', 'gender',
       'password', 'confirmPassword', 'houseNumber', 'streetName',
       'barangay', 'city', 'province', 'postalCode',
-      'birthMonth', 'birthDay', 'birthYear', 'driversLicense'
+      'birthMonth', 'birthDay', 'birthYear'
+      // Note: driversLicense is optional for now
     ];
     
     const completedFields = requiredFields.filter(field => {

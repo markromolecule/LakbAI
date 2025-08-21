@@ -120,6 +120,122 @@ class AuthController {
     }
 
     /**
+     * Get all users with filtering and pagination (admin function)
+     */
+    public function getUsers($userType = null, $discountStatus = null, $page = 1, $limit = 10) {
+        try {
+            return $this->authService->getAllUsers($userType, $discountStatus, $page, $limit);
+
+        } catch (Exception $e) {
+            return $this->errorResponse('Failed to get users: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Admin update user
+     */
+    public function adminUpdateUser($userId, $data) {
+        try {
+            if (empty($userId)) {
+                return $this->errorResponse('User ID is required');
+            }
+
+            return $this->authService->adminUpdateUser($userId, $data);
+
+        } catch (Exception $e) {
+            return $this->errorResponse('Failed to update user: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Delete user (admin function)
+     */
+    public function deleteUser($userId) {
+        try {
+            if (empty($userId)) {
+                return $this->errorResponse('User ID is required');
+            }
+
+            return $this->authService->deleteUser($userId);
+
+        } catch (Exception $e) {
+            return $this->errorResponse('Failed to delete user: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Approve or reject discount application
+     */
+    public function approveDiscount($userId, $approved) {
+        try {
+            if (empty($userId)) {
+                return $this->errorResponse('User ID is required');
+            }
+
+            return $this->authService->approveDiscount($userId, $approved);
+
+        } catch (Exception $e) {
+            return $this->errorResponse('Failed to process discount approval: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Approve or reject driver license
+     */
+    public function approveDriverLicense($userId, $approved) {
+        try {
+            if (empty($userId)) {
+                return $this->errorResponse('User ID is required');
+            }
+
+            return $this->authService->approveDriverLicense($userId, $approved);
+
+        } catch (Exception $e) {
+            return $this->errorResponse('Failed to process license approval: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Get pending discount approvals
+     */
+    public function getPendingApprovals() {
+        try {
+            return $this->authService->getPendingApprovals();
+
+        } catch (Exception $e) {
+            return $this->errorResponse('Failed to get pending approvals: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Get all discount applications
+     */
+    public function getAllDiscountApplications() {
+        try {
+            return $this->authService->getAllDiscountApplications();
+
+        } catch (Exception $e) {
+            return $this->errorResponse('Failed to get discount applications: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Get discount status for mobile users
+     */
+    public function getDiscountStatus($userId) {
+        try {
+            if (empty($userId)) {
+                return $this->errorResponse('User ID is required');
+            }
+
+            return $this->authService->getDiscountStatus($userId);
+
+        } catch (Exception $e) {
+            return $this->errorResponse('Failed to get discount status: ' . $e->getMessage());
+        }
+    }
+
+    /**
      * Format validation errors for response
      */
     private function validationErrorResponse($errors) {

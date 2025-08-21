@@ -158,5 +158,131 @@ class UserRepository extends BaseRepository {
     public function findUsersWithDiscount() {
         return $this->findAll(['discount_type IS NOT NULL AND discount_verified = ?' => 1]);
     }
+
+    /**
+     * Get all users with filtering and pagination (admin function)
+     */
+    public function getAllUsers($userType = null, $discountStatus = null, $page = 1, $limit = 10) {
+        $conditions = [];
+        $params = [];
+        $types = "";
+
+        if ($userType) {
+            $conditions[] = "user_type = ?";
+            $params[] = $userType;
+            $types .= "s";
+        }
+
+        if ($discountStatus === 'pending') {
+            $conditions[] = "discount_type IS NOT NULL AND discount_verified = 0";
+        } elseif ($discountStatus === 'approved') {
+            $conditions[] = "discount_type IS NOT NULL AND discount_verified = 1";
+        } elseif ($discountStatus === 'none') {
+            $conditions[] = "discount_type IS NULL";
+        }
+
+        $whereClause = empty($conditions) ? "" : "WHERE " . implode(" AND ", $conditions);
+        $offset = ($page - 1) * $limit;
+
+        $query = "SELECT * FROM {$this->table_name} {$whereClause} ORDER BY created_at DESC LIMIT {$limit} OFFSET {$offset}";
+        $stmt = $this->conn->prepare($query);
+
+        if (!empty($params)) {
+            $stmt->bind_param($types, ...$params);
+        }
+
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        $users = [];
+        while ($row = $result->fetch_assoc()) {
+            $users[] = $row;
+        }
+
+        return $users;
+    }
+
+    /**
+     * Count users with filtering
+     */
+    public function countUsers($userType = null, $discountStatus = null) {
+        $conditions = [];
+        $params = [];
+        $types = "";
+
+        if ($userType) {
+            $conditions[] = "user_type = ?";
+            $params[] = $userType;
+            $types .= "s";
+        }
+
+        if ($discountStatus === 'pending') {
+            $conditions[] = "discount_type IS NOT NULL AND discount_verified = 0";
+        } elseif ($discountStatus === 'approved') {
+            $conditions[] = "discount_type IS NOT NULL AND discount_verified = 1";
+        } elseif ($discountStatus === 'none') {
+            $conditions[] = "discount_type IS NULL";
+        }
+
+        $whereClause = empty($conditions) ? "" : "WHERE " . implode(" AND ", $conditions);
+
+        $query = "SELECT COUNT(*) as total FROM {$this->table_name} {$whereClause}";
+        $stmt = $this->conn->prepare($query);
+
+        if (!empty($params)) {
+            $stmt->bind_param($types, ...$params);
+        }
+
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $row = $result->fetch_assoc();
+
+        return (int)$row['total'];
+    }
+
+    /**
+     * Delete user
+     */
+    public function delete($userId) {
+        $query = "DELETE FROM {$this->table_name} WHERE id = ?";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bind_param("i", $userId);
+        
+        return $stmt->execute();
+    }
+
+    /**
+     * Get users with pending discount applications
+     */
+    public function findUsersWithPendingDiscounts() {
+        $query = "SELECT * FROM {$this->table_name} WHERE discount_type IS NOT NULL AND discount_verified = 0 ORDER BY created_at DESC";
+        $stmt = $this->conn->prepare($query);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        $users = [];
+        while ($row = $result->fetch_assoc()) {
+            $users[] = $row;
+        }
+
+        return $users;
+    }
+
+    /**
+     * Get all users with discount applications (pending, approved, rejected)
+     */
+    public function findUsersWithDiscounts() {
+        $query = "SELECT * FROM {$this->table_name} WHERE discount_type IS NOT NULL ORDER BY created_at DESC";
+        $stmt = $this->conn->prepare($query);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        $users = [];
+        while ($row = $result->fetch_assoc()) {
+            $users[] = $row;
+        }
+
+        return $users;
+    }
 }
 ?>

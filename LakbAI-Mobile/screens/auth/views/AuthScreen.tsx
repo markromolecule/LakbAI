@@ -53,21 +53,36 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, onSignUp, onGuestConti
     }
   };
 
-  const handleSignUp = (data: SignUpData) => {
-    // Show congratulation message and redirect to login
-    Alert.alert('Congratulation', 'Account created successfully!', [
-      { 
-        text: 'OK', 
-        onPress: () => {
-          // Switch to login tab
-          setActiveTab('login');
+  const handleSignUp = async (data: SignUpData) => {
+    try {
+      console.log('=== AUTHSCREEN HANDLESIGNUP START ===');
+      console.log('AuthScreen handleSignUp called with data:', data);
+      console.log('Registration successful, updating UI...');
+      
+      // Show success message and redirect to login
+      console.log('About to show success alert...');
+      Alert.alert('Success', 'Account created successfully! Please log in.', [
+        { 
+          text: 'OK', 
+          onPress: () => {
+            // Switch to login tab
+            console.log('About to call setActiveTab("login")...');
+            setActiveTab('login');
+            console.log('setActiveTab("login") called successfully');
+          }
         }
+      ]);
+      
+      // Call the optional prop if provided (for any additional logic)
+      if (onSignUp) {
+        console.log('Calling optional onSignUp prop...');
+        onSignUp(data);
+        console.log('Optional onSignUp prop called successfully');
       }
-    ]);
-    
-    // Call the optional prop if provided
-    if (onSignUp) {
-      onSignUp(data);
+      
+      console.log('=== AUTHSCREEN HANDLESIGNUP COMPLETE ===');
+    } catch (error) {
+      console.error('UI update error:', error);
     }
   };
 

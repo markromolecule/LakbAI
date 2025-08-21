@@ -94,11 +94,20 @@ class RegisterRequest extends BaseRequest {
             }
         }
 
-        // Validate discount type
-        if ($this->has('discount_type') && !empty($this->get('discount_type'))) {
-            $validDiscountTypes = ['PWD', 'Senior Citizen', 'Student'];
-            if (!in_array($this->get('discount_type'), $validDiscountTypes)) {
-                $this->addError('discount_type', 'Discount type must be PWD, Senior Citizen, or Student');
+        // Validate discount type (only for passengers)
+        if ($this->has('user_type') && $this->get('user_type') === 'passenger') {
+            if ($this->has('discount_type') && !empty($this->get('discount_type'))) {
+                $validDiscountTypes = ['PWD', 'Senior Citizen', 'Student'];
+                if (!in_array($this->get('discount_type'), $validDiscountTypes)) {
+                    $this->addError('discount_type', 'Discount type must be PWD, Senior Citizen, or Student');
+                }
+            }
+        }
+
+        // Validate driver's license (required for drivers)
+        if ($this->has('user_type') && $this->get('user_type') === 'driver') {
+            if (!$this->has('drivers_license') || empty($this->get('drivers_license'))) {
+                $this->addError('drivers_license', 'Driver\'s license is required for driver accounts');
             }
         }
 

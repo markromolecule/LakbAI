@@ -31,6 +31,7 @@ const RegisterForm = () => {
         <FormHeader />
 
         <form onSubmit={handleSubmit} className={styles.registerForm}>
+
           {/* Error Alert */}
           {errors.general && (
             <div className={styles.errorAlert}>

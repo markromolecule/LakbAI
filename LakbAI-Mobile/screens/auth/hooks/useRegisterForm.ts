@@ -116,19 +116,32 @@ export const useRegisterForm = (onSignUp: (data: SignUpData) => void) => {
   const handleSignUp = async () => {
     if (validateForm()) {
       try {
+        console.log('=== REGISTRATION START ===');
         console.log('Attempting to register user:', signUpData);
         const response = await authService.register(signUpData);
+        console.log('API Response:', response);
+        
+        console.log('Response type:', typeof response);
+        console.log('Response keys:', Object.keys(response));
+        console.log('Response.status value:', response.status);
+        console.log('Response.status === "success":', response.status === 'success');
         
         if (response.status === 'success') {
-          // No popup - directly call onSignUp to redirect to login
+          console.log('Registration successful! Calling onSignUp for UI update...');
+          // Call onSignUp to handle UI updates (like redirecting to login)
+          // This should NOT trigger another API call
           onSignUp(signUpData);
+          console.log('onSignUp called successfully');
         } else {
+          console.log('Registration failed:', response.message);
           Alert.alert('Registration Failed', response.message || 'Please try again');
         }
       } catch (error) {
         console.error('Registration error:', error);
         Alert.alert('Error', 'Network error occurred. Please check your connection and try again.');
       }
+    } else {
+      console.log('Form validation failed');
     }
   };
 
