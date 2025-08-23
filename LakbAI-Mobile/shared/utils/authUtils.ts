@@ -78,6 +78,9 @@ export const clearUserSession = async (): Promise<void> => {
       SESSION_KEYS.REMEMBER_ME,
       SESSION_KEYS.LOGIN_TIME,
     ]);
+    
+    // Set logout flag to prevent automatic re-login
+    await AsyncStorage.setItem('user_logged_out', 'true');
   } catch (error) {
     console.error('Error clearing user session:', error);
   }
@@ -94,6 +97,15 @@ export const useLogout = () => {
       try {
         // Clear all session data
         await clearUserSession();
+        
+        // Clear Auth0 service data
+        try {
+          const { auth0Service } = await import('../services/auth0Service');
+          await auth0Service.logout();
+        } catch (auth0Error) {
+          console.warn('Auth0 logout error:', auth0Error);
+          // Continue with logout even if Auth0 logout fails
+        }
         
         // Navigate to login screen and prevent going back
         router.replace('/');

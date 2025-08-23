@@ -1,9 +1,10 @@
 import React from 'react';
-import { Container, Navbar, Nav } from 'react-bootstrap';
+import { Container, Navbar, Nav, Button, Dropdown } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import styles from './Header.module.css';
 
 const Header = () => {
+
   return (
     <Navbar bg="white" expand="lg" className={`${styles.customHeader} shadow-sm py-2 sticky-top`}>
       <Container>
@@ -37,11 +38,7 @@ const Header = () => {
               Profile
             </Nav.Link>
             
-            {/* Text-based profile for desktop */}
-            <div className={`${styles.userProfileText} d-none d-lg-flex align-items-center`}>
-              <i className="bi bi-person-fill me-2"></i>
-              <span>Profile</span>
-            </div>
+
           </Nav>
         </Navbar.Collapse>
       </Container>

@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
 import { Navbar, Nav, Container, Button, Dropdown, Collapse } from 'react-bootstrap';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useAuth0 } from '@auth0/auth0-react';
+import { clearAllAuthData, handleLogout } from '../../../utils/authUtils';
 
 const AdminHeader = () => {
   const [showMobileNav, setShowMobileNav] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
+  const { logout: auth0Logout, isAuthenticated } = useAuth0();
 
   const navItems = [
     { path: '/admin/dashboard', label: 'Dashboard', icon: 'bi-speedometer2' },
@@ -15,13 +18,14 @@ const AdminHeader = () => {
     { path: '/admin/checkpoints', label: 'Checkpoints', icon: 'bi-geo-alt' }
   ];
 
-  const handleLogout = () => {
-    localStorage.removeItem('isAdminLoggedIn');
-    localStorage.removeItem('adminEmail');
-    navigate('/login');
+  const handleLogoutClick = () => {
+    handleLogout(isAuthenticated, auth0Logout, navigate);
   };
 
+  // Get admin info from localStorage
   const userEmail = localStorage.getItem('adminEmail') || 'Admin';
+  const userName = localStorage.getItem('adminName') || userEmail.split('@')[0];
+  const userRole = 'Administrator';
 
   return (
     <Navbar bg="white" expand="lg" className="admin-header shadow-sm sticky-top">
@@ -87,10 +91,10 @@ const AdminHeader = () => {
                 </div>
                 <div className="d-none d-sm-block text-start me-1">
                   <div className="fw-semibold text-dark" style={{fontSize: '0.75rem', lineHeight: '1.1'}}>
-                    {userEmail.length > 15 ? userEmail.substring(0, 15) + '...' : userEmail}
+                    {userName.length > 15 ? userName.substring(0, 15) + '...' : userName}
                   </div>
                   <div className="text-muted" style={{fontSize: '0.65rem', lineHeight: '1.1'}}>
-                    Administrator
+                    {userRole}
                   </div>
                 </div>
                 <i className="bi bi-chevron-down text-muted small"></i>
@@ -98,8 +102,8 @@ const AdminHeader = () => {
 
               <Dropdown.Menu className="user-dropdown-menu shadow">
                 <Dropdown.Header className="py-2">
-                  <div className="fw-semibold text-truncate">{userEmail}</div>
-                  <small className="text-muted">Administrator</small>
+                  <div className="fw-semibold text-truncate">{userName}</div>
+                  <small className="text-muted">{userRole}</small>
                 </Dropdown.Header>
                 <Dropdown.Divider className="my-1" />
                 <Dropdown.Item href="#profile" className="py-2">
@@ -111,7 +115,7 @@ const AdminHeader = () => {
                   Preferences
                 </Dropdown.Item>
                 <Dropdown.Divider className="my-1" />
-                <Dropdown.Item onClick={handleLogout} className="text-danger py-2">
+                <Dropdown.Item onClick={handleLogoutClick} className="text-danger py-2">
                   <i className="bi bi-box-arrow-right me-2"></i>
                   Logout
                 </Dropdown.Item>

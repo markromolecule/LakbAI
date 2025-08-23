@@ -19,16 +19,16 @@ const HeroSection = () => {
                   Student-led Digital Jeepney System for Dasmariñas
                 </p>
                 <div className={styles.heroButtons}>
-                  <Link to="/login">
+                  <Link to="/admin-login">
                     <Button variant="outline-warning" size="lg" className={styles.heroBtn}>
-                      <i className="bi bi-box-arrow-in-right me-2"></i>
-                      Log In
+                      <i className="bi bi-shield-lock me-2"></i>
+                      Admin Login
                     </Button>
                   </Link>
-                  <Link to="/register">
+                  <Link to="/driver-signup">
                     <Button variant="outline-light" size="lg" className={styles.heroBtn}>
                       <i className="bi bi-person-plus me-2"></i>
-                      Register
+                      Become a Driver
                     </Button>
                   </Link>
                 </div>

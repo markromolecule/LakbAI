@@ -1,6 +1,6 @@
 # LakbAI API - Clean Architecture
 
-## 📁 Folder Structure
+## Folder Structure
 
 ```
 LakbAI-API/
