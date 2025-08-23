@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Container, Card, Button, Alert } from 'react-bootstrap';
 import { useAuth0 } from '@auth0/auth0-react';
 import { CheckCircleFill, ArrowRight, Shield, ArrowLeft } from 'react-bootstrap-icons';
-import { clearAllSignupContext, validateAndClearAuth0State, setAuth0StateTimestamp, clearAuth0Data } from '../../../utils/authUtils';
+import { clearAllSignupContext, validateAndClearAuth0State, setAuth0StateTimestamp, clearAuth0Data, forceFreshDriverSignupSession } from '../../../utils/authUtils';
 import styles from '../styles/DriverSignupPage.module.css';
 
 const DriverSignupPage = () => {
@@ -13,6 +13,11 @@ const DriverSignupPage = () => {
 
   // Clear any existing session when component mounts
   useEffect(() => {
+    console.log('=== DRIVER SIGNUP PAGE MOUNT ===');
+    
+    // Force a completely fresh session for driver signup
+    forceFreshDriverSignupSession();
+    
     // Validate and clear stale Auth0 state
     validateAndClearAuth0State();
     
@@ -42,6 +47,11 @@ const DriverSignupPage = () => {
       setIsProcessing(true);
       setError('');
       
+      console.log('=== AUTH0 DRIVER SIGNUP START ===');
+      
+      // Force fresh session before signup
+      forceFreshDriverSignupSession();
+      
       // Clear any existing context first
       clearAllSignupContext();
       
@@ -55,12 +65,14 @@ const DriverSignupPage = () => {
         returnTo: '/driver-username-setup'
       }));
       
+      console.log('Initiating Auth0 redirect with fresh session...');
+      
       await loginWithRedirect({
         authorizationParams: {
           screen_hint: 'signup',
           role: 'driver',
           app: 'admin',
-          prompt: 'login' // Force login prompt even if user is already authenticated
+          prompt: 'select_account' // Force account selection for fresh signup
         },
         appState: {
           returnTo: '/driver-username-setup',
@@ -83,6 +95,11 @@ const DriverSignupPage = () => {
       setIsProcessing(true);
       setError('');
       
+      console.log('=== GOOGLE DRIVER SIGNUP START ===');
+      
+      // Force fresh session before signup
+      forceFreshDriverSignupSession();
+      
       // Clear any existing context first
       clearAllSignupContext();
       
@@ -96,13 +113,15 @@ const DriverSignupPage = () => {
         returnTo: '/driver-username-setup'
       }));
       
+      console.log('Initiating Google redirect with fresh session...');
+      
       await loginWithRedirect({
         authorizationParams: {
           connection: 'google-oauth2',
           screen_hint: 'signup',
           role: 'driver',
           app: 'admin',
-          prompt: 'login' // Force login prompt even if user is already authenticated
+          prompt: 'select_account' // Force account selection for fresh signup
         },
         appState: {
           returnTo: '/driver-username-setup',
@@ -125,6 +144,11 @@ const DriverSignupPage = () => {
       setIsProcessing(true);
       setError('');
       
+      console.log('=== FACEBOOK DRIVER SIGNUP START ===');
+      
+      // Force fresh session before signup
+      forceFreshDriverSignupSession();
+      
       // Clear any existing context first
       clearAllSignupContext();
       
@@ -138,13 +162,15 @@ const DriverSignupPage = () => {
         returnTo: '/driver-username-setup'
       }));
       
+      console.log('Initiating Facebook redirect with fresh session...');
+      
       await loginWithRedirect({
         authorizationParams: {
           connection: 'facebook',
           screen_hint: 'signup',
           role: 'driver',
           app: 'admin',
-          prompt: 'login' // Force login prompt even if user is already authenticated
+          prompt: 'select_account' // Force account selection for fresh signup
         },
         appState: {
           returnTo: '/driver-username-setup',

@@ -76,6 +76,18 @@ class Auth0Service {
    * Sign up with Auth0 Universal Login
    */
   async signup(): Promise<AuthResult> {
+    // Clear any existing session before signup to ensure fresh start
+    await this.logout();
+    
+    // Force fresh authentication by clearing any cached tokens
+    await Promise.all([
+      SecureStore.deleteItemAsync(Auth0Service.STORAGE_KEYS.ACCESS_TOKEN),
+      SecureStore.deleteItemAsync(Auth0Service.STORAGE_KEYS.ID_TOKEN),
+      SecureStore.deleteItemAsync(Auth0Service.STORAGE_KEYS.REFRESH_TOKEN),
+      SecureStore.deleteItemAsync(Auth0Service.STORAGE_KEYS.USER_DATA),
+      SecureStore.deleteItemAsync(Auth0Service.STORAGE_KEYS.EXPIRES_AT),
+    ]);
+    
     return this.authenticate('signup');
   }
 
@@ -107,10 +119,11 @@ class Auth0Service {
           // Add signup context for role assignment
           ...(mode === 'signup' && {
             screen_hint: 'signup',
-            role: 'passenger'
+            role: 'passenger',
+            prompt: 'select_account'
           })
         },
-        prompt: AuthSession.Prompt.Login,
+        prompt: mode === 'signup' ? AuthSession.Prompt.SelectAccount : AuthSession.Prompt.Login,
       };
 
       const authRequest = new AuthSession.AuthRequest(authRequestConfig);
@@ -367,6 +380,27 @@ class Auth0Service {
    */
   async logout(): Promise<void> {
     try {
+      // First, try to revoke the Auth0 session
+      try {
+        const accessToken = await this.getAccessToken();
+        if (accessToken && this.discoveryDocument?.revocationEndpoint) {
+          await fetch(this.discoveryDocument.revocationEndpoint, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              token: accessToken,
+              client_id: auth0Config.clientId,
+            }),
+          });
+          console.log('Auth0 session revoked');
+        }
+      } catch (revokeError) {
+        console.warn('Failed to revoke Auth0 session:', revokeError);
+        // Continue with local logout even if Auth0 revocation fails
+      }
+
       // Clear all stored data
       await Promise.all([
         SecureStore.deleteItemAsync(Auth0Service.STORAGE_KEYS.ACCESS_TOKEN),
@@ -375,6 +409,9 @@ class Auth0Service {
         SecureStore.deleteItemAsync(Auth0Service.STORAGE_KEYS.USER_DATA),
         SecureStore.deleteItemAsync(Auth0Service.STORAGE_KEYS.EXPIRES_AT),
       ]);
+
+      // Clear any cached user data
+      // Note: The service methods will return null for cached data after logout
 
       console.log('User logged out successfully');
     } catch (error) {

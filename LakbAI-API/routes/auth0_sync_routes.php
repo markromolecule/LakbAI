@@ -37,7 +37,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
-// Route: POST /api/auth0/sync-user
+// Route: POST /routes/auth0_sync_routes.php (direct access)
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $syncController->syncUser();
     exit;

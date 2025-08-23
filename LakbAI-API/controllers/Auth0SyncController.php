@@ -18,7 +18,8 @@ class Auth0SyncController {
             // Get JSON input
             $input = json_decode(file_get_contents('php://input'), true);
             
-            
+            // Debug logging
+            error_log("Auth0 Sync - Received input: " . json_encode($input));
             
             if (!$input) {
                 http_response_code(400);
@@ -26,12 +27,14 @@ class Auth0SyncController {
                 return;
             }
             
-            // Validate required fields
-            $requiredFields = ['email'];
-            foreach ($requiredFields as $field) {
-                if (empty($input[$field])) {
+            // Validate required fields - email is optional for some providers like Facebook
+            if (empty($input['email']) && !empty($input['auth0_id'])) {
+                // For Facebook users, generate a placeholder email if none provided
+                if (strpos($input['auth0_id'], 'facebook|') === 0) {
+                    $input['email'] = 'facebook_' . time() . '@placeholder.com';
+                } else {
                     http_response_code(400);
-                    echo json_encode(['error' => "Missing required field: {$field}"]);
+                    echo json_encode(['error' => 'Missing required field: email']);
                     return;
                 }
             }
@@ -43,13 +46,16 @@ class Auth0SyncController {
             
             // Check if user already exists
             $existingUser = $this->getUserByAuth0Id($input['auth0_id']);
+            error_log("Auth0 Sync - User exists: " . ($existingUser ? 'YES' : 'NO'));
             
             if ($existingUser) {
                 // Update existing user
+                error_log("Auth0 Sync - Updating existing user with ID: " . $existingUser['id']);
                 $userId = $this->updateUser($input);
                 $action = 'updated';
             } else {
                 // Create new user
+                error_log("Auth0 Sync - Creating new user");
                 $userId = $this->createUser($input);
                 $action = 'created';
             }

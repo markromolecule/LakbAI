@@ -75,6 +75,7 @@ class UserSyncService {
 
       return {
         success: true,
+        action: result.action,
         message: `User ${result.action} successfully`
       };
 
@@ -118,7 +119,12 @@ class UserSyncService {
         updated_at: user.updated_at
       };
 
-      return await this.syncUser(mergedUserData, accessToken);
+      const result = await this.syncUser(mergedUserData, accessToken);
+      return {
+        success: result.success,
+        action: result.action,
+        message: result.message
+      };
     } catch (error) {
       console.error('Failed to sync after driver signup:', error);
       return {

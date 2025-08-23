@@ -90,45 +90,103 @@ const HybridAuthScreen: React.FC<HybridAuthScreenProps> = ({
         userType = roles.includes('driver') ? 'driver' : 'passenger';
         username = userData.nickname || userData.email || userData.name || 'user';
         
-        // Check if profile is complete
-        const userMetadata = userData?.user_metadata || {};
-        const hasLocalProfile = userMetadata.registration_complete || 
-          (userMetadata.phone_number && userMetadata.address && userMetadata.first_name && userMetadata.last_name);
+        console.log('Auth0 user data:', {
+          email: userData.email,
+          nickname: userData.nickname,
+          name: userData.name,
+          created_at: userData.created_at,
+          updated_at: userData.updated_at,
+          roles: roles
+        });
         
-        if (!hasLocalProfile) {
-          // Check if user exists in database with complete profile
-          try {
-            const { userSyncService } = await import('../../../shared/services/userSyncService');
-            const accessToken = await auth0Service.getAccessToken();
+                // Always check database status for profile completion since Auth0 metadata is not reliable
+        console.log('Checking database status for profile completion...');
+        
+        try {
+          const { userSyncService } = await import('../../../shared/services/userSyncService');
+          const accessToken = await auth0Service.getAccessToken();
+          
+          if (accessToken) {
+            // Sync user to database to check their status
+            const syncResult = await userSyncService.syncCurrentUser();
+            console.log('Database sync result:', syncResult);
             
-            if (accessToken) {
-              // Try to sync current user - if successful, user has complete profile in database
-              const syncResult = await userSyncService.syncCurrentUser();
-              if (syncResult.success) {
-                console.log('User profile found in database, proceeding to home screen');
-                // User exists in database, proceed to home screen
+            if (syncResult.success) {
+              // Check if this is a new user (created) or existing user (updated)
+              if (syncResult.action === 'created') {
+                console.log('New user created in database, redirecting to profile completion');
+                router.replace('/auth/profile-completion');
+                return;
+              } else if (syncResult.action === 'updated') {
+                console.log('Existing user updated in database, checking if profile is complete');
+                
+                // For existing users, check if they have a complete profile in the database
+                // Since the backend syncs profile data, if the user exists and was updated,
+                // they likely have a complete profile
+                
+                // Check if this is a new signup session by looking at the user creation time
+                if (userData.created_at) {
+                  const userCreatedAt = new Date(userData.created_at);
+                  const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+                  
+                  if (userCreatedAt > fiveMinutesAgo) {
+                    console.log('New signup session detected, redirecting to profile completion');
+                    router.replace('/auth/profile-completion');
+                    return;
+                  }
+                }
+                
+                // For existing users who are not new signups, check if they have a complete mobile profile
+                // This handles cases where drivers were created through the web admin
+                console.log('Existing user detected, checking mobile profile completeness...');
+                
+                // Check if user has essential mobile profile fields
+                const hasEssentialMobileProfile = userData.phone_number && 
+                  userData.first_name && 
+                  userData.last_name && 
+                  userData.address;
+                
+                if (!hasEssentialMobileProfile) {
+                  console.log('User missing essential mobile profile fields, redirecting to profile completion');
+                  console.log('Missing fields:', {
+                    phone_number: !!userData.phone_number,
+                    first_name: !!userData.first_name,
+                    last_name: !!userData.last_name,
+                    address: !!userData.address
+                  });
+                  router.replace('/auth/profile-completion');
+                  return;
+                }
+                
+                console.log('User has complete mobile profile, proceeding to home screen');
               } else {
-                console.log('User profile incomplete, showing profile completion screen');
+                console.log('Unknown sync action, redirecting to profile completion to be safe');
                 router.replace('/auth/profile-completion');
                 return;
               }
             } else {
-              console.log('No access token, showing profile completion screen');
+              console.log('Database sync failed, redirecting to profile completion');
               router.replace('/auth/profile-completion');
               return;
             }
-          } catch (error) {
-            console.error('Error checking user profile:', error);
-            // If we can't check, show profile completion to be safe
+          } else {
+            console.log('No access token, redirecting to profile completion');
             router.replace('/auth/profile-completion');
             return;
           }
+        } catch (error) {
+          console.error('Error checking database status:', error);
+          // If we can't check, redirect to profile completion to be safe
+          router.replace('/auth/profile-completion');
+          return;
         }
-      } else {
-        // Regular login - determine user type from response
-        userType = userData.user_type || 'passenger';
-        username = userData.username || userData.email;
-      }
+              } else {
+          // Regular login - determine user type from response
+          userType = userData.user_type || 'passenger';
+          username = userData.username || userData.email;
+        }
+        
+        // Note: Profile completion logic is now handled above in the hasLocalProfile check
       
       // Store user session
       await storeUserSession(userType, username, true);

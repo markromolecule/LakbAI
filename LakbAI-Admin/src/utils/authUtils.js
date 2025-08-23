@@ -129,27 +129,35 @@ export const getAdminUserInfo = () => {
  * Handles logout with proper Auth0 cleanup
  */
 export const handleLogout = (isAuthenticated, auth0Logout, navigate) => {
-  // Clear all authentication data
+  console.log('=== ADMIN LOGOUT START ===');
+  
+  // Clear all authentication data first
   clearAllAuthData();
   
   // Force Auth0 logout if user is authenticated via Auth0
   if (isAuthenticated) {
     try {
+      console.log('Performing Auth0 logout...');
       auth0Logout({
         logoutParams: {
           returnTo: 'http://localhost:5173',
           clientId: 'ysVIQhHKqNIFT1to9F0K40NuLh7xFvEN'
         }
       });
+      console.log('Auth0 logout initiated successfully');
     } catch (error) {
       console.error('Auth0 logout error:', error);
       // Fallback: manual redirect
+      console.log('Fallback: manual redirect to admin login');
       window.location.href = '/admin-login';
     }
   } else {
     // Traditional logout - just redirect
+    console.log('Traditional logout: redirecting to admin login');
     navigate('/admin-login');
   }
+  
+  console.log('=== ADMIN LOGOUT COMPLETE ===');
 };
 
 /**
@@ -209,6 +217,53 @@ export const forceFreshSession = () => {
     console.error('Error clearing session:', error);
     // Fallback: just reload the page
     window.location.reload();
+  }
+};
+
+/**
+ * Forces a fresh session specifically for driver signup
+ * This ensures no previous authentication state interferes with new signups
+ */
+export const forceFreshDriverSignupSession = () => {
+  console.log('=== FORCING FRESH DRIVER SIGNUP SESSION ===');
+  
+  try {
+    // Clear all authentication data
+    clearAllAuthData();
+    
+    // Clear any remaining keys that might interfere, but PRESERVE driver_signup_context
+    const allKeys = Object.keys(localStorage);
+    allKeys.forEach(key => {
+      if (key.includes('auth0') || 
+          key.includes('token') || 
+          key.includes('session') ||
+          key.includes('state') ||
+          (key.includes('context') && key !== 'driver_signup_context') || // Preserve driver signup context
+          key.includes('user') ||
+          key.includes('login') ||
+          (key.includes('signup') && key !== 'driver_signup_context')) { // Preserve driver signup context
+        console.log('Removing key for fresh driver signup:', key);
+        localStorage.removeItem(key);
+      } else {
+        console.log('Preserving key for driver signup:', key);
+      }
+    });
+    
+    // Clear sessionStorage
+    sessionStorage.clear();
+    
+    // Clear cookies
+    const cookies = document.cookie.split(";");
+    cookies.forEach(cookie => {
+      const eqPos = cookie.indexOf("=");
+      const name = eqPos > -1 ? cookie.substr(0, eqPos) : cookie;
+      document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/";
+    });
+    
+    console.log('Fresh driver signup session established');
+    
+  } catch (error) {
+    console.error('Error clearing driver signup session:', error);
   }
 };
 

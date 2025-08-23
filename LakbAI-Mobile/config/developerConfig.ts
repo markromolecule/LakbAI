@@ -40,7 +40,7 @@ export const getCurrentDeveloperIP = (): string => {
 // Build the complete API URL
 export const buildApiUrl = (): string => {
   const ip = getCurrentDeveloperIP();
-  return `http://${ip}/LakbAI-API/routes/api.php`;
+  return `http://${ip}/routes/api.php`;
 };
 
 // Helper to log current configuration

@@ -12,10 +12,12 @@ class UserSyncService {
   private constructor() {
     // Use the developer config to get the correct API URL
     const apiUrl = buildApiUrl();
-    // Extract the base URL and point to the root server
-    // apiUrl is: http://192.168.254.110:8000/LakbAI-API/routes/api.php
-    // We need: http://192.168.254.110:8000
-    this.baseUrl = apiUrl.replace('/LakbAI-API/routes/api.php', '');
+    // Extract the base URL and point to the server root
+    // apiUrl is: http://192.168.254.110:8000/routes/api.php
+    // We need: http://192.168.254.110:8000 (since server runs from LakbAI-API directory)
+    this.baseUrl = apiUrl.replace('/routes/api.php', '');
+    console.log('UserSyncService - API URL:', apiUrl);
+    console.log('UserSyncService - Base URL:', this.baseUrl);
   }
 
   static getInstance(): UserSyncService {
@@ -28,7 +30,7 @@ class UserSyncService {
   /**
    * Sync current Auth0 user to backend database
    */
-  async syncCurrentUser(): Promise<{ success: boolean; message?: string }> {
+  async syncCurrentUser(): Promise<{ success: boolean; action?: string; message?: string }> {
     try {
       const user = await auth0Service.getCurrentUser();
       const accessToken = await auth0Service.getAccessToken();
@@ -50,7 +52,7 @@ class UserSyncService {
   /**
    * Sync specific user to backend database
    */
-  async syncUser(user: any, accessToken: string): Promise<{ success: boolean; message?: string }> {
+  async syncUser(user: any, accessToken: string): Promise<{ success: boolean; action?: string; message?: string }> {
     try {
       // Get user roles
       const { roles } = await auth0Service.getUserRoles();
@@ -111,6 +113,7 @@ class UserSyncService {
 
       return {
         success: true,
+        action: result.action,
         message: `User ${result.action} successfully`
       };
 
@@ -126,7 +129,10 @@ class UserSyncService {
   /**
    * Sync user after profile completion
    */
-  async syncAfterProfileCompletion(userData: any): Promise<{ success: boolean; message?: string }> {
+  async syncAfterProfileCompletion(userData: any): Promise<{ success: boolean; action?: string; message?: string }> {
+    console.log('=== PROFILE COMPLETION SYNC START ===');
+    console.log('Input userData:', userData);
+    
     // Prevent duplicate sync calls
     if (this.isSyncing) {
       console.log('Sync already in progress, skipping...');
@@ -144,6 +150,8 @@ class UserSyncService {
         console.log(`Profile sync attempt ${attempt}/${maxRetries}`);
         
         const result = await this.performProfileSync(userData);
+        console.log('=== PROFILE COMPLETION SYNC SUCCESS ===');
+        console.log('Result:', result);
         return result;
         
       } catch (error) {
@@ -158,6 +166,8 @@ class UserSyncService {
     }
     
     this.isSyncing = false;
+    console.log('=== PROFILE COMPLETION SYNC FAILED ===');
+    console.log('Final error:', lastError?.message);
     return {
       success: false,
       message: lastError?.message || 'Profile sync failed after all retries'
@@ -167,11 +177,15 @@ class UserSyncService {
   /**
    * Perform the actual profile sync
    */
-  private async performProfileSync(userData: any): Promise<{ success: boolean; message?: string }> {
+  private async performProfileSync(userData: any): Promise<{ success: boolean; action?: string; message?: string }> {
     
     try {
+      console.log('Getting current user and access token...');
       const user = await auth0Service.getCurrentUser();
       const accessToken = await auth0Service.getAccessToken();
+
+      console.log('Current user:', user?.sub);
+      console.log('Has access token:', !!accessToken);
 
       if (!user || !accessToken) {
         throw new Error('User not authenticated');
@@ -201,6 +215,9 @@ class UserSyncService {
       };
 
       const syncUrl = `${this.baseUrl}/routes/auth0_sync_routes.php`;
+      console.log('=== URL CONSTRUCTION DEBUG ===');
+      console.log('this.baseUrl:', this.baseUrl);
+      console.log('Final syncUrl:', syncUrl);
       console.log('Syncing profile completion to:', syncUrl);
       console.log('Profile data:', mergedUserData);
       
@@ -241,6 +258,7 @@ class UserSyncService {
 
       return {
         success: true,
+        action: result.action,
         message: `Profile ${result.action} successfully`
       };
 

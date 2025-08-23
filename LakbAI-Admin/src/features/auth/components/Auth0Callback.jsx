@@ -114,27 +114,101 @@ const Auth0Callback = () => {
                console.log('User authenticated, checking signup context...');
                console.log('User:', user);
                
-                              // Check for driver signup context first
+                              // Check for driver signup context first (highest priority)
                const driverSignupContext = JSON.parse(localStorage.getItem('driver_signup_context') || '{}');
+               console.log('🔍 Checking driver signup context:', driverSignupContext);
+               
                if (driverSignupContext.type === 'driver_signup') {
-                 console.log('Driver signup context found, redirecting immediately to username setup');
+                 console.log('✅ Driver signup context found, redirecting immediately to username setup');
                  clearDriverSignupContext();
                  navigate('/driver-username-setup', { replace: true });
                  return; // Exit early
+               } else {
+                 console.log('❌ No driver signup context found, checking Auth0 app state...');
+                 
+                 // Check Auth0 app state for driver signup indicators
+                 const appState = JSON.parse(localStorage.getItem('auth0_app_state') || '{}');
+                 console.log('🔍 Auth0 app state:', appState);
+                 
+                 // If app state indicates driver signup, set the context and redirect
+                 if (appState.role === 'driver' || appState.forceSignup || appState.returnTo?.includes('driver')) {
+                   console.log('✅ Driver signup detected in Auth0 app state, setting context and redirecting');
+                   
+                   // Set the driver signup context
+                   localStorage.setItem('driver_signup_context', JSON.stringify({
+                     timestamp: Date.now(),
+                     type: 'driver_signup',
+                     returnTo: '/driver-username-setup'
+                   }));
+                   
+                   // Redirect to username setup
+                   navigate('/driver-username-setup', { replace: true });
+                   return; // Exit early
+                 }
+                 
+                 console.log('❌ No driver signup indicators found, continuing with role-based logic...');
                }
                
-               // Check if user has driver role and this is a new user (signup)
-               const userRolesCheck = user['https://lakbai.com/roles'] || [];
-               const hasDriverRoleCheck = userRolesCheck.includes('driver');
-               const hasAdminRoleCheck = userRolesCheck.includes('admin');
-               const isNewUserCheck = !user.updated_at || 
-                                    (new Date(user.updated_at) - new Date(user.created_at)) < 1000; // Within 1 second
-               
-               if (hasDriverRoleCheck && !hasAdminRoleCheck && isNewUserCheck) {
-                 console.log('New user with driver role detected, redirecting to username setup');
-                 navigate('/driver-username-setup', { replace: true });
-                 return; // Exit early
-               }
+                         // Check if user has driver role and this is a new user (signup)
+          const userRolesCheck = user['https://lakbai.com/roles'] || [];
+          const hasDriverRoleCheck = userRolesCheck.includes('driver');
+          const hasAdminRoleCheck = userRolesCheck.includes('admin');
+          
+          console.log('🔍 Role check:', { 
+            userRolesCheck, 
+            hasDriverRoleCheck, 
+            hasAdminRoleCheck,
+            userEmail: user.email 
+          });
+          
+          // Use database sync to determine if this is a new user or returning user
+          if (hasDriverRoleCheck && !hasAdminRoleCheck) {
+            console.log('Driver user detected, syncing to database to check profile status...');
+            
+            try {
+              const accessToken = await getAccessTokenSilently();
+              const syncResult = await userSyncService.syncCurrentUser(user, accessToken);
+              
+              console.log('Database sync result:', syncResult);
+              
+              if (syncResult.success) {
+                if (syncResult.action === 'created') {
+                  console.log('New driver user created in database, redirecting to username setup');
+                  navigate('/driver-username-setup', { replace: true });
+                  return; // Exit early
+                } else if (syncResult.action === 'updated') {
+                  console.log('Existing driver user updated in database, checking if profile is complete');
+                  
+                  // Check if this is a new signup session by looking at the user creation time
+                  if (user.created_at) {
+                    const userCreatedAt = new Date(user.created_at);
+                    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+                    
+                    if (userCreatedAt > fiveMinutesAgo) {
+                      console.log('New signup session detected, redirecting to username setup');
+                      navigate('/driver-username-setup', { replace: true });
+                      return; // Exit early
+                    }
+                  }
+                  
+                  // For existing users who are not new signups, assume they have a complete profile
+                  // since the backend would have created them with profile data
+                  console.log('Existing driver user with complete profile in database, redirecting to admin dashboard');
+                  navigate('/', { replace: true });
+                  return; // Exit early
+                }
+              } else {
+                console.log('Database sync failed, redirecting to username setup to be safe');
+                navigate('/driver-username-setup', { replace: true });
+                return; // Exit early
+              }
+            } catch (syncError) {
+              console.error('Error syncing driver user to database:', syncError);
+              console.log('Redirecting to username setup due to sync error');
+              navigate('/driver-username-setup', { replace: true });
+              return; // Exit early
+            }
+          }
                
                // Check if user has driver role but is not an admin email
                const adminEmails = [
@@ -231,25 +305,57 @@ const Auth0Callback = () => {
             
             // If user has driver role, prioritize driver flow
             if (hasDriverRole && !hasAdminRole) {
-              console.log('User with driver role detected, syncing to database and redirecting to driver username setup');
+              console.log('User with driver role detected, syncing to database and checking profile status...');
               
               // Sync user to database
               try {
                 const accessToken = await getAccessTokenSilently();
                 const syncResult = await userSyncService.syncCurrentUser(user, accessToken);
+                
+                console.log('Driver account sync result:', syncResult);
+                
                 if (syncResult.success) {
-                  console.log('Driver account synced to database successfully');
+                  if (syncResult.action === 'created') {
+                    console.log('New driver user created in database, redirecting to username setup');
+                    clearDriverSignupContext();
+                    navigate('/driver-username-setup', { replace: true });
+                    return; // Exit early
+                  } else if (syncResult.action === 'updated') {
+                    console.log('Existing driver user updated in database, checking if profile is complete');
+                    
+                    // Check if this is a new signup session
+                    if (user.created_at) {
+                      const userCreatedAt = new Date(user.created_at);
+                      const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+                      
+                      if (userCreatedAt > fiveMinutesAgo) {
+                        console.log('New signup session detected, redirecting to username setup');
+                        clearDriverSignupContext();
+                        navigate('/driver-username-setup', { replace: true });
+                        return; // Exit early
+                      }
+                    }
+                    
+                    // For existing users, assume they have a complete profile
+                    console.log('Existing driver user with complete profile, redirecting to admin dashboard');
+                    clearDriverSignupContext();
+                    navigate('/', { replace: true });
+                    return; // Exit early
+                  }
                 } else {
                   console.warn('Failed to sync driver account to database:', syncResult.message);
+                  // Fallback: redirect to username setup
+                  clearDriverSignupContext();
+                  navigate('/driver-username-setup', { replace: true });
+                  return; // Exit early
                 }
               } catch (syncError) {
                 console.warn('Error syncing driver account to database:', syncError);
-              }
-              
-              clearDriverSignupContext();
-              setTimeout(() => {
+                // Fallback: redirect to username setup
+                clearDriverSignupContext();
                 navigate('/driver-username-setup', { replace: true });
-              }, 1500);
+                return; // Exit early
+              }
             } else if (isDriverLogin) {
               console.log('Driver login detected, redirecting to home page');
               // Clear the login flag
@@ -290,6 +396,19 @@ const Auth0Callback = () => {
           }
         }
         
+        // Final safety check: if user has driver role but somehow got here, redirect appropriately
+        if (isAuthenticated && user) {
+          const userRoles = user['https://lakbai.com/roles'] || [];
+          const hasDriverRole = userRoles.includes('driver');
+          const hasAdminRole = userRoles.includes('admin');
+          
+          if (hasDriverRole && !hasAdminRole) {
+            console.log('🚨 Safety check: Driver user detected but no specific action taken, redirecting to username setup');
+            navigate('/driver-username-setup', { replace: true });
+            return;
+          }
+        }
+        
       } catch (err) {
         console.error('Callback processing error:', err);
         setCallbackStatus('error');
@@ -317,15 +436,30 @@ const Auth0Callback = () => {
   }, [error]);
 
   const handleRetry = () => {
+    console.log('🔄 Handle retry called, checking context...');
+    
     // Clear any stale state before retrying
     clearDriverSignupContext();
     
     // Check if this was a driver signup attempt
     const driverSignupContext = JSON.parse(localStorage.getItem('driver_signup_context') || '{}');
+    console.log('🔍 Driver signup context in retry:', driverSignupContext);
+    
     if (driverSignupContext.type === 'driver_signup') {
+      console.log('✅ Driver signup context found in retry, redirecting to driver signup');
       navigate('/driver-signup', { replace: true });
     } else {
-      navigate('/admin-login', { replace: true });
+      // Check Auth0 app state as fallback
+      const appState = JSON.parse(localStorage.getItem('auth0_app_state') || '{}');
+      console.log('🔍 Auth0 app state in retry:', appState);
+      
+      if (appState.role === 'driver' || appState.forceSignup || appState.returnTo?.includes('driver')) {
+        console.log('✅ Driver signup detected in app state, redirecting to driver signup');
+        navigate('/driver-signup', { replace: true });
+      } else {
+        console.log('❌ No driver signup context found, redirecting to admin login');
+        navigate('/admin-login', { replace: true });
+      }
     }
   };
 
