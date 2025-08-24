@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Card, Form, Button, Alert, Row, Col } from 'react-bootstrap';
+import { useAuth0 } from '@auth0/auth0-react';
 import { useNavigate } from 'react-router-dom';
 import { CheckCircleFill, ArrowLeft } from 'react-bootstrap-icons';
-import lakbaiAuthService from '../../../services/lakbaiAuthService';
 import { userSyncService } from '../../../services/userSyncService';
+import { driverStorage } from '../../../utils/authUtils';
 import styles from '../styles/DriverUsernameSetup.module.css';
 
 const DriverUsernameSetup = () => {
+  const { user, isAuthenticated, isLoading, getAccessTokenSilently } = useAuth0();
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     username: '',
@@ -30,22 +32,37 @@ const DriverUsernameSetup = () => {
 
   // Check authentication and redirect logic
   useEffect(() => {
-    const session = lakbaiAuthService.getCurrentDriverSession();
-    
-    if (!session) {
-      console.log('❌ No driver session found, redirecting to driver signup');
+    if (!isLoading && !isAuthenticated) {
+      console.log('❌ User not authenticated, redirecting to driver signup');
       navigate('/driver-signup');
       return;
     }
 
-    if (session.isProfileComplete) {
-      console.log('✅ Driver profile already complete, redirecting to home');
-      navigate('/');
-      return;
-    }
+    if (isAuthenticated && user) {
+      // Check if user is admin (should not be here)
+      const adminEmails = [
+        'livadomc@gmail.com',
+        'admin@lakbai.com',
+        'support@lakbai.com'
+      ];
+      
+      if (adminEmails.includes(user.email)) {
+        console.log('Admin user detected, redirecting to admin login');
+        navigate('/admin-login');
+        return;
+      }
 
-    console.log('✅ Driver session found, proceeding with profile completion');
-  }, [navigate]);
+      // Check if driver profile already exists
+      const driverProfile = localStorage.getItem(`driver_profile_${user.email}`);
+      if (driverProfile) {
+        console.log('Driver profile already exists, redirecting to home');
+        navigate('/');
+        return;
+      }
+
+      console.log('✅ Driver authenticated, proceeding with profile completion');
+    }
+  }, [isAuthenticated, user, isLoading, navigate]);
 
   const updateFormData = (field, value) => {
     setFormData(prev => ({
@@ -153,18 +170,12 @@ const DriverUsernameSetup = () => {
     setError('');
 
     try {
-      console.log('📝 Completing driver profile...');
+      console.log('📝 Completing driver profile with Auth0 user:', user);
       
-      // Complete profile using LakbAI service
-      const result = await lakbaiAuthService.completeDriverProfile(formData);
-      
-      if (!result.success) {
-        throw new Error(result.error || 'Failed to complete profile');
-      }
+      // Store username
+      localStorage.setItem(`driver_username_${user.email}`, formData.username);
 
-      console.log('✅ Driver profile completed successfully:', result.data);
-      
-      // Prepare complete profile data for database sync
+      // Prepare complete profile data
       const completeProfileData = {
         ...formData,
         username: formData.username,
@@ -179,32 +190,33 @@ const DriverUsernameSetup = () => {
         }
       };
 
-      // Sync to database (optional - can be skipped if backend is not ready)
-      try {
-        const syncResult = await userSyncService.syncAfterDriverSignup(
-          { email: result.data.profileData.username }, // Mock user object
-          null, // No access token needed for local auth
-          completeProfileData
-        );
+      // Store driver profile in localStorage
+      localStorage.setItem(`driver_profile_${user.email}`, JSON.stringify(completeProfileData));
 
-        if (syncResult.success) {
-          console.log('✅ Driver profile synced to database:', syncResult);
-        } else {
-          console.warn('⚠️ Database sync failed (non-critical):', syncResult.message);
-        }
-      } catch (syncError) {
-        console.warn('⚠️ Database sync error (non-critical):', syncError);
-        // Continue with the flow even if sync fails
+      // Get Auth0 access token for backend sync
+      const accessToken = await getAccessTokenSilently();
+      
+      // Sync to database with Auth0 user data + profile completion
+      const syncResult = await userSyncService.syncAfterDriverSignup(
+        user, // Auth0 user object with token
+        accessToken, // Auth0 access token
+        completeProfileData // Profile completion data
+      );
+
+      if (syncResult.success) {
+        console.log('✅ Driver profile synced successfully:', syncResult);
+        setIsSuccess(true);
+        
+        // Clear the driver signup context since profile is complete
+        driverStorage.clear();
+        
+        // Redirect to home page after 3 seconds
+        setTimeout(() => {
+          navigate('/');
+        }, 3000);
+      } else {
+        throw new Error(syncResult.message || 'Failed to sync profile data');
       }
-
-      // Show success and redirect
-      setIsSuccess(true);
-      
-      // Redirect to home page after 3 seconds
-      setTimeout(() => {
-        navigate('/');
-      }, 3000);
-      
     } catch (err) {
       console.error('❌ Error completing driver setup:', err);
       setError(err.message || 'Failed to complete setup. Please try again.');
@@ -212,6 +224,21 @@ const DriverUsernameSetup = () => {
       setIsSubmitting(false);
     }
   };
+
+  if (isLoading) {
+    return (
+      <Container className={styles.container}>
+        <div className={styles.loadingSpinner}>
+          <div className={styles.spinner}></div>
+          <p>Loading...</p>
+        </div>
+      </Container>
+    );
+  }
+
+  if (!isAuthenticated || !user) {
+    return null; // Will redirect in useEffect
+  }
 
   if (isSuccess) {
     return (
@@ -269,7 +296,7 @@ const DriverUsernameSetup = () => {
 
             <h2 className={styles.title}>Complete Your Driver Profile</h2>
             <p className={styles.subtitle}>
-              Please complete your profile information to finish your driver registration.
+              Welcome, {user.name || user.email}! Please complete your profile information to finish your driver registration.
             </p>
 
             {/* Setup Form */}

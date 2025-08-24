@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { useAuth0 } from '@auth0/auth0-react';
 import { useNavigate } from 'react-router-dom';
 import { Container, Card, Alert, Button } from 'react-bootstrap';
-import { ExclamationTriangle, ArrowRight } from 'react-bootstrap-icons';
+import { ExclamationTriangle, ArrowRight, Refresh } from 'react-bootstrap-icons';
+import { driverStorage } from '../../../utils/authUtils';
 import styles from '../styles/Auth0Callback.module.css';
 
 const Auth0Callback = () => {
@@ -10,6 +11,8 @@ const Auth0Callback = () => {
   const navigate = useNavigate();
   const [callbackStatus, setCallbackStatus] = useState('processing');
   const [errorMessage, setErrorMessage] = useState('');
+  const [retryCount, setRetryCount] = useState(0);
+  const [isRetrying, setIsRetrying] = useState(false);
 
   useEffect(() => {
     const processCallback = async () => {
@@ -20,42 +23,70 @@ const Auth0Callback = () => {
         console.error('❌ Auth0 callback error:', err);
         
         if (err.message.includes('Invalid state')) {
-          setErrorMessage('Authentication state expired. Please try signing up again.');
+          console.log('⚠️ Invalid state error detected, attempting recovery...');
+          
+          // Check if we have driver signup context
+          const driverSignupContext = driverStorage.get('signup_context', {});
+          
+          if (driverSignupContext.type === 'driver_signup' && retryCount < 2) {
+            // Try to recover by clearing state and retrying
+            console.log(`🔄 Attempting recovery (attempt ${retryCount + 1}/2)...`);
+            setRetryCount(prev => prev + 1);
+            setIsRetrying(true);
+            
+            // Clear Auth0 state and retry
+            setTimeout(() => {
+              setIsRetrying(false);
+              window.location.reload();
+            }, 2000);
+            return;
+          } else {
+            // Max retries reached or no context, show error
+            setErrorMessage('Authentication state expired. Please try signing up again.');
+            setCallbackStatus('error');
+          }
         } else {
           setErrorMessage(err.message || 'Authentication failed. Please try again.');
+          setCallbackStatus('error');
         }
-        
-        setCallbackStatus('error');
       }
     };
 
-    if (!isLoading) {
+    if (!isLoading && !isRetrying) {
       processCallback();
     }
-  }, [handleRedirectCallback, isLoading]);
+  }, [handleRedirectCallback, isLoading, retryCount, isRetrying]);
 
   useEffect(() => {
     if (isAuthenticated && user) {
       console.log('✅ User authenticated:', user);
       
       // Check if this is a driver signup
-      const driverSignupContext = localStorage.getItem('lakbai_driver_signup');
+      const driverSignupContext = driverStorage.get('signup_context', {});
       
-      if (driverSignupContext) {
-        try {
-          const context = JSON.parse(driverSignupContext);
-          console.log('Driver signup context found:', context);
-          
-          // Clear the context
-          localStorage.removeItem('lakbai_driver_signup');
-          
-          // Redirect to LakbAI driver authentication
-          console.log('🔄 Redirecting to LakbAI driver authentication...');
-          navigate('/driver-signup', { replace: true });
+      if (driverSignupContext.type === 'driver_signup') {
+        console.log('🚗 Driver signup context found:', driverSignupContext);
+        
+        // Clear the context to prevent loops
+        driverStorage.remove('signup_context');
+        
+        // Check if user is admin (should not be here)
+        const adminEmails = [
+          'livadomc@gmail.com',
+          'admin@lakbai.com',
+          'support@lakbai.com'
+        ];
+        
+        if (adminEmails.includes(user.email)) {
+          console.log('❌ Admin user detected in driver flow, redirecting to admin login');
+          navigate('/admin-login', { replace: true });
           return;
-        } catch (parseError) {
-          console.error('Error parsing driver context:', parseError);
         }
+        
+        // Redirect to driver profile completion
+        console.log('🔄 Redirecting to driver profile completion...');
+        navigate('/driver-username-setup', { replace: true });
+        return;
       }
       
       // Default redirect for other users
@@ -66,7 +97,7 @@ const Auth0Callback = () => {
 
   useEffect(() => {
     if (error) {
-      console.error('Auth0 error:', error);
+      console.error('❌ Auth0 error:', error);
       setErrorMessage(error.message || 'Authentication failed');
       setCallbackStatus('error');
     }
@@ -74,11 +105,16 @@ const Auth0Callback = () => {
 
   const handleRetry = () => {
     console.log('🔄 Retrying authentication...');
-    localStorage.removeItem('lakbai_driver_signup');
+    driverStorage.clear();
     navigate('/driver-signup', { replace: true });
   };
 
-  if (isLoading) {
+  const handleRefresh = () => {
+    console.log('🔄 Refreshing page...');
+    window.location.reload();
+  };
+
+  if (isLoading || isRetrying) {
     return (
       <Container className={styles.container}>
         <div className={styles.content}>
@@ -86,8 +122,18 @@ const Auth0Callback = () => {
             <Card.Body className={styles.cardBody}>
               <div className={styles.loadingContainer}>
                 <div className={styles.spinner}></div>
-                <h3>Processing Authentication...</h3>
-                <p>Please wait while we complete your sign-in process.</p>
+                <h3>
+                  {isRetrying 
+                    ? `Recovering Authentication... (Attempt ${retryCount}/2)`
+                    : 'Processing Authentication...'
+                  }
+                </h3>
+                <p>
+                  {isRetrying 
+                    ? 'Attempting to recover from authentication state issue...'
+                    : 'Please wait while we complete your sign-in process.'
+                  }
+                </p>
               </div>
             </Card.Body>
           </Card>
@@ -106,14 +152,24 @@ const Auth0Callback = () => {
                 <ExclamationTriangle className={styles.errorIcon} />
                 <h3>Authentication Error</h3>
                 <p className={styles.errorMessage}>{errorMessage}</p>
-                <Button 
-                  variant="primary" 
-                  onClick={handleRetry}
-                  className={styles.retryButton}
-                >
-                  <ArrowRight className="me-2" />
-                  Try Again
-                </Button>
+                <div className={styles.errorActions}>
+                  <Button 
+                    variant="primary" 
+                    onClick={handleRetry}
+                    className={styles.retryButton}
+                  >
+                    <ArrowRight className="me-2" />
+                    Try Again
+                  </Button>
+                  <Button 
+                    variant="outline-secondary" 
+                    onClick={handleRefresh}
+                    className={styles.refreshButton}
+                  >
+                    <Refresh className="me-2" />
+                    Refresh Page
+                  </Button>
+                </div>
               </div>
             </Card.Body>
           </Card>
