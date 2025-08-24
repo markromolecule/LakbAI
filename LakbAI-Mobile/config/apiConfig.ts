@@ -4,7 +4,7 @@ import Constants from 'expo-constants';
 // Network configuration for different developers
 const DEVELOPER_CONFIGS: { [key: string]: string } = {
   joseph: '192.168.254.110',  // Your local IP address (without port)
-  jiro: '192.168.254.110:8000',  // Use actual computer IP with port
+  jiro: '192.168.1.11:8000',  // Use actual computer IP with port
   // Add your name and IP here:
   // maria: '192.168.1.105',
   // john: '10.0.0.23',
@@ -31,7 +31,7 @@ const getCurrentDeveloper = (): string => {
   // Set this in each developer's environment
   
   // For now, default to the first developer (Joseph)
-  return 'joseph';
+  return 'jiro';
 };
 
 // Get the API base URL based on environment
@@ -39,7 +39,7 @@ const getApiBaseUrl = (): string => {
   if (__DEV__) {
     // Development mode - use local server
     const developer = getCurrentDeveloper();
-    const ip = DEVELOPER_CONFIGS[developer] || DEVELOPER_CONFIGS.joseph;
+    const ip = DEVELOPER_CONFIGS[developer] || DEVELOPER_CONFIGS.jiro;
     
     // Check if tunnel mode is enabled
     if (TUNNEL_CONFIG.enabled) {
@@ -52,7 +52,7 @@ const getApiBaseUrl = (): string => {
     }
     
     // Regular LAN mode (no port specified)
-    return `http://${ip}/LakbAI/LakbAI-API/routes/api.php`;
+    return `http://${ip}/LakbAI-API/routes/api.php`;
   } else {
     // Production mode - use production server
     return 'https://your-production-domain.com/LakbAI-API/routes/api.php';
