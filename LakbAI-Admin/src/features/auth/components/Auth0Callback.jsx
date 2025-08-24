@@ -1,549 +1,141 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useAuth0 } from '@auth0/auth0-react';
-import { userSyncService } from '../../../services/userSyncService';
-import { clearDriverSignupContext } from '../../../utils/authUtils';
+import { useNavigate } from 'react-router-dom';
+import { Container, Card, Alert, Button } from 'react-bootstrap';
+import { ExclamationTriangle, ArrowRight } from 'react-bootstrap-icons';
 import styles from '../styles/Auth0Callback.module.css';
 
 const Auth0Callback = () => {
+  const { handleRedirectCallback, isAuthenticated, user, isLoading, error } = useAuth0();
   const navigate = useNavigate();
-  const { 
-    handleRedirectCallback, 
-    isAuthenticated, 
-    isLoading, 
-    error, 
-    user,
-    getAccessTokenSilently
-  } = useAuth0();
-  
   const [callbackStatus, setCallbackStatus] = useState('processing');
-  const [errorMessage, setErrorMessage] = useState(null);
+  const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
     const processCallback = async () => {
-      // Add timeout to prevent hanging (increased to 60 seconds)
-      const timeoutId = setTimeout(() => {
-        console.error('Auth0 callback timeout - checking context before redirecting');
-        
-        // Check if this was a driver signup attempt
-        const driverSignupContext = JSON.parse(localStorage.getItem('driver_signup_context') || '{}');
-        if (driverSignupContext.type === 'driver_signup') {
-          console.log('Driver signup context found, redirecting to driver signup page');
-          clearDriverSignupContext();
-          navigate('/driver-signup', { replace: true });
-        } else {
-          console.log('No driver signup context, redirecting to admin login');
-          clearDriverSignupContext();
-          navigate('/admin-login', { replace: true });
-        }
-      }, 60000); // 60 second timeout
-      
       try {
-        setCallbackStatus('processing');
-        
-        // Check if there's a callback to handle
-        const urlParams = new URLSearchParams(window.location.search);
-        const hasCode = urlParams.get('code');
-        const hasError = urlParams.get('error');
-        const hasState = urlParams.get('state');
-        
-        console.log('URL Parameters:', {
-          hasCode: !!hasCode,
-          hasError: !!hasError,
-          hasState: !!hasState,
-          error: urlParams.get('error'),
-          errorDescription: urlParams.get('error_description')
-        });
-        
-        if (hasError) {
-          const errorDescription = urlParams.get('error_description') || 'Authentication failed';
-          console.error('Auth0 Error:', { error: urlParams.get('error'), description: errorDescription });
-          
-          // Handle specific error types
-          if (urlParams.get('error') === 'invalid_state') {
-            // Clear stale state and redirect to appropriate page
-            console.log('Invalid state detected, checking context before redirecting');
-            
-            // Check if this was a driver signup attempt
-            const driverSignupContext = JSON.parse(localStorage.getItem('driver_signup_context') || '{}');
-            if (driverSignupContext.type === 'driver_signup') {
-              console.log('Driver signup context found, redirecting to driver signup page');
-              clearDriverSignupContext();
-              navigate('/driver-signup', { replace: true });
-            } else {
-              console.log('No driver signup context, redirecting to admin login');
-              clearDriverSignupContext();
-              navigate('/admin-login', { replace: true });
-            }
-            return;
-          }
-          
-          throw new Error(errorDescription);
-        }
-        
-        if (hasCode) {
-          // Handle the Auth0 callback
-          console.log('Processing Auth0 callback...');
-          try {
-            await handleRedirectCallback();
-            setCallbackStatus('success');
-          } catch (callbackError) {
-            console.error('Auth0 callback error:', callbackError);
-            
-            // If it's a state validation error, clear context and redirect
-            if (callbackError.message.includes('state') || callbackError.message.includes('Invalid state')) {
-              clearDriverSignupContext();
-              console.log('State validation failed, clearing context and redirecting');
-              
-              // Check if this was a driver signup attempt
-              const driverSignupContext = JSON.parse(localStorage.getItem('driver_signup_context') || '{}');
-              if (driverSignupContext.type === 'driver_signup') {
-                navigate('/driver-signup', { replace: true });
-              } else {
-                navigate('/admin-login', { replace: true });
-              }
-              return;
-            }
-            
-            throw callbackError;
-          }
-        }
-        
-                     // If already authenticated, check if this was a signup
-             if (isAuthenticated && user) {
-               console.log('User authenticated, checking signup context...');
-               console.log('User:', user);
-               
-                              // Check for driver signup context first (highest priority)
-               const driverSignupContext = JSON.parse(localStorage.getItem('driver_signup_context') || '{}');
-               console.log('🔍 Checking driver signup context:', driverSignupContext);
-               
-               if (driverSignupContext.type === 'driver_signup') {
-                 console.log('✅ Driver signup context found, redirecting immediately to username setup');
-                 clearDriverSignupContext();
-                 navigate('/driver-username-setup', { replace: true });
-                 return; // Exit early
-               } else {
-                 console.log('❌ No driver signup context found, checking Auth0 app state...');
-                 
-                 // Check Auth0 app state for driver signup indicators
-                 const appState = JSON.parse(localStorage.getItem('auth0_app_state') || '{}');
-                 console.log('🔍 Auth0 app state:', appState);
-                 
-                 // If app state indicates driver signup, set the context and redirect
-                 if (appState.role === 'driver' || appState.forceSignup || appState.returnTo?.includes('driver')) {
-                   console.log('✅ Driver signup detected in Auth0 app state, setting context and redirecting');
-                   
-                   // Set the driver signup context
-                   localStorage.setItem('driver_signup_context', JSON.stringify({
-                     timestamp: Date.now(),
-                     type: 'driver_signup',
-                     returnTo: '/driver-username-setup'
-                   }));
-                   
-                   // Redirect to username setup
-                   navigate('/driver-username-setup', { replace: true });
-                   return; // Exit early
-                 }
-                 
-                 console.log('❌ No driver signup indicators found, continuing with role-based logic...');
-               }
-               
-                         // Check if user has driver role and this is a new user (signup)
-          const userRolesCheck = user['https://lakbai.com/roles'] || [];
-          const hasDriverRoleCheck = userRolesCheck.includes('driver');
-          const hasAdminRoleCheck = userRolesCheck.includes('admin');
-          
-          console.log('🔍 Role check:', { 
-            userRolesCheck, 
-            hasDriverRoleCheck, 
-            hasAdminRoleCheck,
-            userEmail: user.email 
-          });
-          
-          // Use database sync to determine if this is a new user or returning user
-          if (hasDriverRoleCheck && !hasAdminRoleCheck) {
-            console.log('Driver user detected, syncing to database to check profile status...');
-            
-            try {
-              const accessToken = await getAccessTokenSilently();
-              const syncResult = await userSyncService.syncCurrentUser(user, accessToken);
-              
-              console.log('Database sync result:', syncResult);
-              
-              if (syncResult.success) {
-                if (syncResult.action === 'created') {
-                  console.log('New driver user created in database, redirecting to username setup');
-                  navigate('/driver-username-setup', { replace: true });
-                  return; // Exit early
-                } else if (syncResult.action === 'updated') {
-                  console.log('Existing driver user updated in database, checking if profile is complete');
-                  
-                  // Check if this is a new signup session by looking at the user creation time
-                  if (user.created_at) {
-                    const userCreatedAt = new Date(user.created_at);
-                    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
-                    
-                    if (userCreatedAt > fiveMinutesAgo) {
-                      console.log('New signup session detected, redirecting to username setup');
-                      navigate('/driver-username-setup', { replace: true });
-                      return; // Exit early
-                    }
-                  }
-                  
-                  // For existing users who are not new signups, assume they have a complete profile
-                  // since the backend would have created them with profile data
-                  console.log('Existing driver user with complete profile in database, redirecting to admin dashboard');
-                  navigate('/', { replace: true });
-                  return; // Exit early
-                }
-              } else {
-                console.log('Database sync failed, redirecting to username setup to be safe');
-                navigate('/driver-username-setup', { replace: true });
-                return; // Exit early
-              }
-            } catch (syncError) {
-              console.error('Error syncing driver user to database:', syncError);
-              console.log('Redirecting to username setup due to sync error');
-              navigate('/driver-username-setup', { replace: true });
-              return; // Exit early
-            }
-          }
-               
-               // Check if user has driver role but is not an admin email
-               const adminEmails = [
-                 'livadomc@gmail.com',
-                 'admin@lakbai.com',
-                 'support@lakbai.com'
-               ];
-               
-               if (hasDriverRoleCheck && !hasAdminRoleCheck && !adminEmails.includes(user.email)) {
-                 console.log('Non-admin user with driver role detected, redirecting to username setup');
-                 navigate('/driver-username-setup', { replace: true });
-                 return; // Exit early
-               }
-           
-            // Check if this was a signup (from appState)
-            const appState = JSON.parse(localStorage.getItem('auth0_app_state') || '{}');
-            console.log('App State:', appState);
-          console.log('Driver Signup Context:', driverSignupContext);
-          
-          // Check URL parameters for signup context
-          const urlParams = new URLSearchParams(window.location.search);
-          const hasSignupParam = urlParams.get('signup') === 'true';
-          const hasDriverParam = urlParams.get('role') === 'driver';
-          const hasScreenHint = urlParams.get('screen_hint') === 'signup';
-          
-          // Check if this is a new user (signup) or existing user (login)
-          const isNewUser = !user.updated_at || 
-                           (new Date(user.updated_at) - new Date(user.created_at)) < 1000; // Within 1 second
-          
-          // Check if we have a recent driver signup context (within last 5 minutes)
-          const isRecentDriverSignup = driverSignupContext.type === 'driver_signup' && 
-                                     driverSignupContext.timestamp && 
-                                     (Date.now() - driverSignupContext.timestamp) < 300000; // 5 minutes
-          
-          const wasSignup = appState.signupComplete || appState.forceSignup || hasSignupParam || hasScreenHint || isNewUser || isRecentDriverSignup;
-          
-          // Check if user has driver role from Auth0
-          const userRoles = user['https://lakbai.com/roles'] || [];
-          const hasDriverRole = userRoles.includes('driver');
-          const hasAdminRole = userRoles.includes('admin');
-          
-          // Check if this is a driver signup based on multiple factors
-          const isDriverSignup = appState.role === 'driver' || 
-                                appState.forceSignup ||
-                                hasDriverParam || 
-                                (appState.returnTo && appState.returnTo.includes('driver')) ||
-                                (appState.returnTo && appState.returnTo.includes('driver-username-setup')) ||
-                                isRecentDriverSignup ||
-                                driverSignupContext.type === 'driver_signup' ||
-                                (hasDriverRole && wasSignup); // If user has driver role and this was a signup
-          
-          console.log('Signup detection:', {
-            wasSignup,
-            isDriverSignup,
-            hasSignupParam,
-            hasDriverParam,
-            hasScreenHint,
-            isNewUser,
-            appStateRole: appState.role,
-            appStateReturnTo: appState.returnTo,
-            appStateForceSignup: appState.forceSignup,
-            driverSignupContextType: driverSignupContext.type,
-            driverSignupContextTimestamp: driverSignupContext.timestamp,
-            isRecentDriverSignup,
-            userRoles,
-            hasDriverRole,
-            hasAdminRole,
-            userCreatedAt: user.created_at,
-            userUpdatedAt: user.updated_at,
-            fullDriverSignupContext: driverSignupContext
-          });
-          
-          if (wasSignup && isDriverSignup) {
-            console.log('Driver signup detected, redirecting to username setup immediately');
-            
-            // Clear all signup flags and context
-            clearDriverSignupContext();
-            
-            // Redirect immediately without waiting
-            navigate('/driver-username-setup', { replace: true });
-            return; // Exit early to prevent further processing
-          } else if (wasSignup) {
-            console.log('Admin signup detected, redirecting to success page');
-            // Clear the signup flag
-            clearDriverSignupContext();
-            setTimeout(() => {
-              navigate('/auth/signup-success', { replace: true });
-            }, 1500);
-          } else {
-            // Check if this is a driver login
-            const isDriverLogin = appState.role === 'driver' || 
-                                appState.returnTo === '/driver-login' ||
-                                isRecentDriverSignup;
-            
-            // If user has driver role, prioritize driver flow
-            if (hasDriverRole && !hasAdminRole) {
-              console.log('User with driver role detected, syncing to database and checking profile status...');
-              
-              // Sync user to database
-              try {
-                const accessToken = await getAccessTokenSilently();
-                const syncResult = await userSyncService.syncCurrentUser(user, accessToken);
-                
-                console.log('Driver account sync result:', syncResult);
-                
-                if (syncResult.success) {
-                  if (syncResult.action === 'created') {
-                    console.log('New driver user created in database, redirecting to username setup');
-                    clearDriverSignupContext();
-                    navigate('/driver-username-setup', { replace: true });
-                    return; // Exit early
-                  } else if (syncResult.action === 'updated') {
-                    console.log('Existing driver user updated in database, checking if profile is complete');
-                    
-                    // Check if this is a new signup session
-                    if (user.created_at) {
-                      const userCreatedAt = new Date(user.created_at);
-                      const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
-                      
-                      if (userCreatedAt > fiveMinutesAgo) {
-                        console.log('New signup session detected, redirecting to username setup');
-                        clearDriverSignupContext();
-                        navigate('/driver-username-setup', { replace: true });
-                        return; // Exit early
-                      }
-                    }
-                    
-                    // For existing users, assume they have a complete profile
-                    console.log('Existing driver user with complete profile, redirecting to admin dashboard');
-                    clearDriverSignupContext();
-                    navigate('/', { replace: true });
-                    return; // Exit early
-                  }
-                } else {
-                  console.warn('Failed to sync driver account to database:', syncResult.message);
-                  // Fallback: redirect to username setup
-                  clearDriverSignupContext();
-                  navigate('/driver-username-setup', { replace: true });
-                  return; // Exit early
-                }
-              } catch (syncError) {
-                console.warn('Error syncing driver account to database:', syncError);
-                // Fallback: redirect to username setup
-                clearDriverSignupContext();
-                navigate('/driver-username-setup', { replace: true });
-                return; // Exit early
-              }
-            } else if (isDriverLogin) {
-              console.log('Driver login detected, redirecting to home page');
-              // Clear the login flag
-              clearDriverSignupContext();
-              setTimeout(() => {
-                navigate('/', { replace: true });
-              }, 1500);
-            } else {
-              // Final fallback: check if we have driver signup context
-              if (driverSignupContext.type === 'driver_signup' || isRecentDriverSignup) {
-                console.log('Driver signup context found in fallback, redirecting to username setup');
-                clearDriverSignupContext();
-                setTimeout(() => {
-                  navigate('/driver-username-setup', { replace: true });
-                }, 1500);
-              } else {
-                console.log('Regular login, redirecting to login form for role check');
-                // Clear any remaining context
-                clearDriverSignupContext();
-                setTimeout(() => {
-                  navigate('/login', { replace: true });
-                }, 1500);
-              }
-            }
-          }
-        }
-        
-        // If we reach here and no specific action was taken, check for driver signup context
-        if (!isAuthenticated) {
-          console.log('Not authenticated, checking for driver signup context...');
-          const driverSignupContext = JSON.parse(localStorage.getItem('driver_signup_context') || '{}');
-          
-          if (driverSignupContext.type === 'driver_signup') {
-            console.log('Driver signup context found, redirecting to driver signup page');
-            clearDriverSignupContext();
-            navigate('/driver-signup', { replace: true });
-            return;
-          }
-        }
-        
-        // Final safety check: if user has driver role but somehow got here, redirect appropriately
-        if (isAuthenticated && user) {
-          const userRoles = user['https://lakbai.com/roles'] || [];
-          const hasDriverRole = userRoles.includes('driver');
-          const hasAdminRole = userRoles.includes('admin');
-          
-          if (hasDriverRole && !hasAdminRole) {
-            console.log('🚨 Safety check: Driver user detected but no specific action taken, redirecting to username setup');
-            navigate('/driver-username-setup', { replace: true });
-            return;
-          }
-        }
-        
+        console.log('🔄 Processing Auth0 callback...');
+        await handleRedirectCallback();
       } catch (err) {
-        console.error('Callback processing error:', err);
+        console.error('❌ Auth0 callback error:', err);
+        
+        if (err.message.includes('Invalid state')) {
+          setErrorMessage('Authentication state expired. Please try signing up again.');
+        } else {
+          setErrorMessage(err.message || 'Authentication failed. Please try again.');
+        }
+        
         setCallbackStatus('error');
-        setErrorMessage(err.message || 'Authentication failed. Please try again.');
-      } finally {
-        clearTimeout(timeoutId);
       }
     };
 
     if (!isLoading) {
-      // Add a small delay to ensure Auth0 has time to complete authentication
-      setTimeout(() => {
-        processCallback();
-      }, 1000);
+      processCallback();
     }
-  }, [handleRedirectCallback, isAuthenticated, isLoading, navigate, error]);
+  }, [handleRedirectCallback, isLoading]);
 
-  // Handle Auth0 errors
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      console.log('✅ User authenticated:', user);
+      
+      // Check if this is a driver signup
+      const driverSignupContext = localStorage.getItem('lakbai_driver_signup');
+      
+      if (driverSignupContext) {
+        try {
+          const context = JSON.parse(driverSignupContext);
+          console.log('Driver signup context found:', context);
+          
+          // Clear the context
+          localStorage.removeItem('lakbai_driver_signup');
+          
+          // Redirect to LakbAI driver authentication
+          console.log('🔄 Redirecting to LakbAI driver authentication...');
+          navigate('/driver-signup', { replace: true });
+          return;
+        } catch (parseError) {
+          console.error('Error parsing driver context:', parseError);
+        }
+      }
+      
+      // Default redirect for other users
+      console.log('🔄 Redirecting to home...');
+      navigate('/', { replace: true });
+    }
+  }, [isAuthenticated, user, navigate]);
+
   useEffect(() => {
     if (error) {
-      console.error('Auth0 Error:', error);
+      console.error('Auth0 error:', error);
+      setErrorMessage(error.message || 'Authentication failed');
       setCallbackStatus('error');
-      setErrorMessage(error.message || 'Authentication failed. Please try again.');
     }
   }, [error]);
 
   const handleRetry = () => {
-    console.log('🔄 Handle retry called, checking context...');
-    
-    // Clear any stale state before retrying
-    clearDriverSignupContext();
-    
-    // Check if this was a driver signup attempt
-    const driverSignupContext = JSON.parse(localStorage.getItem('driver_signup_context') || '{}');
-    console.log('🔍 Driver signup context in retry:', driverSignupContext);
-    
-    if (driverSignupContext.type === 'driver_signup') {
-      console.log('✅ Driver signup context found in retry, redirecting to driver signup');
-      navigate('/driver-signup', { replace: true });
-    } else {
-      // Check Auth0 app state as fallback
-      const appState = JSON.parse(localStorage.getItem('auth0_app_state') || '{}');
-      console.log('🔍 Auth0 app state in retry:', appState);
-      
-      if (appState.role === 'driver' || appState.forceSignup || appState.returnTo?.includes('driver')) {
-        console.log('✅ Driver signup detected in app state, redirecting to driver signup');
-        navigate('/driver-signup', { replace: true });
-      } else {
-        console.log('❌ No driver signup context found, redirecting to admin login');
-        navigate('/admin-login', { replace: true });
-      }
-    }
+    console.log('🔄 Retrying authentication...');
+    localStorage.removeItem('lakbai_driver_signup');
+    navigate('/driver-signup', { replace: true });
   };
 
-  const renderContent = () => {
-    switch (callbackStatus) {
-      case 'processing':
-        return (
-          <div className={styles.statusContainer}>
-            <div className={styles.spinner}></div>
-            <h2 className={styles.statusTitle}>Authenticating...</h2>
-            <p className={styles.statusMessage}>
-              Please wait while we securely sign you in
-            </p>
-          </div>
-        );
-        
-      case 'success':
-        return (
-          <div className={styles.statusContainer}>
-            <div className={styles.successIcon}>✓</div>
-            <h2 className={styles.statusTitle}>Welcome back!</h2>
-            <p className={styles.statusMessage}>
-              {user?.name ? `Hello ${user.name}!` : 'Authentication successful.'}
-              <br />
-              Redirecting to your dashboard...
-            </p>
-          </div>
-        );
-        
-      case 'error':
-        return (
-          <div className={styles.statusContainer}>
-            <div className={styles.errorIcon}>✕</div>
-            <h2 className={styles.statusTitle}>Authentication Failed</h2>
-            <p className={styles.statusMessage}>
-              {errorMessage}
-            </p>
-            <button 
-              onClick={handleRetry}
-              className={styles.retryButton}
-            >
-              <i className="bi bi-arrow-left"></i>
-              Try Again
-            </button>
-          </div>
-        );
-        
-      default:
-        return null;
-    }
-  };
+  if (isLoading) {
+    return (
+      <Container className={styles.container}>
+        <div className={styles.content}>
+          <Card className={styles.callbackCard}>
+            <Card.Body className={styles.cardBody}>
+              <div className={styles.loadingContainer}>
+                <div className={styles.spinner}></div>
+                <h3>Processing Authentication...</h3>
+                <p>Please wait while we complete your sign-in process.</p>
+              </div>
+            </Card.Body>
+          </Card>
+        </div>
+      </Container>
+    );
+  }
+
+  if (callbackStatus === 'error' || error) {
+    return (
+      <Container className={styles.container}>
+        <div className={styles.content}>
+          <Card className={styles.callbackCard}>
+            <Card.Body className={styles.cardBody}>
+              <div className={styles.errorContainer}>
+                <ExclamationTriangle className={styles.errorIcon} />
+                <h3>Authentication Error</h3>
+                <p className={styles.errorMessage}>{errorMessage}</p>
+                <Button 
+                  variant="primary" 
+                  onClick={handleRetry}
+                  className={styles.retryButton}
+                >
+                  <ArrowRight className="me-2" />
+                  Try Again
+                </Button>
+              </div>
+            </Card.Body>
+          </Card>
+        </div>
+      </Container>
+    );
+  }
 
   return (
-    <div className={styles.callbackContainer}>
-      <div className={styles.callbackCard}>
-        {/* Logo Header */}
-        <div className={styles.header}>
-          <div className={styles.logoContainer}>
-            <img
-              src="/image/logofinal.png"
-              width="50"
-              height="50"
-              className={styles.logo}
-              alt="LakbAI Logo"
-            />
-            <div className={styles.logoText}>
-              <h3 className={styles.brandName}>LakbAI Admin</h3>
-              <p className={styles.brandTagline}>Secure Authentication</p>
+    <Container className={styles.container}>
+      <div className={styles.content}>
+        <Card className={styles.callbackCard}>
+          <Card.Body className={styles.cardBody}>
+            <div className={styles.processingContainer}>
+              <div className={styles.spinner}></div>
+              <h3>Completing Authentication...</h3>
+              <p>Please wait while we redirect you to the appropriate page.</p>
             </div>
-          </div>
-        </div>
-
-        {/* Dynamic Content */}
-        {renderContent()}
-
-        {/* Security Footer */}
-        <div className={styles.securityFooter}>
-          <div className={styles.securityBadge}>
-            <i className="bi bi-shield-check"></i>
-            <span>Secured by Auth0</span>
-          </div>
-        </div>
+          </Card.Body>
+        </Card>
       </div>
-    </div>
+    </Container>
   );
 };
 

@@ -1,13 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Card, Form, Button, Alert, Row, Col } from 'react-bootstrap';
-import { useAuth0 } from '@auth0/auth0-react';
 import { useNavigate } from 'react-router-dom';
 import { CheckCircleFill, ArrowLeft } from 'react-bootstrap-icons';
+import lakbaiAuthService from '../../../services/lakbaiAuthService';
 import { userSyncService } from '../../../services/userSyncService';
 import styles from '../styles/DriverUsernameSetup.module.css';
 
 const DriverUsernameSetup = () => {
-  const { user, isAuthenticated, isLoading, getAccessTokenSilently } = useAuth0();
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     username: '',
@@ -29,54 +28,24 @@ const DriverUsernameSetup = () => {
   const [error, setError] = useState('');
   const [isSuccess, setIsSuccess] = useState(false);
 
-  // Redirect if not authenticated or if user is admin
+  // Check authentication and redirect logic
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
+    const session = lakbaiAuthService.getCurrentDriverSession();
+    
+    if (!session) {
+      console.log('❌ No driver session found, redirecting to driver signup');
       navigate('/driver-signup');
       return;
     }
 
-    if (isAuthenticated && user) {
-      // Check if user is admin (should not be here)
-      const adminEmails = [
-        'livadomc@gmail.com',
-        'admin@lakbai.com',
-        'support@lakbai.com'
-      ];
-      
-      console.log('Checking user email:', user.email, 'against admin emails:', adminEmails);
-      
-      if (adminEmails.includes(user.email)) {
-        // Admin user - redirect to admin login
-        console.log('Admin user detected in driver flow, redirecting to admin login');
-        navigate('/admin-login');
-        return;
-      }
-
-      // Check if user has admin role from Auth0
-      const userRoles = user['https://lakbai.com/roles'] || [];
-      const hasAdminRole = userRoles.includes('admin');
-      const hasDriverRole = userRoles.includes('driver');
-      
-      console.log('User roles:', userRoles, 'Has admin role:', hasAdminRole, 'Has driver role:', hasDriverRole);
-      
-      // If user has both admin and driver roles, prioritize driver role for this flow
-      if (hasAdminRole && !hasDriverRole) {
-        // User with admin role but no driver role - redirect to admin login
-        console.log('User with admin role (no driver role) detected in driver flow, redirecting to admin login');
-        navigate('/admin-login');
-        return;
-      }
-
-      // Check if username already exists
-      const existingUsername = localStorage.getItem(`driver_username_${user.email}`);
-      if (existingUsername) {
-        // Username already set up, redirect to driver login
-        navigate('/driver-login');
-        return;
-      }
+    if (session.isProfileComplete) {
+      console.log('✅ Driver profile already complete, redirecting to home');
+      navigate('/');
+      return;
     }
-  }, [isAuthenticated, user, isLoading, navigate]);
+
+    console.log('✅ Driver session found, proceeding with profile completion');
+  }, [navigate]);
 
   const updateFormData = (field, value) => {
     setFormData(prev => ({
@@ -95,16 +64,6 @@ const DriverUsernameSetup = () => {
 
     if (username.length < 3) {
       setError('Username must be at least 3 characters long');
-      return false;
-    }
-
-    if (username.length > 20) {
-      setError('Username must be less than 20 characters');
-      return false;
-    }
-
-    if (!/^[a-zA-Z0-9_]+$/.test(username)) {
-      setError('Username can only contain letters, numbers, and underscores');
       return false;
     }
 
@@ -160,8 +119,18 @@ const DriverUsernameSetup = () => {
       return false;
     }
 
-    if (!birthMonth || !birthDate || !birthYear) {
-      setError('Complete birthday information is required');
+    if (!birthMonth) {
+      setError('Birth month is required');
+      return false;
+    }
+
+    if (!birthDate) {
+      setError('Birth date is required');
+      return false;
+    }
+
+    if (!birthYear) {
+      setError('Birth year is required');
       return false;
     }
 
@@ -170,7 +139,6 @@ const DriverUsernameSetup = () => {
       return false;
     }
 
-    setError('');
     return true;
   };
 
@@ -185,10 +153,18 @@ const DriverUsernameSetup = () => {
     setError('');
 
     try {
-      // Store username
-      localStorage.setItem(`driver_username_${user.email}`, formData.username);
+      console.log('📝 Completing driver profile...');
+      
+      // Complete profile using LakbAI service
+      const result = await lakbaiAuthService.completeDriverProfile(formData);
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to complete profile');
+      }
 
-      // Prepare complete profile data
+      console.log('✅ Driver profile completed successfully:', result.data);
+      
+      // Prepare complete profile data for database sync
       const completeProfileData = {
         ...formData,
         username: formData.username,
@@ -203,43 +179,39 @@ const DriverUsernameSetup = () => {
         }
       };
 
-      // Sync to database
-      const accessToken = await getAccessTokenSilently();
-      const syncResult = await userSyncService.syncAfterDriverSignup(user, accessToken, completeProfileData);
+      // Sync to database (optional - can be skipped if backend is not ready)
+      try {
+        const syncResult = await userSyncService.syncAfterDriverSignup(
+          { email: result.data.profileData.username }, // Mock user object
+          null, // No access token needed for local auth
+          completeProfileData
+        );
 
-      if (syncResult.success) {
-        console.log('Driver profile synced successfully:', syncResult);
-        setIsSuccess(true);
-        
-        // Redirect to driver login after 3 seconds
-        setTimeout(() => {
-          navigate('/driver-login');
-        }, 3000);
-      } else {
-        throw new Error(syncResult.message || 'Failed to sync profile data');
+        if (syncResult.success) {
+          console.log('✅ Driver profile synced to database:', syncResult);
+        } else {
+          console.warn('⚠️ Database sync failed (non-critical):', syncResult.message);
+        }
+      } catch (syncError) {
+        console.warn('⚠️ Database sync error (non-critical):', syncError);
+        // Continue with the flow even if sync fails
       }
+
+      // Show success and redirect
+      setIsSuccess(true);
+      
+      // Redirect to home page after 3 seconds
+      setTimeout(() => {
+        navigate('/');
+      }, 3000);
+      
     } catch (err) {
-      console.error('Error completing driver setup:', err);
+      console.error('❌ Error completing driver setup:', err);
       setError(err.message || 'Failed to complete setup. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
   };
-
-  if (isLoading) {
-    return (
-      <Container className={styles.container}>
-        <div className={styles.loadingSpinner}>
-          <div className={styles.spinner}></div>
-          <p>Loading...</p>
-        </div>
-      </Container>
-    );
-  }
-
-  if (!isAuthenticated || !user) {
-    return null; // Will redirect in useEffect
-  }
 
   if (isSuccess) {
     return (
@@ -254,7 +226,7 @@ const DriverUsernameSetup = () => {
                   Your driver account has been successfully set up.
                 </p>
                 <p className={styles.redirectMessage}>
-                  Redirecting to driver login...
+                  Redirecting to home page...
                 </p>
               </div>
             </Card.Body>
@@ -297,34 +269,46 @@ const DriverUsernameSetup = () => {
 
             <h2 className={styles.title}>Complete Your Driver Profile</h2>
             <p className={styles.subtitle}>
-              Welcome, {user.name || user.email}! Please complete your profile information to finish your driver registration.
+              Please complete your profile information to finish your driver registration.
             </p>
 
             {/* Setup Form */}
             <Form onSubmit={handleSubmit} className={styles.form}>
               {error && (
-                <Alert variant="danger" className={styles.alert}>
+                <Alert variant="danger" className="mb-3">
                   {error}
                 </Alert>
               )}
 
               {/* Username */}
-              <Form.Group className="mb-3">
-                <Form.Label>Username *</Form.Label>
-                <Form.Control
-                  type="text"
-                  value={formData.username}
-                  onChange={(e) => updateFormData('username', e.target.value)}
-                  placeholder="Enter your username"
-                  className={styles.input}
-                  maxLength={20}
-                />
-                <Form.Text className="text-muted">
-                  Username must be 3-20 characters long and can only contain letters, numbers, and underscores.
-                </Form.Text>
-              </Form.Group>
+              <Row>
+                <Col md={6}>
+                  <Form.Group className="mb-3">
+                    <Form.Label>Username *</Form.Label>
+                    <Form.Control
+                      type="text"
+                      value={formData.username}
+                      onChange={(e) => updateFormData('username', e.target.value)}
+                      placeholder="Choose a username"
+                      className={styles.input}
+                    />
+                  </Form.Group>
+                </Col>
+                <Col md={6}>
+                  <Form.Group className="mb-3">
+                    <Form.Label>Phone Number *</Form.Label>
+                    <Form.Control
+                      type="tel"
+                      value={formData.phoneNumber}
+                      onChange={(e) => updateFormData('phoneNumber', e.target.value)}
+                      placeholder="Enter phone number"
+                      className={styles.input}
+                    />
+                  </Form.Group>
+                </Col>
+              </Row>
 
-              {/* Personal Information */}
+              {/* Name */}
               <Row>
                 <Col md={6}>
                   <Form.Group className="mb-3">
@@ -333,7 +317,7 @@ const DriverUsernameSetup = () => {
                       type="text"
                       value={formData.firstName}
                       onChange={(e) => updateFormData('firstName', e.target.value)}
-                      placeholder="Enter your first name"
+                      placeholder="Enter first name"
                       className={styles.input}
                     />
                   </Form.Group>
@@ -345,40 +329,28 @@ const DriverUsernameSetup = () => {
                       type="text"
                       value={formData.lastName}
                       onChange={(e) => updateFormData('lastName', e.target.value)}
-                      placeholder="Enter your last name"
+                      placeholder="Enter last name"
                       className={styles.input}
                     />
                   </Form.Group>
                 </Col>
               </Row>
 
-              {/* Phone Number */}
-              <Form.Group className="mb-3">
-                <Form.Label>Phone Number *</Form.Label>
-                <Form.Control
-                  type="tel"
-                  value={formData.phoneNumber}
-                  onChange={(e) => updateFormData('phoneNumber', e.target.value)}
-                  placeholder="Enter your phone number"
-                  className={styles.input}
-                />
-              </Form.Group>
-
               {/* Address */}
               <Row>
-                <Col md={3}>
+                <Col md={4}>
                   <Form.Group className="mb-3">
-                    <Form.Label>House No. *</Form.Label>
+                    <Form.Label>House Number *</Form.Label>
                     <Form.Control
                       type="text"
                       value={formData.houseNumber}
                       onChange={(e) => updateFormData('houseNumber', e.target.value)}
-                      placeholder="House No."
+                      placeholder="Enter house number"
                       className={styles.input}
                     />
                   </Form.Group>
                 </Col>
-                <Col md={9}>
+                <Col md={8}>
                   <Form.Group className="mb-3">
                     <Form.Label>Street Name *</Form.Label>
                     <Form.Control
@@ -505,59 +477,44 @@ const DriverUsernameSetup = () => {
               </Row>
 
               {/* Gender */}
-              <Form.Group className="mb-4">
-                <Form.Label>Gender *</Form.Label>
-                <Form.Select
-                  value={formData.gender}
-                  onChange={(e) => updateFormData('gender', e.target.value)}
-                  className={styles.input}
+              <Row>
+                <Col md={6}>
+                  <Form.Group className="mb-3">
+                    <Form.Label>Gender *</Form.Label>
+                    <Form.Select
+                      value={formData.gender}
+                      onChange={(e) => updateFormData('gender', e.target.value)}
+                      className={styles.input}
+                    >
+                      <option value="">Select Gender</option>
+                      <option value="Male">Male</option>
+                      <option value="Female">Female</option>
+                      <option value="Other">Other</option>
+                    </Form.Select>
+                  </Form.Group>
+                </Col>
+              </Row>
+
+              {/* Submit Button */}
+              <div className={styles.submitContainer}>
+                <Button
+                  type="submit"
+                  variant="success"
+                  size="lg"
+                  disabled={isSubmitting}
+                  className={styles.submitButton}
                 >
-                  <option value="">Select Gender</option>
-                  <option value="Male">Male</option>
-                  <option value="Female">Female</option>
-                  <option value="Other">Other</option>
-                </Form.Select>
-              </Form.Group>
-
-              <Button
-                type="submit"
-                variant="success"
-                size="lg"
-                className={styles.submitButton}
-                disabled={isSubmitting}
-                block
-              >
-                {isSubmitting ? (
-                  <>
-                    <div className={styles.spinner}></div>
-                    Creating Account...
-                  </>
-                ) : (
-                  <>
-                    <CheckCircleFill className="me-2" />
-                    Complete Setup
-                  </>
-                )}
-              </Button>
+                  {isSubmitting ? (
+                    <>
+                      <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                      Completing Setup...
+                    </>
+                  ) : (
+                    'Complete Profile'
+                  )}
+                </Button>
+              </div>
             </Form>
-
-            {/* User Info */}
-            <div className={styles.userInfo}>
-              <h6>Account Information:</h6>
-              <div className={styles.userDetails}>
-                <div><strong>Email:</strong> {user.email}</div>
-                <div><strong>Name:</strong> {user.name || 'Not provided'}</div>
-                <div><strong>Role:</strong> Driver</div>
-              </div>
-            </div>
-
-            {/* Security Info */}
-            <div className={styles.securityInfo}>
-              <div className={styles.securityBadge}>
-                <CheckCircleFill className="me-2" />
-                <span>Secured by Auth0</span>
-              </div>
-            </div>
           </Card.Body>
         </Card>
       </div>

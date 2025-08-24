@@ -1,261 +1,148 @@
-/* Auth0Callback.module.css - Callback processing page styles */
-
-.callbackContainer {
+/* Auth0Callback Styles */
+.container {
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #007AFF 0%, #4A90E2 100%);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   padding: 20px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+}
+
+.content {
+  width: 100%;
+  max-width: 500px;
 }
 
 .callbackCard {
-  background: #ffffff;
-  border-radius: 24px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
-  padding: 48px;
-  width: 100%;
-  max-width: 440px;
+  border: none;
+  border-radius: 20px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.95);
+}
+
+.cardBody {
+  padding: 40px;
   text-align: center;
-  position: relative;
-  overflow: hidden;
 }
 
-.callbackCard::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 4px;
-  background: linear-gradient(90deg, #007AFF, #4A90E2);
-}
-
-/* Header */
-.header {
-  margin-bottom: 40px;
-}
-
-.logoContainer {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 16px;
-  margin-bottom: 16px;
-}
-
-.logo {
-  border-radius: 12px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-}
-
-.logoText {
-  text-align: left;
-}
-
-.brandName {
-  margin: 0;
-  font-size: 24px;
-  font-weight: 700;
-  color: #1a1a1a;
-  background: linear-gradient(135deg, #007AFF, #4A90E2);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-.brandTagline {
-  margin: 4px 0 0 0;
-  font-size: 13px;
-  color: #6c757d;
-  font-weight: 500;
-}
-
-/* Status Container */
-.statusContainer {
+.loadingContainer,
+.processingContainer,
+.errorContainer {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  min-height: 200px;
-  margin-bottom: 32px;
+  gap: 20px;
 }
 
-.statusTitle {
-  margin: 24px 0 12px 0;
-  font-size: 28px;
-  font-weight: 700;
-  color: #1a1a1a;
-}
-
-.statusMessage {
-  margin: 0;
-  font-size: 16px;
-  color: #6c757d;
-  line-height: 1.5;
-  text-align: center;
-}
-
-/* Icons */
 .spinner {
-  display: inline-block;
-  width: 48px;
-  height: 48px;
+  width: 60px;
+  height: 60px;
   border: 4px solid #e9ecef;
+  border-top: 4px solid #667eea;
   border-radius: 50%;
-  border-top-color: #007AFF;
   animation: spin 1s linear infinite;
 }
 
-.successIcon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 72px;
-  height: 72px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #28a745, #20c997);
-  color: white;
-  font-size: 36px;
-  font-weight: bold;
-  animation: scaleIn 0.5s ease-out;
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loadingContainer h3,
+.processingContainer h3,
+.errorContainer h3 {
+  color: #2c3e50;
+  font-weight: 600;
+  margin: 0;
+  font-size: 24px;
+}
+
+.loadingContainer p,
+.processingContainer p {
+  color: #6c757d;
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.5;
 }
 
 .errorIcon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 72px;
-  height: 72px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #dc3545, #c82333);
-  color: white;
-  font-size: 36px;
-  font-weight: bold;
-  animation: scaleIn 0.5s ease-out;
+  font-size: 60px;
+  color: #dc3545;
 }
 
-/* Retry Button */
+.errorMessage {
+  color: #6c757d;
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.5;
+  max-width: 400px;
+}
+
 .retryButton {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 24px;
-  background: linear-gradient(135deg, #007AFF, #4A90E2);
-  color: white;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   border: none;
   border-radius: 12px;
-  font-size: 14px;
+  padding: 12px 24px;
+  font-size: 16px;
   font-weight: 600;
-  cursor: pointer;
   transition: all 0.3s ease;
-  margin-top: 20px;
-  text-decoration: none;
 }
 
 .retryButton:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(0, 122, 255, 0.4);
-}
-
-.retryButton:active {
-  transform: translateY(0);
-}
-
-/* Security Footer */
-.securityFooter {
-  border-top: 1px solid #e9ecef;
-  padding-top: 24px;
-  text-align: center;
-}
-
-.securityBadge {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  color: #28a745;
-  font-weight: 600;
-  font-size: 14px;
-  padding: 8px 16px;
-  background: #f8f9fa;
-  border-radius: 20px;
-  border: 1px solid #e9ecef;
-}
-
-/* Animations */
-@keyframes spin {
-  to { 
-    transform: rotate(360deg); 
-  }
-}
-
-@keyframes scaleIn {
-  from {
-    transform: scale(0);
-    opacity: 0;
-  }
-  to {
-    transform: scale(1);
-    opacity: 1;
-  }
+  box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
 }
 
 /* Responsive Design */
-@media (max-width: 640px) {
-  .callbackContainer {
-    padding: 16px;
+@media (max-width: 768px) {
+  .cardBody {
+    padding: 30px 20px;
   }
   
-  .callbackCard {
-    padding: 32px 24px;
-    border-radius: 16px;
-  }
-  
-  .logoContainer {
-    flex-direction: column;
-    gap: 12px;
-  }
-  
-  .logoText {
-    text-align: center;
-  }
-  
-  .brandName {
+  .loadingContainer h3,
+  .processingContainer h3,
+  .errorContainer h3 {
     font-size: 20px;
   }
   
-  .statusTitle {
-    font-size: 24px;
-  }
-  
-  .statusMessage {
+  .loadingContainer p,
+  .processingContainer p,
+  .errorMessage {
     font-size: 14px;
   }
   
-  .successIcon,
+  .spinner {
+    width: 50px;
+    height: 50px;
+  }
+  
   .errorIcon {
-    width: 64px;
-    height: 64px;
-    font-size: 32px;
+    font-size: 50px;
+  }
+}
+
+@media (max-width: 480px) {
+  .container {
+    padding: 10px;
+  }
+  
+  .cardBody {
+    padding: 25px 15px;
+  }
+  
+  .loadingContainer h3,
+  .processingContainer h3,
+  .errorContainer h3 {
+    font-size: 18px;
   }
   
   .spinner {
     width: 40px;
     height: 40px;
   }
-}
-
-@media (max-width: 480px) {
-  .callbackCard {
-    padding: 24px 20px;
-  }
   
-  .statusTitle {
-    font-size: 22px;
-  }
-  
-  .statusMessage {
-    font-size: 13px;
+  .errorIcon {
+    font-size: 40px;
   }
 }

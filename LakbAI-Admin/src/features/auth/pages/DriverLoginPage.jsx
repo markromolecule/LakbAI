@@ -1,113 +1,83 @@
 import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { Container, Card, Form, Button, Alert } from 'react-bootstrap';
-import { useAuth0 } from '@auth0/auth0-react';
-import { useNavigate } from 'react-router-dom';
-import { CheckCircleFill, ArrowLeft, Shield } from 'react-bootstrap-icons';
+import { Eye, EyeSlash, Shield, ArrowLeft, CarFront } from 'react-bootstrap-icons';
+import lakbaiAuthService from '../../../services/lakbaiAuthService';
 import styles from '../styles/DriverLoginPage.module.css';
 
 const DriverLoginPage = () => {
-  const { loginWithRedirect, isAuthenticated, user, isLoading } = useAuth0();
   const navigate = useNavigate();
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [formData, setFormData] = useState({
+    username: '',
+    password: ''
+  });
+  const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Redirect if already authenticated and has driver profile
+  // Check if driver is already authenticated
   useEffect(() => {
-    if (!isLoading && isAuthenticated && user) {
-      // Check if user has driver profile
-      const driverProfile = localStorage.getItem(`driver_profile_${user.email}`);
-      if (driverProfile) {
-        console.log('Driver already authenticated, redirecting to home');
-        navigate('/', { replace: true });
-        return;
+    const session = lakbaiAuthService.getCurrentDriverSession();
+    if (session) {
+      if (session.isProfileComplete) {
+        console.log('✅ Driver already authenticated with complete profile, redirecting to home');
+        navigate('/');
+      } else {
+        console.log('⚠️ Driver authenticated but profile incomplete, redirecting to profile completion');
+        navigate('/driver-username-setup');
       }
     }
-  }, [isAuthenticated, user, isLoading, navigate]);
+  }, [navigate]);
 
-  const handleDriverLogin = async () => {
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+    // Clear error when user starts typing
+    if (error) setError('');
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError('');
+
     try {
-      setIsProcessing(true);
-      setError('');
+      console.log('🔐 Driver login attempt:', formData.username);
       
-      await loginWithRedirect({
-        authorizationParams: {
-          screen_hint: 'login',
-          role: 'driver',
-          app: 'driver'
-        },
-        appState: {
-          returnTo: '/driver-login',
-          loginComplete: true,
-          role: 'driver'
+      // Authenticate driver using LakbAI service
+      const result = await lakbaiAuthService.authenticateDriver(
+        formData.username, 
+        formData.password
+      );
+
+      if (result.success) {
+        console.log('✅ Driver authentication successful:', result.data);
+        
+        // Check if profile is complete
+        if (result.data.isProfileComplete) {
+          console.log('✅ Profile complete, redirecting to home');
+          navigate('/');
+        } else {
+          console.log('⚠️ Profile incomplete, redirecting to profile completion');
+          navigate('/driver-username-setup');
         }
-      });
+      } else {
+        setError(result.error || 'Authentication failed. Please try again.');
+      }
     } catch (err) {
+      setError('Login failed. Please try again.');
       console.error('Driver login error:', err);
-      setError(err.message || 'Login failed. Please try again.');
-      setIsProcessing(false);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleGoogleLogin = async () => {
-    try {
-      setIsProcessing(true);
-      setError('');
-      
-      await loginWithRedirect({
-        authorizationParams: {
-          connection: 'google-oauth2',
-          screen_hint: 'login',
-          role: 'driver',
-          app: 'driver'
-        },
-        appState: {
-          returnTo: '/driver-login',
-          loginComplete: true,
-          role: 'driver'
-        }
-      });
-    } catch (err) {
-      console.error('Google login error:', err);
-      setError(err.message || 'Google login failed. Please try again.');
-      setIsProcessing(false);
-    }
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
   };
-
-  const handleFacebookLogin = async () => {
-    try {
-      setIsProcessing(true);
-      setError('');
-      
-      await loginWithRedirect({
-        authorizationParams: {
-          connection: 'facebook',
-          screen_hint: 'login',
-          role: 'driver',
-          app: 'driver'
-        },
-        appState: {
-          returnTo: '/driver-login',
-          loginComplete: true,
-          role: 'driver'
-        }
-      });
-    } catch (err) {
-      console.error('Facebook login error:', err);
-      setError(err.message || 'Facebook login failed. Please try again.');
-      setIsProcessing(false);
-    }
-  };
-
-  if (isLoading) {
-    return (
-      <Container className={styles.container}>
-        <div className={styles.loadingSpinner}>
-          <div className={styles.spinner}></div>
-          <p>Loading...</p>
-        </div>
-      </Container>
-    );
-  }
 
   return (
     <Container className={styles.container}>
@@ -115,13 +85,10 @@ const DriverLoginPage = () => {
         <Card className={styles.loginCard}>
           <Card.Body className={styles.cardBody}>
             {/* Back Button */}
-            <button 
-              className={styles.backButton}
-              onClick={() => navigate('/')}
-            >
+            <Link to="/" className={styles.backButton}>
               <ArrowLeft className="me-2" />
               Back to Home
-            </button>
+            </Link>
 
             {/* Header */}
             <div className={styles.header}>
@@ -140,112 +107,102 @@ const DriverLoginPage = () => {
               </div>
             </div>
 
-            <h2 className={styles.title}>Driver Login</h2>
+            <h2 className={styles.title}>Welcome Back, Driver!</h2>
             <p className={styles.subtitle}>
-              Access your driver account and start earning
+              Sign in to access your driver dashboard and start earning
             </p>
 
-            {error && (
-              <Alert variant="danger" className={styles.alert}>
-                {error}
-              </Alert>
-            )}
+            {/* Login Form */}
+            <Form onSubmit={handleSubmit} className={styles.form}>
+              {error && (
+                <Alert variant="danger" className={styles.alert}>
+                  {error}
+                </Alert>
+              )}
 
-            {/* Login Options */}
-            <div className={styles.loginOptions}>
-              {/* Auth0 Login */}
+              <Form.Group className="mb-3">
+                <Form.Label>Username</Form.Label>
+                <Form.Control
+                  type="text"
+                  name="username"
+                  value={formData.username}
+                  onChange={handleInputChange}
+                  placeholder="Enter your username"
+                  required
+                  className={styles.input}
+                />
+              </Form.Group>
+
+              <Form.Group className="mb-4">
+                <Form.Label>Password</Form.Label>
+                <div className={styles.passwordContainer}>
+                  <Form.Control
+                    type={showPassword ? 'text' : 'password'}
+                    name="password"
+                    value={formData.password}
+                    onChange={handleInputChange}
+                    placeholder="Enter your password"
+                    required
+                    className={styles.input}
+                  />
+                  <Button
+                    type="button"
+                    variant="link"
+                    className={styles.passwordToggle}
+                    onClick={togglePasswordVisibility}
+                  >
+                    {showPassword ? <EyeSlash /> : <Eye />}
+                  </Button>
+                </div>
+              </Form.Group>
+
               <Button
-                variant="success"
+                type="submit"
+                variant="primary"
                 size="lg"
                 className={styles.loginButton}
-                onClick={handleDriverLogin}
-                disabled={isProcessing}
+                disabled={isLoading}
                 block
               >
-                {isProcessing ? (
+                {isLoading ? (
                   <>
                     <div className={styles.spinner}></div>
                     Signing In...
                   </>
                 ) : (
                   <>
-                    <Shield className="me-2" />
+                    <CarFront className="me-2" />
                     Sign In as Driver
                   </>
                 )}
               </Button>
+            </Form>
 
-              {/* Divider */}
-              <div className={styles.divider}>
-                <span>or continue with</span>
-              </div>
-
-              {/* Social Login Options */}
-              <div className={styles.socialButtons}>
-                <Button
-                  variant="outline-danger"
-                  className={styles.socialButton}
-                  onClick={handleGoogleLogin}
-                  disabled={isProcessing}
-                >
-                  <div className={styles.googleIcon}></div>
-                  Google
-                </Button>
-
-                <Button
-                  variant="outline-primary"
-                  className={styles.socialButton}
-                  onClick={handleFacebookLogin}
-                  disabled={isProcessing}
-                >
-                  <div className={styles.facebookIcon}></div>
-                  Facebook
-                </Button>
-              </div>
+            {/* Driver Info */}
+            <div className={styles.driverInfo}>
+              <h6>New to LakbAI?</h6>
+              <p className={styles.driverDescription}>
+                Join our network of professional drivers and start earning today!
+              </p>
             </div>
 
-            {/* Driver Benefits */}
-            <div className={styles.benefits}>
-              <h5>Why Login as a Driver?</h5>
-              <div className={styles.benefitsList}>
-                <div className={styles.benefitItem}>
-                  <CheckCircleFill className={styles.benefitIcon} />
-                  <span>Access your earnings</span>
-                </div>
-                <div className={styles.benefitItem}>
-                  <CheckCircleFill className={styles.benefitIcon} />
-                  <span>View ride history</span>
-                </div>
-                <div className={styles.benefitItem}>
-                  <CheckCircleFill className={styles.benefitIcon} />
-                  <span>Update your profile</span>
-                </div>
-                <div className={styles.benefitItem}>
-                  <CheckCircleFill className={styles.benefitIcon} />
-                  <span>Manage your schedule</span>
-                </div>
-              </div>
+            {/* Action Links */}
+            <div className={styles.actionLinks}>
+              <Link to="/driver-signup" className={styles.signupLink}>
+                Create Driver Account
+              </Link>
+              <span className={styles.divider}>•</span>
+              <Link to="/admin-login" className={styles.adminLink}>
+                Admin Login
+              </Link>
             </div>
 
             {/* Security Info */}
             <div className={styles.securityInfo}>
               <div className={styles.securityBadge}>
                 <Shield className="me-2" />
-                <span>Secured by Auth0</span>
+                <span>Secure driver authentication</span>
               </div>
-            </div>
-
-            {/* Footer */}
-            <div className={styles.footer}>
-              <p className={styles.footerText}>
-                Don't have a driver account?{' '}
-                <button 
-                  className={styles.footerLink}
-                  onClick={() => navigate('/driver-signup')}
-                >
-                  Register as Driver
-                </button>
-              </p>
             </div>
           </Card.Body>
         </Card>

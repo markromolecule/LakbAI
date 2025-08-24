@@ -1,191 +1,141 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { Container, Card, Button, Alert } from 'react-bootstrap';
-import { useAuth0 } from '@auth0/auth0-react';
-import { CheckCircleFill, ArrowRight, Shield, ArrowLeft } from 'react-bootstrap-icons';
-import { clearAllSignupContext, validateAndClearAuth0State, setAuth0StateTimestamp, clearAuth0Data, forceFreshDriverSignupSession } from '../../../utils/authUtils';
+import { Link, useNavigate } from 'react-router-dom';
+import { Container, Card, Button, Alert, Form, Row, Col } from 'react-bootstrap';
+import { CheckCircleFill, ArrowRight, Shield, ArrowLeft, CarFront, Eye, EyeSlash } from 'react-bootstrap-icons';
+import lakbaiAuthService from '../../../services/lakbaiAuthService';
 import styles from '../styles/DriverSignupPage.module.css';
 
 const DriverSignupPage = () => {
-  const { loginWithRedirect, isAuthenticated, user } = useAuth0();
+  const navigate = useNavigate();
+  const [formData, setFormData] = useState({
+    username: '',
+    password: '',
+    confirmPassword: ''
+  });
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState('');
+  const [isSuccess, setIsSuccess] = useState(false);
 
   // Clear any existing session when component mounts
   useEffect(() => {
     console.log('=== DRIVER SIGNUP PAGE MOUNT ===');
     
-    // Force a completely fresh session for driver signup
-    forceFreshDriverSignupSession();
+    // Clear any existing driver sessions for fresh signup
+    lakbaiAuthService.clearDriverSession();
     
-    // Validate and clear stale Auth0 state
-    validateAndClearAuth0State();
-    
-    // Clear all signup context and authentication data
-    clearAllSignupContext();
-    
-    // Force clear any existing Auth0 authentication to ensure fresh signup
-    clearAuth0Data();
-    console.log('Cleared existing session and Auth0 data for fresh driver signup');
-    
-    // Clear session when user leaves the page
-    const handleBeforeUnload = () => {
-      clearAllSignupContext();
-      clearAuth0Data();
-    };
-    
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    
-    return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-    };
+    console.log('Cleared existing driver session for fresh signup');
   }, []);
 
-  // Handle Auth0 signup
-  const handleAuth0Signup = async () => {
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+    // Clear error when user starts typing
+    if (error) setError('');
+  };
+
+  const validateForm = () => {
+    const { username, password, confirmPassword } = formData;
+
+    if (!username.trim()) {
+      setError('Username is required');
+      return false;
+    }
+
+    if (username.length < 3) {
+      setError('Username must be at least 3 characters long');
+      return false;
+    }
+
+    if (!password) {
+      setError('Password is required');
+      return false;
+    }
+
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters long');
+      return false;
+    }
+
+    if (password !== confirmPassword) {
+      setError('Passwords do not match');
+      return false;
+    }
+
+    return true;
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (!validateForm()) {
+      return;
+    }
+
+    setIsProcessing(true);
+    setError('');
+
     try {
-      setIsProcessing(true);
-      setError('');
+      console.log('=== LAKBAI DRIVER SIGNUP START ===');
+      console.log('Creating driver account:', formData.username);
       
-      console.log('=== AUTH0 DRIVER SIGNUP START ===');
+      // Create driver session
+      const result = await lakbaiAuthService.storeDriverSession(formData.username, false);
       
-      // Force fresh session before signup
-      forceFreshDriverSignupSession();
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to create driver account');
+      }
+
+      console.log('✅ Driver account created successfully:', result.data);
+      setIsSuccess(true);
       
-      // Clear any existing context first
-      clearAllSignupContext();
+      // Redirect to profile completion after 2 seconds
+      setTimeout(() => {
+        navigate('/driver-username-setup');
+      }, 2000);
       
-      // Set Auth0 state timestamp for validation
-      setAuth0StateTimestamp();
-      
-      // Store fresh signup context in localStorage
-      localStorage.setItem('driver_signup_context', JSON.stringify({
-        timestamp: Date.now(),
-        type: 'driver_signup',
-        returnTo: '/driver-username-setup'
-      }));
-      
-      console.log('Initiating Auth0 redirect with fresh session...');
-      
-      await loginWithRedirect({
-        authorizationParams: {
-          screen_hint: 'signup',
-          role: 'driver',
-          app: 'admin',
-          prompt: 'select_account' // Force account selection for fresh signup
-        },
-        appState: {
-          returnTo: '/driver-username-setup',
-          signupComplete: true,
-          role: 'driver',
-          forceSignup: true
-        }
-      });
     } catch (err) {
-      console.error('Auth0 signup error:', err);
-      setError(err.message || 'Signup failed. Please try again.');
+      console.error('❌ Error creating driver account:', err);
+      setError(err.message || 'Failed to create account. Please try again.');
     } finally {
       setIsProcessing(false);
     }
   };
 
-  // Handle Google signup
-  const handleGoogleSignup = async () => {
-    try {
-      setIsProcessing(true);
-      setError('');
-      
-      console.log('=== GOOGLE DRIVER SIGNUP START ===');
-      
-      // Force fresh session before signup
-      forceFreshDriverSignupSession();
-      
-      // Clear any existing context first
-      clearAllSignupContext();
-      
-      // Set Auth0 state timestamp for validation
-      setAuth0StateTimestamp();
-      
-      // Store fresh signup context in localStorage
-      localStorage.setItem('driver_signup_context', JSON.stringify({
-        timestamp: Date.now(),
-        type: 'driver_signup',
-        returnTo: '/driver-username-setup'
-      }));
-      
-      console.log('Initiating Google redirect with fresh session...');
-      
-      await loginWithRedirect({
-        authorizationParams: {
-          connection: 'google-oauth2',
-          screen_hint: 'signup',
-          role: 'driver',
-          app: 'admin',
-          prompt: 'select_account' // Force account selection for fresh signup
-        },
-        appState: {
-          returnTo: '/driver-username-setup',
-          signupComplete: true,
-          role: 'driver',
-          forceSignup: true
-        }
-      });
-    } catch (err) {
-      console.error('Google signup error:', err);
-      setError(err.message || 'Google signup failed. Please try again.');
-    } finally {
-      setIsProcessing(false);
-    }
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
   };
 
-  // Handle Facebook signup
-  const handleFacebookSignup = async () => {
-    try {
-      setIsProcessing(true);
-      setError('');
-      
-      console.log('=== FACEBOOK DRIVER SIGNUP START ===');
-      
-      // Force fresh session before signup
-      forceFreshDriverSignupSession();
-      
-      // Clear any existing context first
-      clearAllSignupContext();
-      
-      // Set Auth0 state timestamp for validation
-      setAuth0StateTimestamp();
-      
-      // Store fresh signup context in localStorage
-      localStorage.setItem('driver_signup_context', JSON.stringify({
-        timestamp: Date.now(),
-        type: 'driver_signup',
-        returnTo: '/driver-username-setup'
-      }));
-      
-      console.log('Initiating Facebook redirect with fresh session...');
-      
-      await loginWithRedirect({
-        authorizationParams: {
-          connection: 'facebook',
-          screen_hint: 'signup',
-          role: 'driver',
-          app: 'admin',
-          prompt: 'select_account' // Force account selection for fresh signup
-        },
-        appState: {
-          returnTo: '/driver-username-setup',
-          signupComplete: true,
-          role: 'driver',
-          forceSignup: true
-        }
-      });
-    } catch (err) {
-      console.error('Facebook signup error:', err);
-      setError(err.message || 'Facebook signup failed. Please try again.');
-    } finally {
-      setIsProcessing(false);
-    }
+  const toggleConfirmPasswordVisibility = () => {
+    setShowConfirmPassword(!showConfirmPassword);
   };
+
+  if (isSuccess) {
+    return (
+      <Container className={styles.container}>
+        <div className={styles.content}>
+          <Card className={styles.signupCard}>
+            <Card.Body className={styles.cardBody}>
+              <div className={styles.successContainer}>
+                <CheckCircleFill className={styles.successIcon} />
+                <h2 className={styles.successTitle}>Account Created!</h2>
+                <p className={styles.successMessage}>
+                  Your driver account has been successfully created.
+                </p>
+                <p className={styles.redirectMessage}>
+                  Redirecting to profile completion...
+                </p>
+              </div>
+            </Card.Body>
+          </Card>
+        </div>
+      </Container>
+    );
+  }
 
   return (
     <Container className={styles.container}>
@@ -213,27 +163,99 @@ const DriverSignupPage = () => {
                   <p className={styles.brandTagline}>Become a Driver</p>
                 </div>
               </div>
-              <p className={styles.description}>
-                Join our network of professional drivers and start earning
-              </p>
             </div>
 
-            {/* Error Alert */}
+            <h2 className={styles.title}>Join our network of professional drivers and start earning.</h2>
+
             {error && (
               <Alert variant="danger" className={styles.alert}>
                 {error}
               </Alert>
             )}
 
-            {/* Signup Options */}
-            <div className={styles.signupOptions}>
-              {/* Auth0 Signup */}
+            {/* Signup Form */}
+            <Form onSubmit={handleSubmit} className={styles.form}>
+              <Row>
+                <Col md={12}>
+                  <Form.Group className="mb-3">
+                    <Form.Label>Username *</Form.Label>
+                    <Form.Control
+                      type="text"
+                      name="username"
+                      value={formData.username}
+                      onChange={handleInputChange}
+                      placeholder="Choose a username"
+                      required
+                      className={styles.input}
+                    />
+                    <Form.Text className="text-muted">
+                      Username must be at least 3 characters long
+                    </Form.Text>
+                  </Form.Group>
+                </Col>
+              </Row>
+
+              <Row>
+                <Col md={6}>
+                  <Form.Group className="mb-3">
+                    <Form.Label>Password *</Form.Label>
+                    <div className={styles.passwordContainer}>
+                      <Form.Control
+                        type={showPassword ? 'text' : 'password'}
+                        name="password"
+                        value={formData.password}
+                        onChange={handleInputChange}
+                        placeholder="Enter password"
+                        required
+                        className={styles.input}
+                      />
+                      <Button
+                        type="button"
+                        variant="link"
+                        className={styles.passwordToggle}
+                        onClick={togglePasswordVisibility}
+                      >
+                        {showPassword ? <EyeSlash /> : <Eye />}
+                      </Button>
+                    </div>
+                    <Form.Text className="text-muted">
+                      Password must be at least 6 characters long
+                    </Form.Text>
+                  </Form.Group>
+                </Col>
+                <Col md={6}>
+                  <Form.Group className="mb-4">
+                    <Form.Label>Confirm Password *</Form.Label>
+                    <div className={styles.passwordContainer}>
+                      <Form.Control
+                        type={showConfirmPassword ? 'text' : 'password'}
+                        name="confirmPassword"
+                        value={formData.confirmPassword}
+                        onChange={handleInputChange}
+                        placeholder="Confirm password"
+                        required
+                        className={styles.input}
+                      />
+                      <Button
+                        type="button"
+                        variant="link"
+                        className={styles.passwordToggle}
+                        onClick={toggleConfirmPasswordVisibility}
+                      >
+                        {showConfirmPassword ? <EyeSlash /> : <Eye />}
+                      </Button>
+                    </div>
+                  </Form.Group>
+                </Col>
+              </Row>
+
               <Button
+                type="submit"
                 variant="primary"
                 size="lg"
                 className={styles.signupButton}
-                onClick={handleAuth0Signup}
                 disabled={isProcessing}
+                block
               >
                 {isProcessing ? (
                   <>
@@ -242,40 +264,12 @@ const DriverSignupPage = () => {
                   </>
                 ) : (
                   <>
-                    <Shield className="me-2" />
+                    <CarFront className="me-2" />
                     Create Driver Account
                   </>
                 )}
               </Button>
-
-              {/* Divider */}
-              <div className={styles.divider}>
-                <span>or continue with</span>
-              </div>
-
-              {/* Social Signup Options */}
-              <div className={styles.socialButtons}>
-                <Button
-                  variant="outline-danger"
-                  className={styles.socialButton}
-                  onClick={handleGoogleSignup}
-                  disabled={isProcessing}
-                >
-                  <div className={styles.googleIcon}></div>
-                  Google
-                </Button>
-
-                <Button
-                  variant="outline-primary"
-                  className={styles.socialButton}
-                  onClick={handleFacebookSignup}
-                  disabled={isProcessing}
-                >
-                  <div className={styles.facebookIcon}></div>
-                  Facebook
-                </Button>
-              </div>
-            </div>
+            </Form>
 
             {/* Benefits */}
             <div className={styles.benefits}>
@@ -300,22 +294,24 @@ const DriverSignupPage = () => {
               </div>
             </div>
 
+            {/* Action Links */}
+            <div className={styles.actionLinks}>
+              <span>Already have an account? </span>
+              <Link to="/driver-login" className={styles.loginLink}>
+                Sign In
+              </Link>
+              <span className={styles.divider}>•</span>
+              <Link to="/admin-login" className={styles.adminLink}>
+                Admin Login
+              </Link>
+            </div>
+
             {/* Security Info */}
             <div className={styles.securityInfo}>
               <div className={styles.securityBadge}>
                 <Shield className="me-2" />
-                <span>Secured by Auth0</span>
+                <span>Secure driver registration</span>
               </div>
-            </div>
-
-            {/* Footer */}
-            <div className={styles.footer}>
-              <p className={styles.footerText}>
-                Already have an account?{' '}
-                <Link to="/admin-login" className={styles.footerLink}>
-                  Admin Login
-                </Link>
-              </p>
             </div>
           </Card.Body>
         </Card>

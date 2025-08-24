@@ -17,9 +17,28 @@ export const clearAuth0Data = () => {
   );
   auth0Keys.forEach(key => localStorage.removeItem(key));
   
-  // Clear Auth0 app state and context
-  localStorage.removeItem('auth0_app_state');
+  // Clear Auth0 app state and context, but preserve driver context if it exists
+  const auth0AppState = localStorage.getItem('auth0_app_state');
+  if (auth0AppState) {
+    try {
+      const parsedState = JSON.parse(auth0AppState);
+      if (parsedState.driverContext && parsedState.driverContext.type === 'driver_signup') {
+        console.log('🔄 Preserving driver context in auth0_app_state during clearAuth0Data');
+        // Don't clear auth0_app_state if it contains driver context
+      } else {
+        localStorage.removeItem('auth0_app_state');
+      }
+    } catch (e) {
+      // If we can't parse the state, clear it to be safe
+      localStorage.removeItem('auth0_app_state');
+    }
+  }
+  
   localStorage.removeItem('driver_signup_context');
+  
+  // Don't clear our custom driver signup key
+  // localStorage.removeItem('lakbai_driver_signup');
+  
   localStorage.removeItem('auth0_redirect_uri');
   localStorage.removeItem('auth0_state');
   
@@ -63,15 +82,63 @@ export const clearAllAuthData = () => {
  * Clears driver signup context specifically
  */
 export const clearDriverSignupContext = () => {
+  const context = localStorage.getItem('driver_signup_context');
+  if (context) {
+    console.log('🗑️ Clearing driver signup context:', JSON.parse(context));
+  }
+
+  // Check if auth0_app_state contains driver context before clearing
+  const auth0AppState = localStorage.getItem('auth0_app_state');
+  if (auth0AppState) {
+    try {
+      const parsedState = JSON.parse(auth0AppState);
+      if (parsedState.driverContext && parsedState.driverContext.type === 'driver_signup') {
+        console.log('🔄 Preserving driver context in auth0_app_state during clearDriverSignupContext');
+        // Don't clear auth0_app_state if it contains driver context
+      } else {
+        localStorage.removeItem('auth0_app_state');
+        console.log('🗑️ Cleared auth0_app_state (no driver context found)');
+      }
+    } catch (e) {
+      console.log('❌ Error parsing auth0_app_state during clearDriverSignupContext:', e);
+      localStorage.removeItem('auth0_app_state');
+    }
+  }
+
+  localStorage.removeItem('driver_signup_context');
+
+  // Don't clear our custom key as it's our primary fallback
+  // localStorage.removeItem('lakbai_driver_signup');
+
+  console.log('Driver signup context cleared (preserving lakbai_driver_signup key)');
+};
+
+// New function to completely clear driver signup context after profile completion
+export const clearDriverSignupContextCompletely = () => {
+  console.log('🗑️ Completely clearing all driver signup context after profile completion');
+  
+  localStorage.removeItem('lakbai_driver_signup');
   localStorage.removeItem('driver_signup_context');
   localStorage.removeItem('auth0_app_state');
+  
+  console.log('✅ All driver signup context cleared completely');
 };
 
 /**
  * Clears all signup and authentication context
  */
 export const clearAllSignupContext = () => {
-  clearDriverSignupContext();
+  // Don't clear driver signup context if it was just set (within last 5 seconds)
+  const driverSignupContext = JSON.parse(localStorage.getItem('driver_signup_context') || '{}');
+  if (driverSignupContext.timestamp && (Date.now() - driverSignupContext.timestamp) < 5000) {
+    console.log('🔄 Preserving recent driver signup context during clearAllSignupContext');
+  } else {
+    clearDriverSignupContext();
+  }
+  
+  // Don't clear our custom key as it's our primary fallback
+  // localStorage.removeItem('lakbai_driver_signup');
+  
   localStorage.removeItem('auth0_redirect_uri');
   localStorage.removeItem('auth0_state');
   sessionStorage.clear();
@@ -280,3 +347,70 @@ if (typeof window !== 'undefined') {
   window.manualSessionClear = manualSessionClear;
   window.forceFreshSession = forceFreshSession;
 }
+
+// Separate storage namespaces for admin vs driver flows
+const DRIVER_STORAGE_PREFIX = 'lakbai_driver_';
+const ADMIN_STORAGE_PREFIX = 'lakbai_admin_';
+
+// Driver-specific storage utilities
+export const driverStorage = {
+  set: (key, value) => {
+    localStorage.setItem(`${DRIVER_STORAGE_PREFIX}${key}`, JSON.stringify(value));
+  },
+  
+  get: (key, defaultValue = null) => {
+    try {
+      const item = localStorage.getItem(`${DRIVER_STORAGE_PREFIX}${key}`);
+      return item ? JSON.parse(item) : defaultValue;
+    } catch (e) {
+      console.error(`Error parsing driver storage key ${key}:`, e);
+      return defaultValue;
+    }
+  },
+  
+  remove: (key) => {
+    localStorage.removeItem(`${DRIVER_STORAGE_PREFIX}${key}`);
+  },
+  
+  clear: () => {
+    Object.keys(localStorage)
+      .filter(key => key.startsWith(DRIVER_STORAGE_PREFIX))
+      .forEach(key => localStorage.removeItem(key));
+  }
+};
+
+// Admin-specific storage utilities
+export const adminStorage = {
+  set: (key, value) => {
+    localStorage.setItem(`${ADMIN_STORAGE_PREFIX}${key}`, JSON.stringify(value));
+  },
+  
+  get: (key, defaultValue = null) => {
+    try {
+      const item = localStorage.getItem(`${ADMIN_STORAGE_PREFIX}${key}`);
+      return item ? JSON.parse(item) : defaultValue;
+    } catch (e) {
+      console.error(`Error parsing admin storage key ${key}:`, e);
+      return defaultValue;
+    }
+  },
+  
+  remove: (key) => {
+    localStorage.removeItem(`${ADMIN_STORAGE_PREFIX}${key}`);
+  },
+  
+  clear: () => {
+    Object.keys(localStorage)
+      .filter(key => key.startsWith(ADMIN_STORAGE_PREFIX))
+      .forEach(key => localStorage.removeItem(key));
+  }
+};
+
+// Clear all LakbAI-related storage
+export const clearAllLakbAIStorage = () => {
+  Object.keys(localStorage)
+    .filter(key => key.startsWith('lakbai_'))
+    .forEach(key => localStorage.removeItem(key));
+  
+  console.log('✅ All LakbAI storage cleared');
+};

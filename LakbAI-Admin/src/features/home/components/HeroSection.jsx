@@ -25,6 +25,12 @@ const HeroSection = () => {
                       Admin Login
                     </Button>
                   </Link>
+                  <Link to="/driver-login">
+                    <Button variant="outline-info" size="lg" className={styles.heroBtn}>
+                      <i className="bi bi-person-check me-2"></i>
+                      Driver Login
+                    </Button>
+                  </Link>
                   <Link to="/driver-signup">
                     <Button variant="outline-light" size="lg" className={styles.heroBtn}>
                       <i className="bi bi-person-plus me-2"></i>
