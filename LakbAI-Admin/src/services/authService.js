@@ -3,7 +3,7 @@ class AuthService {
   // Test credentials
   static TEST_CREDENTIALS = {
     email: 'livadomc@gmail.com',
-    password: 'admin123'
+    password: 'admin'
   };
 
   // Storage keys

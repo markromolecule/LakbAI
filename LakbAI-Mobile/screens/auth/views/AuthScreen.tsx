@@ -4,11 +4,14 @@ import {
   Alert,
   SafeAreaView,
   Text,
-  View
+  View,
+  TouchableOpacity,
+  StyleSheet
 } from 'react-native';
 import { LoginData, SignUpData } from '../../../shared/types/authentication';
 import LoginScreen from './LoginScreen';
 import SignUpScreen from './RegisterScreen';
+import HybridAuthScreen from './HybridAuthScreen';
 import styles from '../styles/AuthScreen.styles';
 import { useRouter } from 'expo-router';
 import { PassengerRoutes } from '../../../routes/PassengerRoutes';
@@ -23,7 +26,7 @@ interface AuthScreenProps {
 }
 
 const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, onSignUp, onGuestContinue }) => {
-  const [activeTab, setActiveTab] = useState<'login' | 'signup'>('login');
+  const [activeTab, setActiveTab] = useState<'login' | 'signup' | 'hybrid'>('login');
   const router = useRouter();
 
   const handleLogin = async (data: LoginData) => {
@@ -109,31 +112,65 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, onSignUp, onGuestConti
       <View style={styles.content}>
         {activeTab === 'login' ? (
           <LoginScreen onLogin={handleLogin} onForgotPassword={handleForgotPassword} onGuestContinue={handleGuestContinue} />
-        ) : (
+        ) : activeTab === 'signup' ? (
           <SignUpScreen onSignUp={handleSignUp} />
+        ) : (
+          <HybridAuthScreen onBackToTraditional={() => setActiveTab('login')} />
         )}
       </View>
 
       {/* Toggle footer */}
       <View style={styles.footer}>
         {activeTab === 'login' ? (
-          <Text style={styles.footerText}>
-            Don't have an account?{' '}
-            <Text style={styles.footerLink} onPress={() => setActiveTab('signup')}>
-              Sign up
+          <>
+            <Text style={styles.footerText}>
+              Don't have an account?{' '}
+              <Text style={styles.footerLink} onPress={() => setActiveTab('signup')}>
+                Sign up
+              </Text>
             </Text>
-          </Text>
-        ) : (
+            <TouchableOpacity 
+              style={quickSignInStyles.quickSignInButton}
+              onPress={() => setActiveTab('hybrid')}
+            >
+              <Text style={quickSignInStyles.quickSignInText}>Quick Sign-In</Text>
+            </TouchableOpacity>
+          </>
+        ) : activeTab === 'signup' ? (
           <Text style={styles.footerText}>
             Already have an account?{' '}
             <Text style={styles.footerLink} onPress={() => setActiveTab('login')}>
               Log in
             </Text>
           </Text>
-        )}
+        ) : null}
       </View>
     </SafeAreaView>
   );
 };
+
+const quickSignInStyles = StyleSheet.create({
+  quickSignInButton: {
+    backgroundColor: '#007AFF',
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    marginTop: 16,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  quickSignInText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+});
 
 export default AuthScreen;
