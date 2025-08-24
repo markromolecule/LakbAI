@@ -1,0 +1,21 @@
+# Allow access from all IPs for mobile development
+<RequireAll>
+    Require all granted
+</RequireAll>
+
+# CORS headers for mobile app
+Header always set Access-Control-Allow-Origin "*"
+Header always set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
+Header always set Access-Control-Allow-Headers "Content-Type, Authorization"
+
+# Enable URL rewriting
+RewriteEngine On
+
+# Handle preflight requests
+RewriteCond %{REQUEST_METHOD} OPTIONS
+RewriteRule ^(.*)$ routes/api.php [R=200,L]
+
+# Route all API requests to routes/api.php
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ routes/api.php [QSA,L]

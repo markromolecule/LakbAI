@@ -4,8 +4,12 @@ import styles from '../styles/AuthPage.module.css';
 
 const LoginPage = () => {
   return (
-    <div className={styles.authPage}>
-      <LoginForm />
+    <div className={styles.authPageContainer}>
+      <div className={`${styles.authContent} ${styles.singleLoginLayout}`}>
+        <div className={styles.loginSection}>
+          <LoginForm />
+        </div>
+      </div>
     </div>
   );
 };

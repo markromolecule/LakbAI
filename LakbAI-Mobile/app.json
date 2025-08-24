@@ -5,7 +5,7 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "lakbai-mobile",
+    "scheme": "lakbaimobile",
     "platforms": [
       "ios",
       "android",
@@ -15,7 +15,7 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.anonymous.LakbAI"
+      "bundleIdentifier": "com.lakbai.mobile"
     },
     "android": {
       "adaptiveIcon": {
@@ -29,7 +29,7 @@
         "android.permission.ACCESS_FINE_LOCATION",
         "android.permission.ACCESS_COARSE_LOCATION"
       ],
-      "package": "com.anonymous.LakbAI"
+      "package": "com.lakbai.mobile"
     },
     "web": {
       "bundler": "metro",

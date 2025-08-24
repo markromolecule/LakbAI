@@ -4,8 +4,12 @@ import styles from '../styles/AuthPage.module.css';
 
 const RegisterPage = () => {
   return (
-    <div className={styles.authPage}>
-      <RegisterForm />
+    <div className={styles.authPageContainer}>
+      <div className={`${styles.authContent} ${styles.singleRegisterLayout}`}>
+        <div className={styles.registerSection}>
+          <RegisterForm />
+        </div>
+      </div>
     </div>
   );
 };

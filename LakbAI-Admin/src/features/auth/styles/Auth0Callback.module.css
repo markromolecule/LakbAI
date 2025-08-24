@@ -1,0 +1,148 @@
+/* Auth0Callback Styles */
+.container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 20px;
+}
+
+.content {
+  width: 100%;
+  max-width: 500px;
+}
+
+.callbackCard {
+  border: none;
+  border-radius: 20px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.95);
+}
+
+.cardBody {
+  padding: 40px;
+  text-align: center;
+}
+
+.loadingContainer,
+.processingContainer,
+.errorContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.spinner {
+  width: 60px;
+  height: 60px;
+  border: 4px solid #e9ecef;
+  border-top: 4px solid #667eea;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loadingContainer h3,
+.processingContainer h3,
+.errorContainer h3 {
+  color: #2c3e50;
+  font-weight: 600;
+  margin: 0;
+  font-size: 24px;
+}
+
+.loadingContainer p,
+.processingContainer p {
+  color: #6c757d;
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+.errorIcon {
+  font-size: 60px;
+  color: #dc3545;
+}
+
+.errorMessage {
+  color: #6c757d;
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.5;
+  max-width: 400px;
+}
+
+.retryButton {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  border-radius: 12px;
+  padding: 12px 24px;
+  font-size: 16px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.retryButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .cardBody {
+    padding: 30px 20px;
+  }
+  
+  .loadingContainer h3,
+  .processingContainer h3,
+  .errorContainer h3 {
+    font-size: 20px;
+  }
+  
+  .loadingContainer p,
+  .processingContainer p,
+  .errorMessage {
+    font-size: 14px;
+  }
+  
+  .spinner {
+    width: 50px;
+    height: 50px;
+  }
+  
+  .errorIcon {
+    font-size: 50px;
+  }
+}
+
+@media (max-width: 480px) {
+  .container {
+    padding: 10px;
+  }
+  
+  .cardBody {
+    padding: 25px 15px;
+  }
+  
+  .loadingContainer h3,
+  .processingContainer h3,
+  .errorContainer h3 {
+    font-size: 18px;
+  }
+  
+  .spinner {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .errorIcon {
+    font-size: 40px;
+  }
+}

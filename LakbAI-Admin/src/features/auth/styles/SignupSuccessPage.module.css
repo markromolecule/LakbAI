@@ -1,0 +1,166 @@
+.container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 20px;
+}
+
+.content {
+  width: 100%;
+  max-width: 600px;
+}
+
+.successCard {
+  border: none;
+  border-radius: 20px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.cardBody {
+  padding: 40px;
+  text-align: center;
+}
+
+.iconContainer {
+  margin-bottom: 24px;
+}
+
+.successIcon {
+  font-size: 64px;
+  color: #28a745;
+  animation: bounceIn 0.8s ease-out;
+}
+
+.title {
+  color: #2c3e50;
+  font-weight: 700;
+  margin-bottom: 16px;
+  font-size: 28px;
+}
+
+.message {
+  color: #6c757d;
+  font-size: 16px;
+  line-height: 1.6;
+  margin-bottom: 24px;
+}
+
+.roleInfo {
+  text-align: left;
+  margin-bottom: 24px;
+  border: none;
+  background-color: #f8f9fa;
+}
+
+.roleList {
+  margin: 12px 0 0 0;
+  padding-left: 20px;
+}
+
+.roleList li {
+  margin-bottom: 8px;
+  color: #495057;
+}
+
+.nextSteps {
+  text-align: left;
+  margin-bottom: 32px;
+}
+
+.nextSteps h5 {
+  color: #2c3e50;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+.stepsList {
+  margin: 0;
+  padding-left: 20px;
+  color: #6c757d;
+}
+
+.stepsList li {
+  margin-bottom: 8px;
+  line-height: 1.5;
+}
+
+.buttonContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.loginButton {
+  padding: 12px 24px;
+  font-weight: 600;
+  border-radius: 10px;
+  transition: all 0.3s ease;
+}
+
+.loginButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
+
+.homeButton {
+  padding: 10px 20px;
+  border-radius: 10px;
+  transition: all 0.3s ease;
+}
+
+.homeButton:hover {
+  transform: translateY(-1px);
+}
+
+.autoRedirect {
+  color: #6c757d;
+  font-size: 14px;
+  margin: 0;
+  font-style: italic;
+}
+
+/* Animations */
+@keyframes bounceIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+  70% {
+    transform: scale(0.9);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .container {
+    padding: 16px;
+  }
+  
+  .cardBody {
+    padding: 24px;
+  }
+  
+  .title {
+    font-size: 24px;
+  }
+  
+  .successIcon {
+    font-size: 48px;
+  }
+  
+  .buttonContainer {
+    flex-direction: column;
+  }
+}
