@@ -4,7 +4,7 @@ import Constants from 'expo-constants';
 // Network configuration for different developers
 const DEVELOPER_CONFIGS: { [key: string]: string } = {
   //joseph: '192.168.254.105:8000',  // Local server ko
-  jiro: '192.168.1.11:8000',
+  jiro: '192.168.1.11:8000',     // Jiro's local server
 };
 
 // Auto-detect developer based on device/environment
@@ -22,7 +22,6 @@ const getCurrentDeveloper = (): string => {
   // Set this in each developer's environment
   
   // For now, default to the first developer (Joseph)
-  //return 'joseph';
   return 'jiro';
 };
 
