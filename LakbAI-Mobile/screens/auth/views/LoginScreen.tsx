@@ -14,7 +14,6 @@ import {
     Image
 } from 'react-native';
 import styles from '../styles/LoginScreen.styles';
-import { authService } from '../../../shared/services';
 
 interface LoginData {
   username: string;
@@ -63,23 +62,11 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onForgotPassword, on
     if (!validateForm()) return;
     
     setIsLoading(true);
-    
     try {
-      console.log('Attempting to login user:', loginData);
-      const response = await authService.login(loginData);
-      
-      if (response.status === 'success') {
-        Alert.alert(
-          'Success', 
-          'Login successful!',
-          [{ text: 'OK', onPress: () => onLogin(loginData) }]
-        );
-      } else {
-        Alert.alert('Login Failed', response.message || 'Please check your credentials and try again');
-      }
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      onLogin(loginData);
     } catch (error) {
-      console.error('Login error:', error);
-      Alert.alert('Error', 'Network error occurred. Please check your connection and try again.');
+      Alert.alert('Login Failed', 'Please check your credentials and try again');
     } finally {
       setIsLoading(false);
     }

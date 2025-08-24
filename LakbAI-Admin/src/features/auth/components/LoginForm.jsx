@@ -1,20 +1,14 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import styles from '../styles/LoginForm.module.css';
-import AuthService from '../../../services/authService';
+import { Link } from 'react-router-dom';
 
 const LoginForm = () => {
-  const navigate = useNavigate();
-  
   // State management - keep intact for team to use
   const [formData, setFormData] = useState({
-    email: '',
+    username: '',
     password: ''
   });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
-  
-
 
   // Event handlers - keep intact for team to use
   const handleChange = (e) => {
@@ -36,181 +30,145 @@ const LoginForm = () => {
     e.preventDefault();
     try {
       setLoading(true);
-      setErrors({});
-      
-      // Use AuthService for login
-      const result = await AuthService.login(formData.email, formData.password);
-      
-      if (result.success) {
-        // Redirect to admin dashboard
-        navigate('/admin/dashboard');
-      } else {
-        setErrors({ general: result.error });
-      }
+      // TODO: Implement login logic
+      console.log('Login data:', formData);
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      alert('Login successful!');
     } catch (error) {
-      setErrors({ general: 'An error occurred during login' });
+      setErrors({ general: 'Invalid email or password' });
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className={styles.loginFormContainer}>
-      <div className={styles.loginCard}>
-        {/* Back Button */}
-        <Link to="/" className={styles.backButton}>
-          <i className="bi bi-arrow-left"></i>
-        </Link>
-
-        {/* Header */}
-        <div className={styles.header}>
-          <div className={styles.logoContainer}>
-            <img
-              src="/image/logofinal.png"
-              width="50"
-              height="50"
-              className={styles.logo}
-              alt="LakbAI Logo"
-            />
-            <div className={styles.logoText}>
-              <h3 className={styles.brandName}>LakbAI</h3>
-              <p className={styles.brandTagline}>A Smarter Way to Ride</p>
-            </div>
-          </div>
-          <h2 className={styles.formTitle}>Welcome Back</h2>
-          <p className={styles.formSubtitle}>Sign in to your LakbAI account</p>
-        </div>
-
-        {/* Tab Navigation */}
-        <div className={styles.tabNavigation}>
-          <button className={`${styles.tabButton} ${styles.active}`}>
-            Sign In
-          </button>
-          <Link to="/register" className={styles.tabButton}>
-            Sign Up
-          </Link>
-        </div>
-
-        {/* Login Form */}
-        <form onSubmit={handleSubmit} className={styles.loginForm}>
-          {errors.general && (
-            <div className={styles.errorAlert}>
-              <i className="bi bi-exclamation-triangle-fill"></i>
-              {errors.general}
-            </div>
-          )}
-
-          {/* Email Field */}
-          <div className={styles.formGroup}>
-            <label htmlFor="email" className={styles.formLabel}>
-              Email Address
-            </label>
-            <input
-              type="email"
-              className={`${styles.formControl} ${errors.email ? styles.invalid : ''}`}
-              id="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              placeholder="Enter your email"
-            />
-            {errors.email && (
-              <div className={styles.errorMessage}>
-                {errors.email}
+    <div className="container-fluid vh-100 d-flex align-items-center justify-content-center px-3">
+      <div className="row w-100 justify-content-center">
+        <div className="col-12 col-sm-10 col-md-8 col-lg-6 col-xl-5 col-xxl-4">
+          <div className="card shadow-lg border-0" style={{ borderRadius: '20px' }}>
+            <div className="card-body p-4 p-md-5">
+              {/* Header */}
+              <div className="text-center mb-4">
+                <img
+                  src="/image/logofinal.png"
+                  width="60"
+                  height="60"
+                  className="mb-3"
+                  alt="LakbAI Logo"
+                />
+                <h2 className="fw-bold text-primary mb-2">Welcome Back</h2>
+                <p className="text-muted">Sign in to your LakbAI account</p>
               </div>
-            )}
-          </div>
 
-          {/* Password Field */}
-          <div className={styles.formGroup}>
-            <label htmlFor="password" className={styles.formLabel}>
-              Password
-            </label>
-            <input
-              type="password"
-              className={`${styles.formControl} ${errors.password ? styles.invalid : ''}`}
-              id="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              placeholder="Enter your password"
-            />
-            {errors.password && (
-              <div className={styles.errorMessage}>
-                {errors.password}
+              {/* Login Form */}
+              <form onSubmit={handleSubmit}>
+                {errors.general && (
+                  <div className="alert alert-danger alert-dismissible fade show" role="alert">
+                    <i className="bi bi-exclamation-triangle-fill me-2"></i>
+                    {errors.general}
+                  </div>
+                )}
+
+                {/* Username Field */}
+                <div className="mb-3">
+                  <label htmlFor="username" className="form-label fw-semibold">
+                    <i className="bi bi-person-fill me-2 text-primary"></i>
+                    Username
+                  </label>
+                  <input
+                    type="text"
+                    className={`form-control form-control-lg ${errors.username ? 'is-invalid' : ''}`}
+                    id="username"
+                    name="username"
+                    value={formData.username}
+                    onChange={handleChange}
+                    placeholder="Enter your username"
+                    style={{ borderRadius: '12px', padding: '12px 16px' }}
+                  />
+                  {errors.username && (
+                    <div className="invalid-feedback">
+                      {errors.username}
+                    </div>
+                  )}
+                </div>
+
+                {/* Password Field */}
+                <div className="mb-4">
+                  <label htmlFor="password" className="form-label fw-semibold">
+                    <i className="bi bi-lock-fill me-2 text-primary"></i>
+                    Password
+                  </label>
+                  <input
+                    type="password"
+                    className={`form-control form-control-lg ${errors.password ? 'is-invalid' : ''}`}
+                    id="password"
+                    name="password"
+                    value={formData.password}
+                    onChange={handleChange}
+                    placeholder="Enter your password"
+                    style={{ borderRadius: '12px', padding: '12px 16px' }}
+                  />
+                  {errors.password && (
+                    <div className="invalid-feedback">
+                      {errors.password}
+                    </div>
+                  )}
+                </div>
+
+                {/* Remember Me & Forgot Password */}
+                <div className="d-flex flex-column flex-sm-row justify-content-between align-items-center mb-4">
+                  <div className="form-check mb-2 mb-sm-0">
+                    <input
+                      className="form-check-input"
+                      type="checkbox"
+                      id="rememberMe"
+                    />
+                    <label className="form-check-label text-muted" htmlFor="rememberMe">
+                      Remember me
+                    </label>
+                  </div>
+                  <a href="#forgot" className="text-primary text-decoration-none">
+                    Forgot password?
+                  </a>
+                </div>
+
+                {/* Submit Button */}
+                <button
+                  type="submit"
+                  className="btn btn-primary btn-lg w-100 fw-semibold"
+                  disabled={loading}
+                  style={{
+                    borderRadius: '12px',
+                    background: 'linear-gradient(135deg, #2c5aa0 0%, #1e3d72 100%)',
+                    border: 'none',
+                    minHeight: '50px'
+                  }}
+                >
+                  {loading ? (
+                    <>
+                      <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                      Signing in...
+                    </>
+                  ) : (
+                    <>
+                      <i className="bi bi-box-arrow-in-right me-2"></i>
+                      Sign In
+                    </>
+                  )}
+                </button>
+              </form>
+
+              {/* Register Link */}
+              <div className="text-center mt-4 pt-3 border-top">
+                <p className="text-muted mb-0">
+                  Don't have an account?{' '}
+                  <Link to="/register" className="text-primary text-decoration-none fw-semibold">
+                    Create Account
+                  </Link>
+                </p>
               </div>
-            )}
-          </div>
-
-          {/* Submit Button */}
-          <button
-            type="submit"
-            className={styles.submitButton}
-            disabled={loading}
-          >
-            {loading ? (
-              <>
-                <span className={styles.spinner}></span>
-                Signing in...
-              </>
-            ) : (
-              'Sign In'
-            )}
-          </button>
-
-          {/* Additional Links */}
-          <div className={styles.additionalLinks}>
-            <Link to="/forgot-password" className={styles.forgotPassword}>
-              <i className="bi bi-key"></i>
-              Forgot your password?
-            </Link>
-          </div>
-        </form>
-
-        {/* Footer Content */}
-        <div className={styles.formFooter}>
-          <div className={styles.helpSection}>
-            <h4 className={styles.helpTitle}>Need Help?</h4>
-            <p className={styles.helpText}>
-              Having trouble signing in? Contact our support team for assistance.
-            </p>
-            <div className={styles.contactInfo}>
-              <a href="mailto:support@lakbai.com" className={styles.contactLink}>
-                <i className="bi bi-envelope"></i>
-                support@lakbai.com
-              </a>
-              <a href="tel:+639123456789" className={styles.contactLink}>
-                <i className="bi bi-telephone"></i>
-                +63 912 345 6789
-              </a>
             </div>
-          </div>
-
-          <div className={styles.divider}>
-            <span className={styles.dividerText}>Alternative Sign-In Options</span>
-          </div>
-
-          <div className={styles.socialSignInSection}>
-            <button type="button" className={styles.socialButton}>
-              <i className="bi bi-google"></i>
-              <span>Continue with Google</span>
-            </button>
-            <button type="button" className={styles.socialButton}>
-              <i className="bi bi-facebook"></i>
-              <span>Continue with Facebook</span>
-            </button>
-          </div>
-
-          <div className={styles.legalLinks}>
-            <p className={styles.termsText}>
-              By signing in, you agree to our{' '}
-              <Link to="/terms" className={styles.legalLink}>Terms of Service</Link>
-              {' '}and{' '}
-              <Link to="/privacy" className={styles.legalLink}>Privacy Policy</Link>
-            </p>
-            <p className={styles.copyrightText}>
-              © 2024 LakbAI. All rights reserved.
-            </p>
           </div>
         </div>
       </div>

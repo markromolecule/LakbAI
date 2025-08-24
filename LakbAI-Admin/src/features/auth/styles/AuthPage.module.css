@@ -3,22 +3,7 @@
   background: linear-gradient(135deg, #2c5aa0 0%, #1e3d72 100%);
   min-height: 100vh;
   padding: 0;
-  margin: 0;
   position: relative;
-  overflow: hidden;
-}
-
-/* Global reset for auth pages */
-.authPageContainer *,
-.authPageContainer *::before,
-.authPageContainer *::after {
-  box-sizing: border-box;
-}
-
-/* Remove any default body margins when auth page is displayed */
-body:has(.authPageContainer) {
-  margin: 0;
-  padding: 0;
   overflow: hidden;
 }
 
@@ -34,128 +19,6 @@ body:has(.authPageContainer) {
     radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
     radial-gradient(circle at 40% 40%, rgba(255, 193, 7, 0.1) 0%, transparent 50%);
   pointer-events: none;
-}
-
-/* New Auth Page Container */
-.authPageContainer {
-  min-height: 100vh;
-  width: 100vw;
-  background: linear-gradient(135deg, #2c5aa0 0%, #1e3d72 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px 0;
-  margin: 0;
-  box-sizing: border-box;
-  overflow: auto;
-  position: fixed;
-  top: 0;
-  left: 0;
-}
-
-.authContent {
-  width: calc(100vw - 40px);
-  max-height: calc(100vh - 40px);
-  max-width: 1400px;
-  display: flex;
-  flex-direction: column;
-  padding: 10px;
-  box-sizing: border-box;
-  overflow: visible;
-}
-
-/* Desktop Layout - Side by Side */
-.desktopLayout {
-  display: flex;
-  gap: 20px;
-  align-items: stretch;
-  height: 100%;
-  flex: 1;
-  width: 100%;
-}
-
-.loginSection {
-  flex: 1;
-  display: flex;
-  align-items: stretch;
-  min-width: 0;
-  height: 100%;
-  max-width: 1200px;
-  margin: 0 auto;
-}
-
-.registerSection {
-  flex: 1;
-  display: flex;
-  align-items: stretch;
-  min-width: 0;
-  height: 100%;
-  max-width: 1200px;
-  margin: 0 auto;
-}
-
-/* Single form layouts (when used individually) */
-.authContent:has(.loginSection:only-child) .loginSection {
-  max-width: 1200px;
-}
-
-.authContent:has(.registerSection:only-child) .registerSection {
-  max-width: 1200px;
-}
-
-/* Fallback for single forms without :has() support */
-.singleLoginLayout .loginSection {
-  max-width: 1200px;
-}
-
-.singleRegisterLayout .registerSection {
-  max-width: 1200px;
-}
-
-/* Mobile Layout - Tabbed */
-.mobileLayout {
-  display: none;
-  flex: 1;
-  flex-direction: column;
-  height: 100%;
-  width: 100%;
-  overflow: hidden;
-}
-
-.mobileTabNavigation {
-  display: flex;
-  background: #2a2a2a;
-  border-radius: 8px;
-  padding: 4px;
-  margin-bottom: 10px;
-  flex-shrink: 0;
-}
-
-.mobileTab {
-  flex: 1;
-  padding: 10px 16px;
-  background: none;
-  border: none;
-  border-radius: 6px;
-  color: #999;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  font-size: clamp(0.9rem, 2.5vw, 1rem);
-}
-
-.mobileTab.active {
-  background: #2c5aa0;
-  color: white;
-}
-
-.mobileContent {
-  width: 100%;
-  flex: 1;
-  display: flex;
-  align-items: stretch;
-  height: 100%;
-  overflow: hidden;
 }
 
 .authCard {
@@ -177,159 +40,16 @@ body:has(.authPageContainer) {
   margin-bottom: 0;
 }
 
-/* Large Screen Adjustments */
-@media (min-width: 1400px) {
-  .authContent {
-    width: calc(100vw - 40px);
-    height: calc(100vh - 40px);
-    padding: 20px;
-  }
-  
-  .desktopLayout {
-    gap: 20px;
-  }
-}
-
-@media (min-width: 1600px) {
-  .authContent {
-    width: calc(100vw - 60px);
-    height: calc(100vh - 60px);
-    padding: 30px;
-  }
-  
-  .desktopLayout {
-    gap: 25px;
-  }
-}
-
-/* Responsive Design */
-@media (max-width: 1200px) {
-  .desktopLayout {
-    gap: 15px;
-  }
-}
-
-@media (max-width: 992px) {
-  .desktopLayout {
-    gap: 12px;
-  }
-  
-  .authContent {
-    width: calc(100vw - 16px);
-    height: calc(100vh - 16px);
-    padding: 8px;
-  }
-}
-
-/* Large Phone Screens (768px and below) */
+/* Mobile responsive adjustments */
 @media (max-width: 768px) {
-  .authPageContainer {
-    height: auto;
-    min-height: 100vh;
-    align-items: flex-start;
-    padding: 15px 0;
-  }
-  
-  .authContent {
-    width: calc(100vw - 30px);
-    max-height: none;
-    padding: 10px;
-  }
-  
-  .desktopLayout {
-    display: none;
-  }
-  
-  .mobileLayout {
-    display: flex;
-  }
-  
-  .mobileTabNavigation {
-    margin-bottom: 12px;
-    padding: 4px;
-    flex-shrink: 0;
-  }
-  
-  .mobileTab {
-    padding: clamp(10px, 2.5vw, 14px) clamp(16px, 4vw, 20px);
-    font-size: clamp(0.9rem, 2.5vw, 1rem);
-  }
-  
-  .mobileContent {
-    overflow-y: auto;
-    flex: 1;
+  .authPage {
+    padding: 0;
   }
 }
 
-/* Mid-size Phone Screens (576px and below) */
 @media (max-width: 576px) {
-  .authPageContainer {
-    padding: 8px 0;
-  }
-  
-  .authContent {
-    width: calc(100vw - 12px);
-    max-height: none;
-    min-height: calc(100vh - 16px);
-    padding: 6px;
-  }
-  
-  .mobileTabNavigation {
-    margin-bottom: 10px;
-    padding: 3px;
-  }
-  
-  .mobileTab {
-    padding: clamp(8px, 2vw, 12px) clamp(12px, 3vw, 16px);
-    font-size: clamp(0.85rem, 2.2vw, 0.95rem);
-  }
-}
-
-/* Small Phone Screens (480px and below) */
-@media (max-width: 480px) {
-  .authPageContainer {
-    padding: 6px 0;
-  }
-  
-  .authContent {
-    width: calc(100vw - 8px);
-    max-height: none;
-    min-height: calc(100vh - 12px);
-    padding: 4px;
-  }
-  
-  .mobileTabNavigation {
-    margin-bottom: 8px;
-    padding: 2px;
-  }
-  
-  .mobileTab {
-    padding: clamp(6px, 1.5vw, 10px) clamp(8px, 2vw, 12px);
-    font-size: clamp(0.8rem, 2vw, 0.9rem);
-  }
-}
-
-/* Extra Small Phone Screens (360px and below) */
-@media (max-width: 360px) {
-  .authPageContainer {
-    padding: 4px 0;
-  }
-  
-  .authContent {
-    width: calc(100vw - 6px);
-    max-height: none;
-    min-height: calc(100vh - 8px);
-    padding: 3px;
-  }
-  
-  .mobileTabNavigation {
-    margin-bottom: 6px;
-    padding: 2px;
-  }
-  
-  .mobileTab {
-    padding: clamp(5px, 1.2vw, 8px) clamp(6px, 1.5vw, 10px);
-    font-size: clamp(0.75rem, 1.8vw, 0.85rem);
+  .authPage {
+    padding: 0;
   }
 }
 

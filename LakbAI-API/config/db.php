@@ -1,17 +1,18 @@
 <?php
-// Database configuration
-$host = '127.0.0.1';
-$user = 'root';          // XAMPP default
-$pass = '';              // XAMPP default (empty)
-$db   = 'lakbai_db';     // Replace with your database name
+require __DIR__ . '/../vendor/autoload.php';
 
-// Connect to MySQL
+$dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/..');
+$dotenv->load();
+
+$host = $_ENV['DB_HOST'];
+$db   = $_ENV['DB_NAME'];
+$user = $_ENV['DB_USER'];
+$pass = $_ENV['DB_PASS'];
+
+// sample values for the .ENV file
 $conn = new mysqli($host, $user, $pass, $db);
-
-// Check connection
 if ($conn->connect_error) {
-    die(json_encode([
-        'status' => 'error',
-        'message' => 'Database connection failed: ' . $conn->connect_error
-    ]));
+    http_response_code(500);
+    die(json_encode(['error' => 'DB connection failed']));
 }
+

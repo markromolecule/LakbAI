@@ -1,7 +1,7 @@
 import React from 'react';
 import { Text, View } from 'react-native';
-import HybridAuthScreen from '../screens/auth/views/HybridAuthScreen';
+import AuthScreen from '../screens/auth/views/AuthScreen';
 
 export default function Page() {
-  return <HybridAuthScreen />;
+  return <AuthScreen />;
 }

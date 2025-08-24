@@ -1,10 +1,9 @@
 import React from 'react';
-import { Container, Navbar, Nav, Button, Dropdown } from 'react-bootstrap';
+import { Container, Navbar, Nav } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import styles from './Header.module.css';
 
 const Header = () => {
-
   return (
     <Navbar bg="white" expand="lg" className={`${styles.customHeader} shadow-sm py-2 sticky-top`}>
       <Container>
@@ -22,24 +21,22 @@ const Header = () => {
         <Navbar.Toggle aria-controls="basic-navbar-nav" />
         
         <Navbar.Collapse id="basic-navbar-nav">
-          <Nav className={`${styles.navRight} ms-auto`}>
+          <Nav className="ms-auto me-4">
             <Nav.Link href="#biyabot" className={`${styles.navLinkCustom} me-4`}>
               <i className="bi bi-robot me-1"></i>
               BiyaBot
             </Nav.Link>
-            <Nav.Link href="#about" className={`${styles.navLinkCustom} me-4`}>
+            <Nav.Link href="#about" className={styles.navLinkCustom}>
               <i className="bi bi-info-circle me-1"></i>
               About Us
             </Nav.Link>
-            
-            {/* Profile as navigation link for mobile */}
-            <Nav.Link href="#profile" className={`${styles.navLinkCustom} d-lg-none`}>
-              <i className="bi bi-person-fill me-1"></i>
-              Profile
-            </Nav.Link>
-            
-
           </Nav>
+          
+          <div className={styles.userProfile}>
+            <div className={`${styles.userAvatar} bg-primary rounded-circle d-flex align-items-center justify-content-center`}>
+              <i className="bi bi-person-fill text-white"></i>
+            </div>
+          </div>
         </Navbar.Collapse>
       </Container>
     </Navbar>

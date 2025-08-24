@@ -22,25 +22,6 @@
   z-index: 2;
 }
 
-.footerBrand img {
-  width: clamp(40px, 8vw, 50px);
-  height: clamp(40px, 8vw, 50px);
-  transition: all 0.3s ease;
-}
-
-.footerBrand h3 {
-  font-size: clamp(1.5rem, 4vw, 1.75rem);
-  font-weight: 700;
-  margin: 0;
-  line-height: 1.2;
-}
-
-.footerBrand p {
-  font-size: clamp(0.85rem, 2vw, 0.95rem);
-  line-height: 1.6;
-  margin: clamp(0.75rem, 2vh, 1rem) 0;
-}
-
 .footerLinks {
   list-style: none;
   padding: 0;
@@ -48,48 +29,35 @@
 }
 
 .footerLinks li {
-  margin-bottom: clamp(0.25rem, 1vh, 0.5rem);
+  margin-bottom: 0.5rem;
 }
 
 .footerLink {
   color: rgba(255, 255, 255, 0.7);
   text-decoration: none;
   transition: all 0.3s ease;
-  font-size: clamp(0.8rem, 2vw, 0.9rem);
-  display: inline-block;
-  padding: clamp(2px, 0.5vh, 4px) 0;
-  min-height: clamp(24px, 4vw, 28px);
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
+  font-size: 0.9rem;
 }
 
 .footerLink:hover {
   color: #ffc107;
   text-decoration: none;
   padding-left: 5px;
-  transform: translateX(3px);
 }
 
 .socialLinks {
-  margin-top: clamp(0.75rem, 2vh, 1rem);
-  display: flex;
-  flex-wrap: wrap;
-  gap: clamp(0.5rem, 1vw, 0.75rem);
+  margin-top: 1rem;
 }
 
 .socialBtn {
-  width: clamp(35px, 8vw, 40px);
-  height: clamp(35px, 8vw, 40px);
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   transition: all 0.3s ease;
   border: 1px solid rgba(255, 255, 255, 0.3);
-  font-size: clamp(0.9rem, 2.2vw, 1rem);
-  min-width: clamp(35px, 8vw, 40px);
-  min-height: clamp(35px, 8vw, 40px);
 }
 
 .socialBtn:hover {
@@ -105,73 +73,24 @@
   z-index: 2;
 }
 
-.contactInfo .d-flex {
-  margin-bottom: clamp(0.5rem, 1.5vh, 0.75rem);
-  align-items: flex-start;
-  gap: clamp(0.5rem, 1vw, 0.75rem);
-  justify-content: flex-start;
-}
-
-.contactInfo i {
-  font-size: clamp(12px, 2.5vw, 14px);
-  margin-top: clamp(1px, 0.2vh, 2px);
-  flex-shrink: 0;
-}
-
-.contactInfo span {
-  font-size: clamp(0.8rem, 2vw, 0.9rem);
-  line-height: 1.4;
-}
-
 .footerBottomLinks a {
   color: rgba(255, 255, 255, 0.6);
   text-decoration: none;
   transition: color 0.3s ease;
-  font-size: clamp(0.75rem, 1.8vw, 0.85rem);
-  padding: clamp(2px, 0.5vh, 4px) 0;
-  display: inline-block;
 }
 
 .footerBottomLinks a:hover {
   color: #ffc107;
 }
 
-/* Enhanced Responsive Design */
-@media (max-width: 1200px) {
-  .customFooter .py-5 {
-    padding-top: clamp(2rem, 5vh, 3rem) !important;
-    padding-bottom: clamp(2rem, 5vh, 3rem) !important;
-  }
-}
-
-@media (max-width: 992px) {
-  .customFooter .py-5 {
-    padding-top: clamp(1.5rem, 4vh, 2.5rem) !important;
-    padding-bottom: clamp(1.5rem, 4vh, 2.5rem) !important;
-  }
-  
-  .footerBrand h3 {
-    font-size: clamp(1.3rem, 3.5vw, 1.6rem);
-  }
-  
-  .footerBrand p {
-    font-size: clamp(0.8rem, 1.8vw, 0.9rem);
-  }
-}
-
+/* Responsive Design */
 @media (max-width: 768px) {
   .customFooter {
     text-align: center;
   }
   
-  .customFooter .py-5 {
-    padding-top: clamp(1.25rem, 3vh, 2rem) !important;
-    padding-bottom: clamp(1.25rem, 3vh, 2rem) !important;
-  }
-  
   .footerBottomLinks {
-    margin-top: clamp(0.75rem, 2vh, 1rem);
-    text-align: center;
+    margin-top: 1rem;
   }
   
   .socialLinks {
@@ -179,242 +98,14 @@
     display: flex;
   }
   
-  .contactInfo {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-  }
-  
-  .contactInfo .d-flex {
+  .contactItem {
     justify-content: center;
-    text-align: center;
-    max-width: 300px;
-    margin-left: auto;
-    margin-right: auto;
-    width: 100%;
-  }
-  
-  .footerBrand {
-    margin-bottom: clamp(1rem, 3vh, 1.5rem);
-  }
-  
-  .footerBrand .d-flex {
-    justify-content: center;
-  }
-  
-  .footerBrand img {
-    width: clamp(35px, 7vw, 45px);
-    height: clamp(35px, 7vw, 45px);
-  }
-  
-  .footerBrand h3 {
-    font-size: clamp(1.2rem, 3vw, 1.5rem);
-  }
-  
-  .footerBrand p {
-    font-size: clamp(0.75rem, 1.6vw, 0.85rem);
-    max-width: 400px;
-    margin-left: auto;
-    margin-right: auto;
-  }
-  
-  /* Center quick links on mobile */
-  .footerLinks {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-  }
-  
-  .footerLink {
-    justify-content: center;
-    text-align: center;
   }
 }
 
 @media (max-width: 576px) {
-  .customFooter .py-5 {
-    padding-top: clamp(1rem, 2.5vh, 1.5rem) !important;
-    padding-bottom: clamp(1rem, 2.5vh, 1.5rem) !important;
-  }
-  
   .footerBottomLinks a {
     display: block;
-    margin: clamp(0.25rem, 1vh, 0.5rem) 0;
-    text-align: center;
-  }
-  
-  .footerBrand img {
-    width: clamp(30px, 6vw, 40px);
-    height: clamp(30px, 6vw, 40px);
-  }
-  
-  .footerBrand h3 {
-    font-size: clamp(1.1rem, 2.8vw, 1.3rem);
-  }
-  
-  .footerBrand p {
-    font-size: clamp(0.7rem, 1.4vw, 0.8rem);
-  }
-  
-  .socialBtn {
-    width: clamp(32px, 7vw, 38px);
-    height: clamp(32px, 7vw, 38px);
-    min-width: clamp(32px, 7vw, 38px);
-    min-height: clamp(32px, 7vw, 38px);
-  }
-  
-  .contactInfo {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-  }
-  
-  .contactInfo .d-flex {
-    justify-content: center;
-    text-align: center;
-    max-width: 280px;
-    width: 100%;
-  }
-  
-  .contactInfo span {
-    font-size: clamp(0.75rem, 1.6vw, 0.85rem);
-  }
-  
-  .contactInfo i {
-    font-size: clamp(11px, 2.2vw, 13px);
-  }
-  
-  /* Ensure quick links remain centered on smaller screens */
-  .footerLinks {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-  }
-  
-  .footerLink {
-    justify-content: center;
-    text-align: center;
-  }
-}
-
-@media (max-width: 400px) {
-  .customFooter .py-5 {
-    padding-top: clamp(0.75rem, 2vh, 1.25rem) !important;
-    padding-bottom: clamp(0.75rem, 2vh, 1.25rem) !important;
-  }
-  
-  .footerBrand img {
-    width: clamp(28px, 5vw, 35px);
-    height: clamp(28px, 5vw, 35px);
-  }
-  
-  .footerBrand h3 {
-    font-size: clamp(1rem, 2.5vw, 1.2rem);
-  }
-  
-  .footerBrand p {
-    font-size: clamp(0.65rem, 1.2vw, 0.75rem);
-  }
-  
-  .socialBtn {
-    width: clamp(30px, 6vw, 35px);
-    height: clamp(30px, 6vw, 35px);
-    min-width: clamp(30px, 6vw, 35px);
-    min-height: clamp(30px, 6vw, 35px);
-  }
-  
-  .contactInfo {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-  }
-  
-  .contactInfo .d-flex {
-    justify-content: center;
-    text-align: center;
-    max-width: 260px;
-    width: 100%;
-  }
-  
-  .contactInfo span {
-    font-size: clamp(0.7rem, 1.4vw, 0.8rem);
-  }
-  
-  .contactInfo i {
-    font-size: clamp(10px, 2vw, 12px);
-  }
-  
-  /* Ensure quick links remain centered on very small screens */
-  .footerLinks {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-  }
-  
-  .footerLink {
-    justify-content: center;
-    text-align: center;
-  }
-}
-
-/* Tablet Landscape */
-@media (min-width: 768px) and (max-width: 1024px) and (orientation: landscape) {
-  .customFooter .py-5 {
-    padding-top: clamp(1rem, 2vh, 1.5rem) !important;
-    padding-bottom: clamp(1rem, 2vh, 1.5rem) !important;
-  }
-}
-
-/* Large Desktop */
-@media (min-width: 1440px) {
-  .customFooter .py-5 {
-    padding-top: clamp(3rem, 8vh, 4rem) !important;
-    padding-bottom: clamp(3rem, 8vh, 4rem) !important;
-  }
-  
-  .footerBrand h3 {
-    font-size: clamp(1.8rem, 5vw, 2rem);
-  }
-  
-  .footerBrand p {
-    font-size: clamp(1rem, 2.5vw, 1.1rem);
-  }
-  
-  .socialBtn {
-    width: clamp(45px, 10vw, 50px);
-    height: clamp(45px, 10vw, 50px);
-    min-width: clamp(45px, 10vw, 50px);
-    min-height: clamp(45px, 10vw, 50px);
-  }
-}
-
-/* Ultra-wide screens */
-@media (min-width: 1920px) {
-  .customFooter .py-5 {
-    padding-top: clamp(4rem, 10vh, 5rem) !important;
-    padding-bottom: clamp(4rem, 10vh, 5rem) !important;
-  }
-  
-  .footerBrand h3 {
-    font-size: clamp(2rem, 6vw, 2.5rem);
-  }
-  
-  .footerBrand p {
-    font-size: clamp(1.1rem, 3vw, 1.3rem);
-  }
-  
-  .socialBtn {
-    width: clamp(50px, 12vw, 60px);
-    height: clamp(50px, 12vw, 60px);
-    min-width: clamp(50px, 12vw, 60px);
-    min-height: clamp(50px, 12vw, 60px);
-  }
-}
-
-/* High DPI displays */
-@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
-  .customFooter {
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
+    margin: 0.25rem 0;
   }
 }
