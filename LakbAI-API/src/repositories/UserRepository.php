@@ -284,5 +284,52 @@ class UserRepository extends BaseRepository {
 
         return $users;
     }
+
+    /**
+     * Find user by Auth0 ID
+     */
+    public function findByAuth0Id($auth0Id) {
+        $query = "SELECT * FROM {$this->table_name} WHERE auth0_id = ? LIMIT 1";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bind_param("s", $auth0Id);
+        $stmt->execute();
+        
+        $result = $stmt->get_result();
+        return $result->num_rows > 0 ? $result->fetch_assoc() : null;
+    }
+
+    /**
+     * Create user with Auth0 data
+     */
+    public function createWithAuth0($userData) {
+        $query = "INSERT INTO {$this->table_name} 
+                SET auth0_id=?, username=?, email=?, email_verified=?, name=?, 
+                    nickname=?, picture=?, provider=?, connection=?, password=?,
+                    user_type=?, roles=?, profile_completed=?, created_at=NOW(), updated_at=NOW()";
+
+        $stmt = $this->conn->prepare($query);
+
+        $stmt->bind_param("sssssssssssss", 
+            $userData['auth0_id'],
+            $userData['username'],
+            $userData['email'],
+            $userData['email_verified'],
+            $userData['name'],
+            $userData['nickname'],
+            $userData['picture'],
+            $userData['provider'],
+            $userData['connection'],
+            $userData['password'],
+            $userData['user_type'],
+            $userData['roles'],
+            $userData['profile_completed']
+        );
+
+        if ($stmt->execute()) {
+            return $this->conn->insert_id;
+        }
+
+        return false;
+    }
 }
 ?>

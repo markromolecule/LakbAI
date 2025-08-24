@@ -31,17 +31,7 @@ const Header = () => {
               About Us
             </Nav.Link>
             
-            {/* Profile as navigation link for mobile */}
-            <Nav.Link href="#profile" className={`${styles.navLinkCustom} d-lg-none`}>
-              <i className="bi bi-person-fill me-1"></i>
-              Profile
-            </Nav.Link>
-            
-            {/* Text-based profile for desktop */}
-            <div className={`${styles.userProfileText} d-none d-lg-flex align-items-center`}>
-              <i className="bi bi-person-fill me-2"></i>
-              <span>Profile</span>
-            </div>
+            {/* Profile removed as requested */}
           </Nav>
         </Navbar.Collapse>
       </Container>

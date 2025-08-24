@@ -28,17 +28,29 @@ class AuthService {
     options: RequestInit = {}
   ): Promise<ApiResponse<T>> {
     try {
-      const url = `${API_BASE_URL}/${endpoint}`;
+      // For traditional auth endpoints, we need to include the action in the request body
+      // and call the base API URL
+      const url = API_BASE_URL;
+      
+      // Add the action to the request body for traditional auth endpoints
+      let requestBody = options.body;
+      if (endpoint === 'register' || endpoint === 'login') {
+        const bodyData = JSON.parse(options.body as string);
+        bodyData.action = endpoint;
+        requestBody = JSON.stringify(bodyData);
+      }
       
       const defaultOptions: RequestInit = {
         headers: {
           'Content-Type': 'application/json',
         },
         ...options,
+        body: requestBody,
       };
 
       if (__DEV__) {
         console.log('API Request:', url);
+        console.log('Request Body:', requestBody);
       }
 
       const response = await fetch(url, defaultOptions);

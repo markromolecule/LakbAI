@@ -24,9 +24,11 @@ error_reporting(E_ALL);
 // Bootstrap the application with new architecture
 $app = require_once __DIR__ . '/../bootstrap/app.php';
 require_once __DIR__ . '/../controllers/AuthController.php';
+require_once __DIR__ . '/../controllers/Auth0Controller.php';
 
 // Initialize controller with database connection
 $authController = new AuthController($app->get('Database'));
+$auth0Controller = new Auth0Controller($app->get('Database'));
 
 // Get the request method and path
 $method = $_SERVER['REQUEST_METHOD'];
@@ -116,7 +118,37 @@ function transformMobileRegistrationData($mobileData) {
 
 // Route handling
 try {
-    // Auth routes
+    // Handle requests with actions in the request body (for mobile app)
+    if (isset($input['action']) && $method === 'POST') {
+        switch ($input['action']) {
+            case 'register':
+                // Check if this is web registration (already in correct format) or mobile
+                $isWebRegistration = isset($input['first_name']) && isset($input['last_name']) && isset($input['phone_number']);
+                
+                if ($isWebRegistration) {
+                    // Web registration - data is already in correct format
+                    $transformedData = $input;
+                } else {
+                    // Mobile registration - transform data format
+                    $transformedData = transformMobileRegistrationData($input);
+                }
+                
+                $result = $authController->register($transformedData);
+                echo json_encode($result);
+                exit;
+                
+            case 'login':
+                $result = $authController->login($input);
+                echo json_encode($result);
+                exit;
+                
+            default:
+                // Unknown action, continue to path-based routing
+                break;
+        }
+    }
+    
+    // Traditional path-based Auth routes (for web)
     if (end($pathParts) === 'register' && $method === 'POST') {
         // Check if this is web registration (already in correct format) or mobile
         $isWebRegistration = isset($input['first_name']) && isset($input['last_name']) && isset($input['phone_number']);
@@ -196,6 +228,45 @@ try {
         echo json_encode($result);
         exit;
     }
+
+    // Debug: Log all routes being processed
+    error_log("Processing route - Method: $method, PathParts: " . json_encode($pathParts));
+    
+    // Simple test endpoint to verify routing
+    if (in_array('test-auth0', $pathParts) && $method === 'GET') {
+        echo json_encode([
+            'status' => 'success',
+            'message' => 'Auth0 test endpoint working',
+            'pathParts' => $pathParts,
+            'method' => $method
+        ]);
+        exit;
+    }
+    
+    // Auth0 Integration Routes - Single endpoint for all Auth0 actions
+    if (in_array('auth0', $pathParts) && $method === 'POST') {
+        error_log("Auth0 endpoint matched! PathParts: " . json_encode($pathParts));
+        $action = $input['action'] ?? '';
+        error_log("Auth0 action: " . $action);
+        
+        switch ($action) {
+            case 'token_exchange':
+                $result = $auth0Controller->exchangeTokens($input);
+                break;
+            case 'auth0_sync':
+                $result = $auth0Controller->syncUser($input);
+                break;
+            case 'complete_profile':
+                $result = $auth0Controller->completeProfile($input);
+                break;
+            default:
+                $result = ['status' => 'error', 'message' => 'Invalid Auth0 action: ' . $action];
+                break;
+        }
+        
+        echo json_encode($result);
+        exit;
+    }
     
     // Test route
     if (end($pathParts) === 'test' && $method === 'GET') {
@@ -224,11 +295,15 @@ try {
                 'GET /admin/users' => 'Get all users (admin)',
                 'GET /admin/pending-approvals' => 'Get pending approvals',
                 'POST /register' => 'User registration',
-                'POST /login' => 'User login'
+                'POST /login' => 'User login',
+                'POST /auth0' => 'Auth0 integration (token exchange, sync, profile completion)'
             ]
         ]);
         exit;
     }
+    
+    // Debug: Log all unmatched routes
+    error_log("Unmatched route - Method: $method, PathParts: " . json_encode($pathParts));
     
     // Admin user management routes
     if ($pathParts[0] === 'admin' && count($pathParts) >= 2) {

@@ -3,7 +3,7 @@ import Constants from 'expo-constants';
 
 // Network configuration for different developers
 const DEVELOPER_CONFIGS: { [key: string]: string } = {
-  joseph: '192.168.254.105:8000',  // Local server ko
+  joseph: '192.168.254.110',  // Your local IP address (without port)
 };
 
 // Auto-detect developer based on device/environment
@@ -30,7 +30,7 @@ const getApiBaseUrl = (): string => {
     // Development mode - use local server
     const developer = getCurrentDeveloper();
     const ip = DEVELOPER_CONFIGS[developer] || DEVELOPER_CONFIGS.joseph;
-    return `http://${ip}/LakbAI-API/routes/api.php`;
+    return `http://${ip}/LakbAI/LakbAI-API/routes/api.php`;
   } else {
     // Production mode - use production server
     return 'https://your-production-domain.com/LakbAI-API/routes/api.php';
