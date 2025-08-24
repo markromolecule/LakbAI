@@ -23,14 +23,14 @@ export const DEVELOPER_IP = '192.168.254.105:8000'; // Joseph's IP
 // Alternative configuration for different developers
 export const DEVELOPER_IPS = {
   // joseph: '192.168.254.103:8000',
-  joseph: '192.168.254.105:8000',
+  //joseph: '192.168.254.105:8000',
   // Add your name and IP here:
-  // maria: '192.168.1.105:8000',
+  jiro: '192.168.1.11:8000',
   // john: '10.0.0.23:8000',
 };
 
 // Set which developer to use (change this to your name)
-export const CURRENT_DEVELOPER = 'joseph';
+export const CURRENT_DEVELOPER = 'jiro';
 
 // Get the current developer's IP
 export const getCurrentDeveloperIP = (): string => {
