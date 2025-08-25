@@ -3,7 +3,7 @@ export const AUTH0_CONFIG = {
   clientId: 'oRukVKxyipmWOeKTcP05u3MshZpk66f5',
   // Note: Client secret should NOT be in frontend code for security
   // It will be handled by the backend during token exchange
-  redirectUri: 'com.lakbai.mobile://auth',
+  redirectUri: 'lakbaimobile://auth',
   // For mobile apps, we typically don't need an audience unless calling a specific API
   scope: 'openid profile email',
   responseType: 'code',
