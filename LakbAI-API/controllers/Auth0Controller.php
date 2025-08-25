@@ -231,15 +231,27 @@ class Auth0Controller {
      */
     public function completeProfile($data) {
         try {
-            if (!isset($data['auth0_id']) || !isset($data['profile_data'])) {
-                return $this->errorResponse('Auth0 ID and profile data are required');
+            if (!isset($data['profile_data'])) {
+                return $this->errorResponse('Profile data is required');
             }
 
-            $auth0Id = $data['auth0_id'];
             $profileData = $data['profile_data'];
+            $user = null;
 
-            // Find user by Auth0 ID
-            $user = $this->userRepository->findByAuth0Id($auth0Id);
+            // Try to find user by auth0_id first
+            if (isset($data['auth0_id']) && !empty($data['auth0_id'])) {
+                $user = $this->userRepository->findByAuth0Id($data['auth0_id']);
+            }
+
+            // If not found by auth0_id, try to find by user_id
+            if (!$user && isset($data['user_id']) && !empty($data['user_id'])) {
+                $user = $this->userRepository->findById($data['user_id']);
+            }
+
+            // If still not found, try to find by email
+            if (!$user && isset($data['email']) && !empty($data['email'])) {
+                $user = $this->userRepository->findByEmail($data['email']);
+            }
             
             if (!$user) {
                 return $this->errorResponse('User not found');

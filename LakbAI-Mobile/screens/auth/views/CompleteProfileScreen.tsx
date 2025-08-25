@@ -8,14 +8,15 @@ import {
   Alert,
   ActivityIndicator,
   SafeAreaView,
+  Modal,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Picker } from '@react-native-picker/picker';
 import auth0Service from '../../../shared/services/auth0Service';
 import { PassengerRoutes } from '../../../routes';
 import { storeUserSession } from '../../../shared/utils/authUtils';
 import { TextInput } from 'react-native';
+import styles from '../styles/CompleteProfileScreen.styles';
 
 interface CompleteProfileScreenProps {}
 
@@ -23,14 +24,21 @@ const CompleteProfileScreen: React.FC<CompleteProfileScreenProps> = () => {
   const router = useRouter();
   const params = useLocalSearchParams();
   const auth0Id = params.auth0Id as string;
+  const userId = params.userId as string; // Get userId from params
   const userDataString = params.userData as string;
   
   const [isLoading, setIsLoading] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(true);
+  const [showMonthDropdown, setShowMonthDropdown] = useState(false);
+  const [showDayDropdown, setShowDayDropdown] = useState(false);
+  const [showYearDropdown, setShowYearDropdown] = useState(false);
   const [formData, setFormData] = useState({
     first_name: '',
     last_name: '',
     phone_number: '',
-    birthday: '',
+    birth_month: '1',
+    birth_day: '1',
+    birth_year: '2000',
     gender: 'Male',
     house_number: '',
     street_name: '',
@@ -38,15 +46,56 @@ const CompleteProfileScreen: React.FC<CompleteProfileScreenProps> = () => {
     city_municipality: '',
     province: '',
     postal_code: '',
-    user_type: 'passenger'
+    user_type: 'passenger' // Always passenger for mobile app
   });
 
   const [errors, setErrors] = useState<{[key: string]: string}>({});
+
+  // Generate arrays for date pickers
+  const months = Array.from({ length: 12 }, (_, i) => ({
+    value: (i + 1).toString(),
+    label: new Date(2000, i, 1).toLocaleDateString('en-US', { month: 'short' }).toUpperCase() // APR, MAR, etc.
+  }));
+
+  const days = Array.from({ length: 31 }, (_, i) => ({
+    value: (i + 1).toString(),
+    label: (i + 1).toString()
+  }));
+
+  const years = Array.from({ length: 100 }, (_, i) => ({
+    value: (2024 - i).toString(),
+    label: (2024 - i).toString()
+  }));
+
+  // Gender options for buttons
+  const genderOptions = [
+    { label: 'MALE', value: 'Male' },
+    { label: 'FEMALE', value: 'Female' }
+  ];
 
   useEffect(() => {
     if (userDataString) {
       try {
         const userData = JSON.parse(userDataString);
+        
+        // Parse existing birthday if available
+        let birthMonth = '1';
+        let birthDay = '1';
+        let birthYear = '2000';
+        
+        if (userData.birthday) {
+          try {
+            const birthday = new Date(userData.birthday);
+            if (!isNaN(birthday.getTime())) {
+              birthMonth = (birthday.getMonth() + 1).toString();
+              birthDay = birthday.getDate().toString();
+              birthYear = birthday.getFullYear().toString();
+            }
+          } catch (error) {
+            console.log('Could not parse existing birthday, using defaults');
+          }
+        }
+        
         setFormData(prev => ({
           ...prev,
           ...userData,
@@ -54,7 +103,9 @@ const CompleteProfileScreen: React.FC<CompleteProfileScreenProps> = () => {
           first_name: userData.first_name || '',
           last_name: userData.last_name || '',
           phone_number: userData.phone_number || '',
-          birthday: userData.birthday || '',
+          birth_month: birthMonth,
+          birth_day: birthDay,
+          birth_year: birthYear,
           gender: userData.gender || 'Male',
           house_number: userData.house_number || '',
           street_name: userData.street_name || '',
@@ -62,7 +113,7 @@ const CompleteProfileScreen: React.FC<CompleteProfileScreenProps> = () => {
           city_municipality: userData.city_municipality || '',
           province: userData.province || '',
           postal_code: userData.postal_code || '',
-          user_type: userData.user_type || 'passenger'
+          user_type: 'passenger' // Always passenger for mobile app
         }));
       } catch (error) {
         console.error('Failed to parse user data:', error);
@@ -87,8 +138,29 @@ const CompleteProfileScreen: React.FC<CompleteProfileScreenProps> = () => {
       newErrors.phone_number = 'Please enter a valid phone number';
     }
     
-    if (!formData.birthday) {
+    // Validate birthday components
+    if (!formData.birth_month || !formData.birth_day || !formData.birth_year) {
       newErrors.birthday = 'Birthday is required';
+    } else {
+      // Validate date validity
+      const month = parseInt(formData.birth_month);
+      const day = parseInt(formData.birth_day);
+      const year = parseInt(formData.birth_year);
+      
+      const date = new Date(year, month - 1, day);
+      if (date.getMonth() !== month - 1 || date.getDate() !== day || date.getFullYear() !== year) {
+        newErrors.birthday = 'Invalid date';
+      }
+      
+      // Check if user is at least 13 years old
+      const today = new Date();
+      let age = today.getFullYear() - year;
+      if (today.getMonth() < month - 1 || (today.getMonth() === month - 1 && today.getDate() < day)) {
+        age--;
+      }
+      if (age < 13) {
+        newErrors.birthday = 'You must be at least 13 years old';
+      }
     }
     
     if (!formData.house_number.trim()) {
@@ -127,27 +199,31 @@ const CompleteProfileScreen: React.FC<CompleteProfileScreenProps> = () => {
     setIsLoading(true);
     
     try {
-      const result = await auth0Service.completeProfile(auth0Id, formData);
+      // Format birthday as YYYY-MM-DD
+      const formattedBirthday = `${formData.birth_year}-${formData.birth_month.padStart(2, '0')}-${formData.birth_day.padStart(2, '0')}`;
+      
+      const submitData = {
+        ...formData,
+        birthday: formattedBirthday
+      };
+      
+      const result = await auth0Service.completeProfile(auth0Id, userId, submitData);
       
       if (result.status === 'success') {
-        const user = result.user;
+        const user = result.user || result.data;
         
-        // Store user session
-        await storeUserSession(user.user_type || 'passenger', user.username || user.email, true);
+        // Store user session (always passenger for mobile app)
+        await storeUserSession('passenger', user?.username || user?.email || formData.first_name, true);
         
         Alert.alert(
-          'Profile Completed!',
-          'Your profile has been successfully completed.',
+          'Profile Completed! 🎉',
+          'Your profile has been successfully completed. Welcome to LakbAI!',
           [
             {
               text: 'Continue',
               onPress: () => {
-                // Redirect to appropriate screen based on user type
-                if (user.user_type === 'driver') {
-                  router.replace('/driver');
-                } else {
-                  router.replace(PassengerRoutes.HOME);
-                }
+                // Always redirect to passenger home for mobile app
+                router.replace(PassengerRoutes.HOME);
               }
             }
           ]
@@ -172,6 +248,10 @@ const CompleteProfileScreen: React.FC<CompleteProfileScreenProps> = () => {
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }));
     }
+    // Clear birthday error when any date component changes
+    if (['birth_month', 'birth_day', 'birth_year'].includes(field) && errors.birthday) {
+      setErrors(prev => ({ ...prev, birthday: '' }));
+    }
   };
 
   if (isLoading) {
@@ -195,7 +275,12 @@ const CompleteProfileScreen: React.FC<CompleteProfileScreenProps> = () => {
         <View style={styles.placeholder} />
       </View>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        style={styles.content} 
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={styles.scrollContent}
+      >
         <Text style={styles.subtitle}>
           Please complete your profile information to continue
         </Text>
@@ -210,6 +295,7 @@ const CompleteProfileScreen: React.FC<CompleteProfileScreenProps> = () => {
               value={formData.first_name}
               onChangeText={(value) => handleInputChange('first_name', value)}
               placeholder="Enter your first name"
+              placeholderTextColor="#999999"
             />
             {errors.first_name && <Text style={styles.errorText}>{errors.first_name}</Text>}
           </View>
@@ -221,6 +307,7 @@ const CompleteProfileScreen: React.FC<CompleteProfileScreenProps> = () => {
               value={formData.last_name}
               onChangeText={(value) => handleInputChange('last_name', value)}
               placeholder="Enter your last name"
+              placeholderTextColor="#999999"
             />
             {errors.last_name && <Text style={styles.errorText}>{errors.last_name}</Text>}
           </View>
@@ -232,6 +319,7 @@ const CompleteProfileScreen: React.FC<CompleteProfileScreenProps> = () => {
               value={formData.phone_number}
               onChangeText={(value) => handleInputChange('phone_number', value)}
               placeholder="+63 912 345 6789"
+              placeholderTextColor="#999999"
               keyboardType="phone-pad"
             />
             {errors.phone_number && <Text style={styles.errorText}>{errors.phone_number}</Text>}
@@ -239,42 +327,78 @@ const CompleteProfileScreen: React.FC<CompleteProfileScreenProps> = () => {
 
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Birthday *</Text>
-            <TextInput
-              style={[styles.input, errors.birthday && styles.inputError]}
-              value={formData.birthday}
-              onChangeText={(value) => handleInputChange('birthday', value)}
-              placeholder="YYYY-MM-DD"
-            />
+            <View style={styles.birthdayContainer}>
+              <View style={styles.datePickerGroup}>
+                <Text style={styles.datePickerLabel}>Month</Text>
+                <TouchableOpacity
+                  style={styles.dropdownButton}
+                  onPress={() => setShowMonthDropdown(true)}
+                >
+                  <Text style={styles.dropdownButtonText}>
+                    {months.find(m => m.value === formData.birth_month)?.label || 'Select'}
+                  </Text>
+                  <Ionicons name="chevron-down" size={16} color="#666" />
+                </TouchableOpacity>
+              </View>
+              
+              <View style={styles.datePickerGroup}>
+                <Text style={styles.datePickerLabel}>Day</Text>
+                <TouchableOpacity
+                  style={styles.dropdownButton}
+                  onPress={() => setShowDayDropdown(true)}
+                >
+                  <Text style={styles.dropdownButtonText}>
+                    {formData.birth_day || 'Select'}
+                  </Text>
+                  <Ionicons name="chevron-down" size={16} color="#666" />
+                </TouchableOpacity>
+              </View>
+              
+              <View style={styles.datePickerGroup}>
+                <Text style={styles.datePickerLabel}>Year</Text>
+                <TouchableOpacity
+                  style={styles.dropdownButton}
+                  onPress={() => setShowYearDropdown(true)}
+                >
+                  <Text style={styles.dropdownButtonText}>
+                    {formData.birth_year || 'Select'}
+                  </Text>
+                  <Ionicons name="chevron-down" size={16} color="#666" />
+                </TouchableOpacity>
+              </View>
+            </View>
             {errors.birthday && <Text style={styles.errorText}>{errors.birthday}</Text>}
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Gender</Text>
-            <View style={styles.pickerContainer}>
-              <Picker
-                selectedValue={formData.gender}
-                onValueChange={(value) => handleInputChange('gender', value)}
-                style={styles.picker}
-              >
-                <Picker.Item label="Male" value="Male" />
-                <Picker.Item label="Female" value="Female" />
-                <Picker.Item label="Other" value="Other" />
-              </Picker>
+            <Text style={styles.label}>Gender *</Text>
+            <View style={styles.genderButtonContainer}>
+              {genderOptions.map((option) => (
+                <TouchableOpacity
+                  key={option.value}
+                  style={[
+                    styles.genderButton,
+                    formData.gender === option.value && styles.genderButtonSelected
+                  ]}
+                  onPress={() => handleInputChange('gender', option.value)}
+                  activeOpacity={0.8}
+                >
+                  <Text style={[
+                    styles.genderButtonText,
+                    formData.gender === option.value && styles.genderButtonTextSelected
+                  ]}>
+                    {option.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
             </View>
           </View>
 
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>User Type</Text>
-            <View style={styles.pickerContainer}>
-              <Picker
-                selectedValue={formData.user_type}
-                onValueChange={(value) => handleInputChange('user_type', value)}
-                style={styles.picker}
-              >
-                <Picker.Item label="Passenger" value="passenger" />
-                <Picker.Item label="Driver" value="driver" />
-              </Picker>
-            </View>
+          <View style={styles.userTypeInfo}>
+            <Ionicons name="information-circle" size={18} color="#007AFF" />
+            <Text style={styles.userTypeInfoText}>
+              Account Type: Passenger (Mobile App)
+            </Text>
           </View>
         </View>
 
@@ -288,6 +412,7 @@ const CompleteProfileScreen: React.FC<CompleteProfileScreenProps> = () => {
               value={formData.house_number}
               onChangeText={(value) => handleInputChange('house_number', value)}
               placeholder="123"
+              placeholderTextColor="#999999"
             />
             {errors.house_number && <Text style={styles.errorText}>{errors.house_number}</Text>}
           </View>
@@ -299,6 +424,7 @@ const CompleteProfileScreen: React.FC<CompleteProfileScreenProps> = () => {
               value={formData.street_name}
               onChangeText={(value) => handleInputChange('street_name', value)}
               placeholder="Rizal Street"
+              placeholderTextColor="#999999"
             />
             {errors.street_name && <Text style={styles.errorText}>{errors.street_name}</Text>}
           </View>
@@ -310,6 +436,7 @@ const CompleteProfileScreen: React.FC<CompleteProfileScreenProps> = () => {
               value={formData.barangay}
               onChangeText={(value) => handleInputChange('barangay', value)}
               placeholder="Barangay 1"
+              placeholderTextColor="#999999"
             />
             {errors.barangay && <Text style={styles.errorText}>{errors.barangay}</Text>}
           </View>
@@ -321,6 +448,7 @@ const CompleteProfileScreen: React.FC<CompleteProfileScreenProps> = () => {
               value={formData.city_municipality}
               onChangeText={(value) => handleInputChange('city_municipality', value)}
               placeholder="Manila"
+              placeholderTextColor="#999999"
             />
             {errors.city_municipality && <Text style={styles.errorText}>{errors.city_municipality}</Text>}
           </View>
@@ -332,6 +460,7 @@ const CompleteProfileScreen: React.FC<CompleteProfileScreenProps> = () => {
               value={formData.province}
               onChangeText={(value) => handleInputChange('province', value)}
               placeholder="Metro Manila"
+              placeholderTextColor="#999999"
             />
             {errors.province && <Text style={styles.errorText}>{errors.province}</Text>}
           </View>
@@ -343,6 +472,7 @@ const CompleteProfileScreen: React.FC<CompleteProfileScreenProps> = () => {
               value={formData.postal_code}
               onChangeText={(value) => handleInputChange('postal_code', value)}
               placeholder="1000"
+              placeholderTextColor="#999999"
               keyboardType="numeric"
             />
             {errors.postal_code && <Text style={styles.errorText}>{errors.postal_code}</Text>}
@@ -353,122 +483,157 @@ const CompleteProfileScreen: React.FC<CompleteProfileScreenProps> = () => {
           style={styles.submitButton}
           onPress={handleSubmit}
           disabled={isLoading}
+          activeOpacity={0.8}
         >
           <Text style={styles.submitButtonText}>Complete Profile</Text>
         </TouchableOpacity>
       </ScrollView>
+
+      {/* Month Dropdown Modal */}
+      <Modal
+        visible={showMonthDropdown}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowMonthDropdown(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowMonthDropdown(false)}
+        >
+          <View style={styles.dropdownModal}>
+            <View style={styles.dropdownHeader}>
+              <Text style={styles.dropdownTitle}>Select Month</Text>
+              <TouchableOpacity onPress={() => setShowMonthDropdown(false)}>
+                <Ionicons name="close" size={24} color="#666" />
+              </TouchableOpacity>
+            </View>
+            <ScrollView style={styles.dropdownList}>
+              {months.map((month) => (
+                <TouchableOpacity
+                  key={month.value}
+                  style={[
+                    styles.dropdownItem,
+                    formData.birth_month === month.value && styles.dropdownItemSelected
+                  ]}
+                  onPress={() => {
+                    handleInputChange('birth_month', month.value);
+                    setShowMonthDropdown(false);
+                  }}
+                >
+                  <Text style={[
+                    styles.dropdownItemText,
+                    formData.birth_month === month.value && styles.dropdownItemTextSelected
+                  ]}>
+                    {month.label}
+                  </Text>
+                  {formData.birth_month === month.value && (
+                    <Ionicons name="checkmark" size={20} color="#007AFF" />
+                  )}
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* Day Dropdown Modal */}
+      <Modal
+        visible={showDayDropdown}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowDayDropdown(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowDayDropdown(false)}
+        >
+          <View style={styles.dropdownModal}>
+            <View style={styles.dropdownHeader}>
+              <Text style={styles.dropdownTitle}>Select Day</Text>
+              <TouchableOpacity onPress={() => setShowDayDropdown(false)}>
+                <Ionicons name="close" size={24} color="#666" />
+              </TouchableOpacity>
+            </View>
+            <ScrollView style={styles.dropdownList}>
+              {days.map((day) => (
+                <TouchableOpacity
+                  key={day.value}
+                  style={[
+                    styles.dropdownItem,
+                    formData.birth_day === day.value && styles.dropdownItemSelected
+                  ]}
+                  onPress={() => {
+                    handleInputChange('birth_day', day.value);
+                    setShowDayDropdown(false);
+                  }}
+                >
+                  <Text style={[
+                    styles.dropdownItemText,
+                    formData.birth_day === day.value && styles.dropdownItemTextSelected
+                  ]}>
+                    {day.label}
+                  </Text>
+                  {formData.birth_day === day.value && (
+                    <Ionicons name="checkmark" size={20} color="#007AFF" />
+                  )}
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* Year Dropdown Modal */}
+      <Modal
+        visible={showYearDropdown}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowYearDropdown(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowYearDropdown(false)}
+        >
+          <View style={styles.dropdownModal}>
+            <View style={styles.dropdownHeader}>
+              <Text style={styles.dropdownTitle}>Select Year</Text>
+              <TouchableOpacity onPress={() => setShowYearDropdown(false)}>
+                <Ionicons name="close" size={24} color="#666" />
+              </TouchableOpacity>
+            </View>
+            <ScrollView style={styles.dropdownList}>
+              {years.map((year) => (
+                <TouchableOpacity
+                  key={year.value}
+                  style={[
+                    styles.dropdownItem,
+                    formData.birth_year === year.value && styles.dropdownItemSelected
+                  ]}
+                  onPress={() => {
+                    handleInputChange('birth_year', year.value);
+                    setShowYearDropdown(false);
+                  }}
+                >
+                  <Text style={[
+                    styles.dropdownItemText,
+                    formData.birth_year === year.value && styles.dropdownItemTextSelected
+                  ]}>
+                    {year.label}
+                  </Text>
+                  {formData.birth_year === year.value && (
+                    <Ionicons name="checkmark" size={20} color="#007AFF" />
+                  )}
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </SafeAreaView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 10,
-  },
-  backButton: {
-    padding: 8,
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#000000',
-  },
-  placeholder: {
-    width: 40,
-  },
-  content: {
-    flex: 1,
-    paddingHorizontal: 20,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#666666',
-    textAlign: 'center',
-    marginVertical: 20,
-  },
-  formSection: {
-    marginBottom: 30,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#000000',
-    marginBottom: 20,
-  },
-  inputGroup: {
-    marginBottom: 20,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#333333',
-    marginBottom: 8,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 16,
-    backgroundColor: '#FFFFFF',
-  },
-  inputError: {
-    borderColor: '#FF3B30',
-  },
-  errorText: {
-    color: '#FF3B30',
-    fontSize: 12,
-    marginTop: 4,
-  },
-  pickerContainer: {
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-    borderRadius: 8,
-    backgroundColor: '#FFFFFF',
-  },
-  picker: {
-    height: 50,
-  },
-  submitButton: {
-    backgroundColor: '#007AFF',
-    borderRadius: 12,
-    paddingVertical: 16,
-    alignItems: 'center',
-    marginVertical: 30,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  submitButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    marginTop: 16,
-    fontSize: 16,
-    color: '#666666',
-  },
-});
 
 export default CompleteProfileScreen;

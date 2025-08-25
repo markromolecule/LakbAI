@@ -1,12 +1,15 @@
+
 export const AUTH0_CONFIG = {
   domain: 'dev-0aaa1azz6qjnlz2l.us.auth0.com',
   clientId: 'oRukVKxyipmWOeKTcP05u3MshZpk66f5',
   // Note: Client secret should NOT be in frontend code for security
+  
   // It will be handled by the backend during token exchange
-  redirectUri: 'com.lakbai.mobile://auth',
+  redirectUri: 'lakbaimobile://auth',
   // For mobile apps, we typically don't need an audience unless calling a specific API
   scope: 'openid profile email',
   responseType: 'code',
+  
   // Additional callback URLs for development
   additionalRedirectUris: [
     'lakbaimobile://auth',
@@ -16,6 +19,7 @@ export const AUTH0_CONFIG = {
     'https://localhost:8081',
     'http://localhost:8081'
   ],
+  
   // Logout URLs
   logoutUrls: [
     'lakbaimobile://auth',

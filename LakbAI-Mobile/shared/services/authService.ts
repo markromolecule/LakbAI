@@ -53,19 +53,151 @@ class AuthService {
         console.log('Request Body:', requestBody);
       }
 
-      const response = await fetch(url, defaultOptions);
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      // Add timeout to prevent hanging requests
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
+      try {
+        const response = await fetch(url, {
+          ...defaultOptions,
+          signal: controller.signal,
+        });
+        
+        clearTimeout(timeoutId);
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        return data;
+      } catch (fetchError: unknown) {
+        clearTimeout(timeoutId);
+        
+        if (fetchError instanceof Error && fetchError.name === 'AbortError') {
+          throw new Error('Request timeout - server not responding');
+        }
+        
+        throw fetchError;
       }
-      
-      const data = await response.json();
-      return data;
     } catch (error) {
       console.error('API request failed:', error);
+      
+      // Provide more specific error messages
+      let errorMessage = 'Network error occurred';
+      
+      if (error instanceof Error) {
+        if (error.message.includes('timeout')) {
+          errorMessage = 'Server not responding - please check your connection';
+        } else if (error.message.includes('Network request failed')) {
+          errorMessage = 'Cannot connect to server - please check your network';
+        } else if (error.message.includes('fetch')) {
+          errorMessage = 'Network request failed - please try again';
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
       return {
         status: 'error',
-        message: error instanceof Error ? error.message : 'Network error occurred'
+        message: errorMessage
+      };
+    }
+  }
+
+  /**
+   * Check if the backend server is reachable
+   */
+  async checkBackendConnectivity(): Promise<{ reachable: boolean; responseTime: number; error?: string }> {
+    const startTime = Date.now();
+    
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout for connectivity check
+      
+      try {
+        const response = await fetch(API_BASE_URL, {
+          method: 'HEAD', // Just check if server responds, don't download content
+          signal: controller.signal,
+        });
+        
+        clearTimeout(timeoutId);
+        const responseTime = Date.now() - startTime;
+        
+        return {
+          reachable: response.ok,
+          responseTime,
+        };
+      } catch (fetchError: unknown) {
+        clearTimeout(timeoutId);
+        
+        if (fetchError instanceof Error && fetchError.name === 'AbortError') {
+          return {
+            reachable: false,
+            responseTime: Date.now() - startTime,
+            error: 'Request timeout - server not responding'
+          };
+        }
+        
+        throw fetchError;
+      }
+    } catch (error) {
+      const responseTime = Date.now() - startTime;
+      
+      return {
+        reachable: false,
+        responseTime,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      };
+    }
+  }
+
+  /**
+   * Perform a health check on the backend server
+   */
+  async performHealthCheck(): Promise<{ status: string; message: string; data?: any }> {
+    try {
+      // Get the base URL without the specific route
+      const baseUrl = API_BASE_URL.replace('/routes/api.php', '');
+      const healthCheckUrl = `${baseUrl}/routes/health_check.php`;
+      
+      console.log('🔍 Testing health check at:', healthCheckUrl);
+      
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+      
+      try {
+        const response = await fetch(healthCheckUrl, {
+          method: 'GET',
+          signal: controller.signal,
+        });
+        
+        clearTimeout(timeoutId);
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        return {
+          status: 'ok',
+          message: 'Health check successful',
+          data
+        };
+      } catch (fetchError: unknown) {
+        clearTimeout(timeoutId);
+        
+        if (fetchError instanceof Error && fetchError.name === 'AbortError') {
+          throw new Error('Health check timeout - server not responding');
+        }
+        
+        throw fetchError;
+      }
+    } catch (error) {
+      console.error('Health check failed:', error);
+      return {
+        status: 'error',
+        message: error instanceof Error ? error.message : 'Health check failed'
       };
     }
   }

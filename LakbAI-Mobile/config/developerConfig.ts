@@ -4,7 +4,7 @@
  */
 
 // CHANGE THIS TO YOUR LOCAL IP ADDRESS
-export const DEVELOPER_IP = '192.168.1.11:8000'; // Joseph's IP
+export const DEVELOPER_IP = '192.168.254.110:8000'; // Joseph's IP
 
 // Instructions for co-developers:
 // 1. Find your computer's IP address:
@@ -31,7 +31,7 @@ export const DEVELOPER_IPS = {
 };
 
 // Set which developer to use (change this to your name)
-export const CURRENT_DEVELOPER = 'jiro';
+export const CURRENT_DEVELOPER = 'joseph';
 
 // Get the current developer's IP
 export const getCurrentDeveloperIP = (): string => {
@@ -41,7 +41,20 @@ export const getCurrentDeveloperIP = (): string => {
 // Build the complete API URL
 export const buildApiUrl = (): string => {
   const ip = getCurrentDeveloperIP();
-  return `http://${ip}/LakbAI-API/routes/api.php`;
+  return `http://${ip}/LakbAI/LakbAI-API/routes/api.php`;
+};
+
+// Build the complete Auth0 API URL
+export const buildAuth0Url = (): string => {
+  const ip = getCurrentDeveloperIP();
+  // The IP already includes the port, so don't add another one
+  return `http://${ip}/routes/auth0.php`;
+};
+
+// Get the base URL for the project
+export const getBaseUrl = (): string => {
+  const ip = getCurrentDeveloperIP();
+  return `http://${ip}/LakbAI`;
 };
 
 // Helper to log current configuration
@@ -50,6 +63,8 @@ export const logCurrentConfig = (): void => {
   console.log('Developer:', CURRENT_DEVELOPER);
   console.log('IP:', getCurrentDeveloperIP());
   console.log('API URL:', buildApiUrl());
+  console.log('Auth0 URL:', buildAuth0Url());
+  console.log('Base URL:', getBaseUrl());
   console.log('Make sure both devices are on the same WiFi!');
   console.log('If using tunnel mode, IP should be localhost:8000');
 };
