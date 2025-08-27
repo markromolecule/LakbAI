@@ -4,7 +4,7 @@
  */
 
 // CHANGE THIS TO YOUR LOCAL IP ADDRESS
-export const DEVELOPER_IP = '192.168.254.110:8000'; // Joseph's IP
+export const DEVELOPER_IP = '192.168.254.105:8000'; // Joseph's IP
 
 // Instructions for co-developers:
 // 1. Find your computer's IP address:
@@ -26,7 +26,7 @@ export const DEVELOPER_IP = '192.168.254.110:8000'; // Joseph's IP
 
 // Alternative configuration for different developers
 export const DEVELOPER_IPS = {
-  joseph: '192.168.254.110:8000',
+  joseph: '192.168.254.105:8000',
   jiro: 'localhost:8000', // For tunnel mode users
 };
 

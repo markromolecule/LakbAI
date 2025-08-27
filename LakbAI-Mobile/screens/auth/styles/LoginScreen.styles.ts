@@ -14,87 +14,100 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
-    paddingVertical: 20,
+    paddingVertical: 40, // was 32
     minHeight: '100%',
   },
   header: {
     alignItems: 'center',
-    marginBottom: 40,
+    marginBottom: 48, // was 40
+  },
+  backButton: {
+    alignSelf: 'flex-start',
+    paddingVertical: 8,
+    paddingHorizontal: 4,
+    marginBottom: 20,
+  },
+  backButtonText: {
+    color: '#007AFF',
+    fontSize: 16,
+    fontWeight: '600',
   },
   logoContainer: {
-    marginBottom: 24,
+    marginBottom: 12,
   },
   logo: {
-    width: 64,
-    height: 64,
+    width: 60,
+    height: 60,
     borderRadius: 16,
     backgroundColor: '#F8F9FF',
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#007AFF',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.12,
-    shadowRadius: 24,
-    elevation: 8,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 4,
   },
   logoInner: {
-    width: 32,
-    height: 32,
+    width: 28,
+    height: 28,
     borderRadius: 8,
     backgroundColor: '#007AFF',
     shadowColor: '#007AFF',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 3,
   },
   logoImage: {
-    width: 120,
-    height: 120,
+    width: 100,
+    height: 100,
     borderRadius: 12,
     resizeMode: 'contain',
   },
   appTitle: {
-    fontSize: 32,
-    fontWeight: '800',
+    fontSize: 24,
+    fontWeight: '700',
     color: '#1A1A1A',
-    marginBottom: 8,
-    letterSpacing: -0.5,
+    marginBottom: 10, // was 6
+    letterSpacing: -0.2,
+    textAlign: 'center',
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: 14,
     color: '#666666',
     fontWeight: '400',
-    marginBottom: 32,
+    marginBottom: 28, // was 24
+    textAlign: 'center',
   },
   formContainer: {
     width: '100%',
-    marginBottom: 32,
+    marginBottom: 28, // was 24
   },
   buttonsContainer: {
-    marginTop: 24,
+    marginTop: 16, // was 12
     width: '100%',
     alignItems: 'center',
   },
   inputGroup: {
-    marginBottom: 20,
+    marginBottom: 24, // was 20
   },
   inputContainer: {
     position: 'relative',
     width: '100%',
   },
   textInput: {
-    borderWidth: 1.5,
-    borderColor: '#E8E8E8',
-    borderRadius: 20,
-    paddingLeft: 70,
-    paddingRight: 70,
-    paddingVertical: 12,
-    fontSize: 18,
-    backgroundColor: '#FAFAFA',
+    borderWidth: 1,
+    borderColor: '#E5E5EA',
+    borderRadius: 16,
+    paddingLeft: 64,
+    paddingRight: 64,
+    paddingVertical: 14, // was 12
+    fontSize: 16,
+    backgroundColor: '#FFFFFF',
     color: '#1A1A1A',
     fontWeight: '500',
-    height: 56,
+    height: 52, // was 50
     width: '100%',
   },
   textInputFocused: {
@@ -102,9 +115,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     shadowColor: '#007AFF',
     shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 4,
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 2,
   },
   textInputError: {
     borderColor: '#FF3B30',
@@ -119,9 +132,9 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   userIcon: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
     backgroundColor: '#B0B0B0',
     position: 'relative',
   },
@@ -135,9 +148,9 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   eyeIcon: {
-    width: 20,
+    width: 18,
     height: 14,
-    borderRadius: 10,
+    borderRadius: 9,
     backgroundColor: '#B0B0B0',
     position: 'relative',
   },
@@ -145,9 +158,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#007AFF',
   },
   errorText: {
-    fontSize: 13,
+    fontSize: 12,
     color: '#FF3B30',
-    marginTop: 8,
+    marginTop: 8, // was 6
     marginLeft: 4,
     fontWeight: '500',
   },
@@ -155,7 +168,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 28,
+    marginBottom: 20, // was 20 earlier then 12; set to 20
     paddingHorizontal: 4,
     width: '100%',
   },
@@ -164,41 +177,42 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   rememberMeText: {
-    fontSize: 15,
+    fontSize: 14,
     color: '#666666',
     marginLeft: 8,
     fontWeight: '500',
   },
   forgotPasswordText: {
-    fontSize: 15,
+    fontSize: 14,
     color: '#007AFF',
     fontWeight: '600',
   },
   loginButton: {
     backgroundColor: '#007AFF',
-    paddingVertical: 18,
+    paddingVertical: 16, // was 14
     paddingHorizontal: 24,
-    borderRadius: 20,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
     width: screenWidth - 64,
-    height: 58,
-    marginBottom: 16,
+    height: 52, // was 50
+    marginBottom: 20, // was 16
+    marginTop: 24, // was 16
     shadowColor: '#007AFF',
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.3,
-    shadowRadius: 24,
-    elevation: 12,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.18,
+    shadowRadius: 14,
+    elevation: 6,
   },
   loginButtonDisabled: {
     backgroundColor: '#B0B0B0',
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.06,
   },
   loginButtonText: {
     color: '#FFFFFF',
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '700',
-    letterSpacing: 0.3,
+    letterSpacing: 0.2,
   },
   loadingContainer: {
     flexDirection: 'row',
@@ -206,23 +220,39 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   guestButton: {
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: '#007AFF',
     backgroundColor: 'transparent',
-    paddingVertical: 18,
+    paddingVertical: 16, // was 14
     paddingHorizontal: 24,
-    borderRadius: 20,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
     width: screenWidth - 64,
-    height: 58,
-    marginBottom: 24,
+    height: 52, // was 50
+    marginBottom: 20, // was 16
   },
   guestButtonText: {
     color: '#007AFF',
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
-    letterSpacing: 0.3,
+    letterSpacing: 0.2,
+  },
+  switchToSignUpContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 20, // was 16
+  },
+  switchToSignUpText: {
+    fontSize: 14,
+    color: '#666666',
+    fontWeight: '400',
+  },
+  switchToSignUpLink: {
+    fontSize: 14,
+    color: '#007AFF',
+    fontWeight: '700',
   },
 });
 

@@ -110,24 +110,14 @@ export const useLogout = () => {
           console.log('⚠️ Could not set logout flag:', flagError);
         }
         
-        // Clear Auth0 service state to allow fresh authentication
+        // Clear authentication state (using new clean architecture)
         try {
-          const auth0Service = require('../services/auth0Service').default;
+          // The new clean architecture handles logout through the useAuth hook
+          // This function is now deprecated in favor of the clean architecture
+          console.log('✅ Logout completed (clean architecture)');
           
-          // Force fresh authentication
-          await auth0Service.forceFreshAuthentication();
-          console.log('✅ Auth0 fresh authentication forced');
-          
-          // Force Google account selection
-          await auth0Service.forceGoogleAccountSelection();
-          console.log('✅ Google account selection forced');
-          
-          // Clear any stored tokens or cached data
-          await auth0Service.clearExpoAuthSessionData();
-          console.log('✅ Expo auth session data cleared');
-          
-        } catch (auth0Error) {
-          console.log('⚠️ Could not clear some Auth0 service state:', auth0Error);
+        } catch (authError) {
+          console.log('⚠️ Could not complete logout:', authError);
         }
         
         // Clear any AsyncStorage tokens that might still exist
@@ -222,14 +212,5 @@ export const isTestDriverSession = async (): Promise<boolean> => {
   return session.userType === 'driver' && session.username === 'livado';
 };
 
-/**
- * Get test user credentials for debugging
- */
-export const getTestUserCredentials = () => {
-  return {
-    username: 'livado',
-    password: 'livado123',
-    userType: 'driver' as const
-  };
-};
+
 

@@ -9,8 +9,9 @@ export { ScannerScreen } from './passenger/views/ScannerView';
 export { DriverScreen } from './driver';
 
 // Auth Screens
-export { default as CompleteProfileScreen } from './auth/views/CompleteProfileScreen';
-export { default as HybridAuthScreen } from './auth/views/HybridAuthScreen';
+export { default as CleanAuthScreen } from './auth/views/CleanAuthScreen';
+export { default as CleanProfileScreen } from './auth/views/CleanProfileScreen';
+export { default as CleanPassengerHomeScreen } from './passenger/views/CleanPassengerHomeScreen';
 export { default as LoginScreen } from './auth/views/LoginScreen';
 export { default as RegisterScreen } from './auth/views/RegisterScreen';
 

@@ -3,7 +3,7 @@ import Constants from 'expo-constants';
 
 // Network configuration for different developers
 const DEVELOPER_CONFIGS: { [key: string]: string } = {
-  joseph: '192.168.254.110',  // Your local IP address (without port)
+  joseph: '192.168.254.105',  // Your local IP address (without port)
   jiro: '192.168.254.111',    // Updated to match your actual network
   // Add your name and IP here:
   // maria: '192.168.1.105',
@@ -99,13 +99,6 @@ export const configureForCoDeveloper = (developerName: string, useTunnel: boolea
   console.log(`- API URL: ${getApiBaseUrl()}`);
 };
 
-// Debug function to show current configuration (development only)
-export const debugApiConfig = (): void => {
-  if (__DEV__) {
-    console.log('API Configuration:', API_CONFIG.BASE_URL);
-    console.log('Tunnel Mode:', TUNNEL_CONFIG.enabled);
-    console.log('Current Developer:', getCurrentDeveloper());
-  }
-};
+
 
 export default API_CONFIG;

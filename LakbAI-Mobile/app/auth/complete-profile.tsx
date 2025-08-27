@@ -1,6 +1,6 @@
 import React from 'react';
-import CompleteProfileScreen from '../../screens/auth/views/CompleteProfileScreen';
+import CleanProfileScreen from '../../screens/auth/views/CleanProfileScreen';
 
 export default function CompleteProfilePage() {
-  return <CompleteProfileScreen />;
+  return <CleanProfileScreen />;
 }
