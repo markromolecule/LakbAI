@@ -20,9 +20,10 @@ import styles from '../styles/RegisterScreen.styles';
 
 interface SignUpScreenProps {
   onSignUp: (data: SignUpData) => void;
+  onBack?: () => void;
 }
 
-const SignUpScreen: React.FC<SignUpScreenProps> = ({ onSignUp }) => {
+const SignUpScreen: React.FC<SignUpScreenProps> = ({ onSignUp, onBack }) => {
   const {
     signUpData,
     showTermsModal,
@@ -52,6 +53,13 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({ onSignUp }) => {
       showsVerticalScrollIndicator={false}
     >
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
+        {/* Back / Opt-out */}
+        {onBack && (
+          <TouchableOpacity style={styles.backButton} onPress={onBack} activeOpacity={0.7}>
+            <Text style={styles.backButtonText}>Back</Text>
+          </TouchableOpacity>
+        )}
+
         <Text style={styles.title}>Create Account</Text>
 
         <NameSection

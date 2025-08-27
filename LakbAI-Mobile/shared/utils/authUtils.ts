@@ -12,6 +12,7 @@ const SESSION_KEYS = {
   USERNAME: '@username',
   REMEMBER_ME: '@remember_me',
   LOGIN_TIME: '@login_time',
+  LOGOUT_FLAG: '@logout_flag', // Add logout flag
 };
 
 export type UserType = 'passenger' | 'driver' | 'guest' | null;
@@ -32,6 +33,7 @@ export const storeUserSession = async (
       [SESSION_KEYS.USERNAME, username],
       [SESSION_KEYS.REMEMBER_ME, rememberMe.toString()],
       [SESSION_KEYS.LOGIN_TIME, loginTime],
+      [SESSION_KEYS.LOGOUT_FLAG, 'false'], // Clear logout flag when storing new session
     ]);
   } catch (error) {
     console.error('Error storing user session:', error);
@@ -77,6 +79,7 @@ export const clearUserSession = async (): Promise<void> => {
       SESSION_KEYS.USERNAME,
       SESSION_KEYS.REMEMBER_ME,
       SESSION_KEYS.LOGIN_TIME,
+      SESSION_KEYS.LOGOUT_FLAG, // Also clear logout flag
     ]);
   } catch (error) {
     console.error('Error clearing user session:', error);
@@ -92,16 +95,70 @@ export const useLogout = () => {
   const logout = (showConfirmation: boolean = true) => {
     const performLogout = async () => {
       try {
+        console.log('🔄 Starting comprehensive logout...');
+        
         // Clear all session data
         await clearUserSession();
+        console.log('✅ User session cleared');
         
-        // Navigate to login screen and prevent going back
+        // Set logout flag to prevent automatic session restoration
+        try {
+          const AsyncStorage = require('@react-native-async-storage/async-storage');
+          await AsyncStorage.setItem(SESSION_KEYS.LOGOUT_FLAG, 'true');
+          console.log('✅ Logout flag set');
+        } catch (flagError) {
+          console.log('⚠️ Could not set logout flag:', flagError);
+        }
+        
+        // Clear authentication state (using new clean architecture)
+        try {
+          // The new clean architecture handles logout through the useAuth hook
+          // This function is now deprecated in favor of the clean architecture
+          console.log('✅ Logout completed (clean architecture)');
+          
+        } catch (authError) {
+          console.log('⚠️ Could not complete logout:', authError);
+        }
+        
+        // Clear any AsyncStorage tokens that might still exist
+        try {
+          const AsyncStorage = require('@react-native-async-storage/async-storage');
+          
+          const keysToRemove = [
+            'auth0_access_token',
+            'auth0_id_token',
+            'auth0_refresh_token',
+            'auth0_user_profile',
+            'user_session',
+            'auth_state',
+            'expo_auth_session_*'
+          ];
+          
+          for (const key of keysToRemove) {
+            if (key.includes('*')) {
+              // Handle wildcard keys
+              const allKeys = await AsyncStorage.getAllKeys();
+              const matchingKeys = allKeys.filter((k: string) => k.startsWith('expo_auth_session_'));
+              await AsyncStorage.multiRemove(matchingKeys);
+            } else {
+              await AsyncStorage.removeItem(key);
+            }
+          }
+          
+          console.log('✅ AsyncStorage tokens cleared');
+        } catch (storageError) {
+          console.log('⚠️ Could not clear AsyncStorage tokens:', storageError);
+        }
+        
+        console.log('🎉 Comprehensive logout completed');
+        
+        // Navigate to authentication screen and prevent going back
         router.replace('/');
         
         // Optional success feedback
         // Alert.alert('Success', 'You have been logged out successfully');
       } catch (error) {
-        console.error('Logout error:', error);
+        console.error('❌ Logout error:', error);
         Alert.alert('Error', 'Failed to logout. Please try again.');
       }
     };
@@ -155,14 +212,5 @@ export const isTestDriverSession = async (): Promise<boolean> => {
   return session.userType === 'driver' && session.username === 'livado';
 };
 
-/**
- * Get test user credentials for debugging
- */
-export const getTestUserCredentials = () => {
-  return {
-    username: 'livado',
-    password: 'livado123',
-    userType: 'driver' as const
-  };
-};
+
 

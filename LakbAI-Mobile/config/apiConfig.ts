@@ -3,8 +3,8 @@ import Constants from 'expo-constants';
 
 // Network configuration for different developers
 const DEVELOPER_CONFIGS: { [key: string]: string } = {
-  joseph: '192.168.254.110',  // Your local IP address (without port)
-  jiro: '192.168.254.110:8000',  // Use actual computer IP with port
+  joseph: '192.168.254.105',  // Your local IP address (without port)
+  jiro: '192.168.254.111',    // Updated to match your actual network
   // Add your name and IP here:
   // maria: '192.168.1.105',
   // john: '10.0.0.23',
@@ -39,23 +39,23 @@ const getApiBaseUrl = (): string => {
   if (__DEV__) {
     // Development mode - use local server
     const developer = getCurrentDeveloper();
-    const ip = DEVELOPER_CONFIGS[developer] || DEVELOPER_CONFIGS.joseph;
+    const ip = DEVELOPER_CONFIGS[developer] || DEVELOPER_CONFIGS.jiro;
     
     // Check if tunnel mode is enabled
     if (TUNNEL_CONFIG.enabled) {
-      return `http://localhost:${TUNNEL_CONFIG.port}/LakbAI-API/routes/api.php`;
+      return `http://localhost:${TUNNEL_CONFIG.port}/LakbAI/LakbAI-API/routes/api.php`;
     }
     
     // Check if the IP already includes a port (like 192.168.254.110:8000)
     if (ip.includes(':')) {
-      return `http://${ip}/LakbAI-API/routes/api.php`;
+      return `http://${ip}/LakbAI/LakbAI-API/routes/api.php`;
     }
     
     // Regular LAN mode (no port specified)
     return `http://${ip}/LakbAI/LakbAI-API/routes/api.php`;
   } else {
     // Production mode - use production server
-    return 'https://your-production-domain.com/LakbAI-API/routes/api.php';
+    return 'https://your-production-domain.com/LakbAI/LakbAI-API/routes/api.php';
   }
 };
 
@@ -99,13 +99,6 @@ export const configureForCoDeveloper = (developerName: string, useTunnel: boolea
   console.log(`- API URL: ${getApiBaseUrl()}`);
 };
 
-// Debug function to show current configuration (development only)
-export const debugApiConfig = (): void => {
-  if (__DEV__) {
-    console.log('API Configuration:', API_CONFIG.BASE_URL);
-    console.log('Tunnel Mode:', TUNNEL_CONFIG.enabled);
-    console.log('Current Developer:', getCurrentDeveloper());
-  }
-};
+
 
 export default API_CONFIG;

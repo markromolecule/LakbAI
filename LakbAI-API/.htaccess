@@ -11,11 +11,20 @@ Header always set Access-Control-Allow-Headers "Content-Type, Authorization"
 # Enable URL rewriting
 RewriteEngine On
 
-# Handle preflight requests
-RewriteCond %{REQUEST_METHOD} OPTIONS
-RewriteRule ^(.*)$ routes/api.php [R=200,L]
+# Handle /api/auth0/sync-user requests (for Auth0 action)
+RewriteRule ^api/auth0/sync-user$ api/auth0/sync-user.php [L,QSA]
 
-# Route all API requests to routes/api.php
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule ^(.*)$ routes/api.php [QSA,L]
+# Handle other API routes
+RewriteRule ^api/(.*)$ api/$1 [L,QSA]
+
+# Handle /routes/* requests (for mobile app)
+RewriteRule ^routes/(.*)$ routes/$1 [L,QSA]
+
+# Enable CORS for all requests
+Header always set Access-Control-Allow-Origin "*"
+Header always set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
+Header always set Access-Control-Allow-Headers "Content-Type, Authorization, X-Auth0-Action"
+
+# Handle preflight OPTIONS requests
+RewriteCond %{REQUEST_METHOD} OPTIONS
+RewriteRule ^(.*)$ $1 [R=200,L]

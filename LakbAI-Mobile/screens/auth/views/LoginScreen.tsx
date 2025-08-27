@@ -25,9 +25,11 @@ interface LoginScreenProps {
   onLogin: (data: LoginData) => void;
   onForgotPassword: () => void;
   onGuestContinue?: () => void;
+  onSwitchToSignUp?: () => void;
+  onBack?: () => void;
 }
 
-const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onForgotPassword, onGuestContinue }) => {
+const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onForgotPassword, onGuestContinue, onSwitchToSignUp, onBack }) => {
   const [loginData, setLoginData] = useState<LoginData>({
     username: '',
     password: '',
@@ -37,8 +39,6 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onForgotPassword, on
   const [rememberMe, setRememberMe] = useState(false);
   const [errors, setErrors] = useState<{ username?: string; password?: string }>({});
   const [focusedField, setFocusedField] = useState<string | null>(null);
-
-
 
   const validateForm = (): boolean => {
     const newErrors: { username?: string; password?: string } = {};
@@ -112,6 +112,20 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onForgotPassword, on
         <View>
           {/* Header Section */}
           <View style={styles.header}>
+            {/* Back / Opt-out */}
+            {onBack && (
+              <TouchableOpacity 
+                style={styles.backButton} 
+                onPress={onBack} 
+                activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityLabel="Go back"
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Text style={styles.backButtonText}>← Back</Text>
+              </TouchableOpacity>
+            )}
+
             {/* Implement main logo design */}
             <View style={styles.logoContainer}>
               <View style={styles.logo}>
@@ -122,7 +136,8 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onForgotPassword, on
                 />
               </View>
             </View>
-            <Text style={styles.subtitle}>Welcome back</Text>
+            <Text style={styles.appTitle}>Sign in to LakbAI</Text>
+            <Text style={styles.subtitle}>Welcome back! Please enter your details.</Text>
           </View>
 
           {/* Form Container */}
@@ -142,6 +157,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onForgotPassword, on
                   autoCorrect={false}
                   editable={!isLoading}
                   textAlignVertical="center"
+                  returnKeyType="next"
                 />
                 <View style={styles.inputIcon}>
                   <View style={styles.userIcon} />
@@ -168,12 +184,15 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onForgotPassword, on
                   secureTextEntry={!showPassword}
                   editable={!isLoading}
                   textAlignVertical="center"
+                  returnKeyType="done"
                 />
                 <TouchableOpacity 
                   style={styles.passwordToggle}
                   onPress={() => setShowPassword(!showPassword)}
                   disabled={isLoading}
                   activeOpacity={0.7}
+                  accessibilityRole="button"
+                  accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
                 >
                   <View style={[styles.eyeIcon, showPassword && styles.eyeIconVisible]} />
                 </TouchableOpacity>
@@ -218,7 +237,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onForgotPassword, on
                 ]} 
                 onPress={handleLogin}
                 disabled={isLoading}
-                activeOpacity={0.8}
+                activeOpacity={0.9}
               >
                 {isLoading ? (
                   <View style={styles.loadingContainer}>
@@ -226,7 +245,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onForgotPassword, on
                     <Text style={styles.loginButtonText}>Signing in...</Text>
                   </View>
                 ) : (
-                  <Text style={styles.loginButtonText}>Login</Text>
+                  <Text style={styles.loginButtonText}>Sign In</Text>
                 )}
               </TouchableOpacity>
 
@@ -236,10 +255,20 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onForgotPassword, on
                   style={styles.guestButton} 
                   onPress={onGuestContinue}
                   disabled={isLoading}
-                  activeOpacity={0.8}
+                  activeOpacity={0.9}
                 >
                   <Text style={styles.guestButtonText}>Continue as Guest</Text>
                 </TouchableOpacity>
+              )}
+
+              {/* Footer: Register link */}
+              {onSwitchToSignUp && (
+                <View style={styles.switchToSignUpContainer}>
+                  <Text style={styles.switchToSignUpText}>Don't have an account? </Text>
+                  <TouchableOpacity onPress={onSwitchToSignUp} activeOpacity={0.7}>
+                    <Text style={styles.switchToSignUpLink}>Register here</Text>
+                  </TouchableOpacity>
+                </View>
               )}
             </View>
           </View>

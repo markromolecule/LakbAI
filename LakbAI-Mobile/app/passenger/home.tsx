@@ -3,7 +3,7 @@ import React from 'react';
 import { SafeAreaView, StyleSheet, View } from 'react-native';
 import { Header } from '../../components/common/Header';
 import { Footer } from '../../components/common/Footer';
-import HomeScreen from '../../screens/passenger/views/HomeView';
+import CleanPassengerHomeScreen from '../../screens/passenger/views/CleanPassengerHomeScreen';
 import { COLORS } from '../../shared/styles';
 
 export default function PassengerHome() {
@@ -11,7 +11,7 @@ export default function PassengerHome() {
     <SafeAreaView style={styles.container}>
       <Header showBackButton={false} userType="Passenger" />
       <View style={styles.content}>
-        <HomeScreen />
+        <CleanPassengerHomeScreen />
       </View>
       <Footer />
     </SafeAreaView>
