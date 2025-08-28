@@ -6,17 +6,18 @@ import { Header } from '../../components/common/Header';
 import { Footer } from '../../components/common/Footer';
 import { ChatScreen } from '../../screens/passenger/views/ChatView';
 import { COLORS } from '../../shared/styles';
-import { getUserSession, isGuestSession } from '../../shared/utils/authUtils';
+import { useAuthContext } from '../../shared/providers/AuthProvider';
 
 export default function PassengerChat() {
   const router = useRouter();
   const [allowed, setAllowed] = useState(false);
+  const { isAuthenticated, isLoading } = useAuthContext();
 
   useEffect(() => {
     const checkAccess = async () => {
-      const guest = await isGuestSession();
-      const session = await getUserSession();
-      if (guest || !session.username) {
+      if (isLoading) return; // Wait for auth state to load
+      
+      if (!isAuthenticated) {
         Alert.alert(
           'Restricted',
           'Please log in to use BiyaBot.',
@@ -33,7 +34,7 @@ export default function PassengerChat() {
       setAllowed(true);
     };
     checkAccess();
-  }, [router]);
+  }, [router, isAuthenticated, isLoading]);
 
   const handleBackPress = () => {
     router.back();

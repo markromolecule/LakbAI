@@ -44,6 +44,7 @@ export interface PassengerProfile {
   email: string;
   phoneNumber: string;
   username: string;
+  picture?: string; // Profile picture URL from Auth0
   address: {
     houseNumber: string;
     streetName: string;

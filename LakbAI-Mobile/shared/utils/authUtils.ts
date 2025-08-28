@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import { Alert } from 'react-native';
+import { AUTH_CONFIG } from '../../config/auth';
 
 /**
  * Authentication utilities for managing user sessions
@@ -12,7 +13,7 @@ const SESSION_KEYS = {
   USERNAME: '@username',
   REMEMBER_ME: '@remember_me',
   LOGIN_TIME: '@login_time',
-  LOGOUT_FLAG: '@logout_flag', // Add logout flag
+  LOGOUT_FLAG: '@logout_flag',
 };
 
 export type UserType = 'passenger' | 'driver' | 'guest' | null;
@@ -101,29 +102,16 @@ export const useLogout = () => {
         await clearUserSession();
         console.log('✅ User session cleared');
         
-        // Set logout flag to prevent automatic session restoration
+        // Set logout flag using the same key as sessionManager
         try {
-          const AsyncStorage = require('@react-native-async-storage/async-storage');
-          await AsyncStorage.setItem(SESSION_KEYS.LOGOUT_FLAG, 'true');
-          console.log('✅ Logout flag set');
+          await AsyncStorage.setItem(AUTH_CONFIG.session.storageKeys.logoutFlag, 'true');
+          console.log('✅ Logout flag set (sessionManager compatible)');
         } catch (flagError) {
           console.log('⚠️ Could not set logout flag:', flagError);
         }
         
-        // Clear authentication state (using new clean architecture)
-        try {
-          // The new clean architecture handles logout through the useAuth hook
-          // This function is now deprecated in favor of the clean architecture
-          console.log('✅ Logout completed (clean architecture)');
-          
-        } catch (authError) {
-          console.log('⚠️ Could not complete logout:', authError);
-        }
-        
         // Clear any AsyncStorage tokens that might still exist
         try {
-          const AsyncStorage = require('@react-native-async-storage/async-storage');
-          
           const keysToRemove = [
             'auth0_access_token',
             'auth0_id_token',
@@ -139,7 +127,9 @@ export const useLogout = () => {
               // Handle wildcard keys
               const allKeys = await AsyncStorage.getAllKeys();
               const matchingKeys = allKeys.filter((k: string) => k.startsWith('expo_auth_session_'));
-              await AsyncStorage.multiRemove(matchingKeys);
+              if (matchingKeys.length > 0) {
+                await AsyncStorage.multiRemove(matchingKeys);
+              }
             } else {
               await AsyncStorage.removeItem(key);
             }

@@ -34,11 +34,16 @@ export const profileStyles = StyleSheet.create({
   avatar: {
     width: 80,
     height: 80,
-    backgroundColor: '#3B82F6',
     borderRadius: 40,
+    backgroundColor: COLORS.primary,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 16,
+  },
+  avatarImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
   },
   profileInfo: {
     flex: 1,

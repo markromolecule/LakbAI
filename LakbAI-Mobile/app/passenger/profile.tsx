@@ -10,21 +10,14 @@ import { usePassengerState } from '../../screens/passenger/hooks/usePassengerSta
 import { useDiscountState } from '../../screens/passenger/hooks/useDiscountState';
 import { DiscountApplication } from '../../shared/services/discountService';
 import { COLORS } from '../../shared/styles';
-import { getUserSession, isGuestSession } from '../../shared/utils/authUtils';
+import { useAuthContext } from '../../shared/providers/AuthProvider';
 
 export default function PassengerProfile() {
   const router = useRouter();
   const { passengerProfile } = usePassengerState();
   const { submitApplication, isSubmitting, error, clearError } = useDiscountState();
-  const [guest, setGuest] = useState(false);
+  const { isAuthenticated, isLoading, user } = useAuthContext();
   const [showDiscountModal, setShowDiscountModal] = useState(false);
-
-  useEffect(() => {
-    const load = async () => {
-      setGuest(await isGuestSession());
-    };
-    load();
-  }, []);
 
   // Clear error when modal is closed
   useEffect(() => {
@@ -34,7 +27,7 @@ export default function PassengerProfile() {
   }, [showDiscountModal, clearError]);
 
   const profileForDisplay = useMemo(() => {
-    if (!guest) return passengerProfile;
+    if (isAuthenticated && user) return passengerProfile;
     return {
       ...passengerProfile,
       firstName: 'Guest',
@@ -49,7 +42,7 @@ export default function PassengerProfile() {
         document: null 
       },
     };
-  }, [guest, passengerProfile]);
+  }, [isAuthenticated, user, passengerProfile]);
 
   const handleBackPress = () => {
     router.back();
@@ -62,7 +55,7 @@ export default function PassengerProfile() {
   };
 
   const handleApplyForDiscount = () => {
-    if (guest) {
+    if (!isAuthenticated) {
       Alert.alert(
         'Guest User',
         'Please log in to apply for a discount.',
@@ -102,25 +95,32 @@ export default function PassengerProfile() {
     }
   };
 
+  if (isLoading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          {/* Add a loading spinner here if needed */}
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container}>
-      <Header showBackButton={true} userType={guest ? 'Passenger' : 'Passenger'} onBackPress={handleBackPress} />
+      <Header showBackButton={true} userType="Passenger" onBackPress={handleBackPress} />
       <View style={styles.content}>
-        <ProfileView 
+        <ProfileView
           passengerProfile={profileForDisplay}
-          onEditProfile={guest ? undefined : handleEditProfile}
+          onEditProfile={handleEditProfile}
           onApplyForDiscount={handleApplyForDiscount}
         />
       </View>
       <Footer />
-
-      {/* Discount Application Modal */}
+      
       <DiscountApplicationModal
         visible={showDiscountModal}
         onClose={() => setShowDiscountModal(false)}
         onSubmit={handleDiscountSubmission}
-        currentDiscountType={profileForDisplay.fareDiscount.type}
-        currentDocument={profileForDisplay.fareDiscount.document}
       />
     </SafeAreaView>
   );
@@ -133,5 +133,10 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });

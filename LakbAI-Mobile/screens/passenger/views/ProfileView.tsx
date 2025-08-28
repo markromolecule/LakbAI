@@ -3,7 +3,7 @@ import { ScrollView, View, Text, TouchableOpacity, Image } from 'react-native';
 import { User, Mail, Phone, MapPin, Edit, FileText, LogOut, CreditCard, Plus } from 'lucide-react-native';
 import { PassengerProfile } from '../../../shared/types/authentication';
 import { passengerStyles, profileStyles, homeStyles } from '../styles/ProfileScreen.styles';
-import { useLogout } from '../../../shared/utils/authUtils';
+import { useAuthContext } from '../../../shared/providers/AuthProvider';
 
 interface ProfileViewProps {
   passengerProfile: PassengerProfile;
@@ -16,7 +16,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   onEditProfile,
   onApplyForDiscount
 }) => {
-  const { logout } = useLogout();
+  const { logout } = useAuthContext();
 
   const getDiscountTypeDisplay = (type: string) => {
     switch (type) {
@@ -79,7 +79,15 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
       <View style={profileStyles.profileCard}>
         <View style={profileStyles.profileHeader}>
           <View style={profileStyles.avatar}>
-            <User size={40} color="white" />
+            {passengerProfile.picture ? (
+              <Image
+                source={{ uri: passengerProfile.picture }}
+                style={profileStyles.avatarImage}
+                resizeMode="cover"
+              />
+            ) : (
+              <User size={40} color="white" />
+            )}
           </View>
           <View style={profileStyles.profileInfo}>
             <Text style={profileStyles.profileName}>
@@ -228,7 +236,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               <Text style={profileStyles.applyDiscountButtonText}>Apply for Discount</Text>
             </TouchableOpacity>
           )}
-
+          
           {/* Application Date */}
           {passengerProfile.fareDiscount.applicationDate && (
             <View style={profileStyles.applicationDateContainer}>

@@ -47,11 +47,12 @@ class Auth0Controller {
 
                 $this->userRepository->update($existingUser['id'], $updateData);
                 
-                // Return updated user
+                // Return updated user with profile completion status
                 $updatedUser = $this->userRepository->findById($existingUser['id']);
                 return $this->successResponse('User synced successfully', [
                     'user' => $updatedUser,
-                    'is_new_user' => false
+                    'is_new_user' => false,
+                    'profile_completed' => $updatedUser['profile_completed'] ?? false
                 ]);
             } else {
                 // Check if user exists by email
@@ -72,11 +73,12 @@ class Auth0Controller {
 
                     $this->userRepository->update($existingUserByEmail['id'], $updateData);
                     
-                    // Return updated user
+                    // Return updated user with profile completion status
                     $updatedUser = $this->userRepository->findById($existingUserByEmail['id']);
                     return $this->successResponse('User linked to Auth0 successfully', [
                         'user' => $updatedUser,
-                        'is_new_user' => false
+                        'is_new_user' => false,
+                        'profile_completed' => $updatedUser['profile_completed'] ?? false
                     ]);
                 } else {
                     // Create new user with Auth0 data
@@ -104,7 +106,8 @@ class Auth0Controller {
                         $newUser = $this->userRepository->findById($userId);
                         return $this->successResponse('New user created successfully', [
                             'user' => $newUser,
-                            'is_new_user' => true
+                            'is_new_user' => true,
+                            'profile_completed' => false
                         ]);
                     } else {
                         return $this->errorResponse('Failed to create new user');
@@ -289,6 +292,79 @@ class Auth0Controller {
 
         } catch (Exception $e) {
             return $this->errorResponse('Profile completion failed: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Apply for a discount
+     */
+    public function applyDiscount($data) {
+        try {
+            if (!isset($data['auth0_id']) || !isset($data['discount_type'])) {
+                return $this->errorResponse('Auth0 ID and discount type are required');
+            }
+
+            $auth0Id = $data['auth0_id'];
+            $discountType = $data['discount_type'];
+            $documentPath = $data['document_path'] ?? null;
+            $documentName = $data['document_name'] ?? null;
+
+            // Find user by Auth0 ID
+            $user = $this->userRepository->findByAuth0Id($auth0Id);
+            
+            if (!$user) {
+                return $this->errorResponse('User not found');
+            }
+
+            // Update user with discount information
+            $updateData = [
+                'discount_type' => $discountType,
+                'discount_document_path' => $documentPath,
+                'discount_document_name' => $documentName,
+                'discount_verified' => false, // Pending admin verification
+                'updated_at' => date('Y-m-d H:i:s')
+            ];
+
+            $success = $this->userRepository->update($user['id'], $updateData);
+            
+            if ($success) {
+                $updatedUser = $this->userRepository->findById($user['id']);
+                return $this->successResponse('Discount application submitted successfully', [
+                    'user' => $updatedUser
+                ]);
+            } else {
+                return $this->errorResponse('Failed to submit discount application');
+            }
+
+        } catch (Exception $e) {
+            return $this->errorResponse('Discount application failed: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Get discount status for a user
+     */
+    public function getDiscountStatus($data) {
+        try {
+            if (!isset($data['auth0_id'])) {
+                return $this->errorResponse('Auth0 ID is required');
+            }
+
+            $auth0Id = $data['auth0_id'];
+
+            // Find user by Auth0 ID
+            $user = $this->userRepository->findByAuth0Id($auth0Id);
+            
+            if (!$user) {
+                return $this->errorResponse('User not found');
+            }
+
+            return $this->successResponse('Discount status retrieved successfully', [
+                'user' => $user
+            ]);
+
+        } catch (Exception $e) {
+            return $this->errorResponse('Failed to get discount status: ' . $e->getMessage());
         }
     }
 

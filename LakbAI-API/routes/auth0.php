@@ -71,6 +71,14 @@ try {
             $result = $auth0Controller->getUserProfile($input);
             break;
             
+        case 'apply_discount':
+            $result = $auth0Controller->applyDiscount($input);
+            break;
+            
+        case 'get_discount_status':
+            $result = $auth0Controller->getDiscountStatus($input);
+            break;
+            
         default:
             $result = [
                 'status' => 'error',

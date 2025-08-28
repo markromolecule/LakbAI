@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Image } from 'r
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthContext } from '../../../shared/providers/AuthProvider';
 import { useRouter } from 'expo-router';
+import sessionManager from '../../../shared/services/sessionManager';
 
 const CleanAuthScreen: React.FC = () => {
   const { login: auth0Login, isLoading, error } = useAuthContext();
@@ -16,9 +17,22 @@ const CleanAuthScreen: React.FC = () => {
     }
   };
 
-  const handleTraditionalSignIn = () => {
-    // Navigate to the traditional login screen
-    router.push('/auth/login');
+  const handleTraditionalSignIn = async () => {
+    try {
+      // Clear any existing Auth0 session data to ensure clean state
+      console.log('🧹 Clearing Auth0 session data for traditional login...');
+      
+      // Clear the current session if it exists
+      await sessionManager.clearAllAuthData();
+      console.log('✅ Auth0 session data cleared');
+      
+      // Navigate to the traditional login screen
+      router.push('/auth/login');
+    } catch (error) {
+      console.error('Error clearing Auth0 session:', error);
+      // Continue to traditional login even if clearing fails
+      router.push('/auth/login');
+    }
   };
 
   return (

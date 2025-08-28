@@ -19,6 +19,7 @@ import authService from '../../../shared/services/authService';
 interface LoginData {
   username: string;
   password: string;
+  user?: any; // User data from successful authentication
 }
 
 interface LoginScreenProps {
@@ -69,11 +70,9 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onForgotPassword, on
       const response = await authService.login(loginData);
       
       if (response.status === 'success') {
-        Alert.alert(
-          'Success', 
-          'Login successful!',
-          [{ text: 'OK', onPress: () => onLogin(loginData) }]
-        );
+        console.log('Login successful, user data:', response.user);
+        // Pass the user data to the onLogin callback
+        onLogin({ ...loginData, user: response.user });
       } else {
         Alert.alert('Login Failed', response.message || 'Please check your credentials and try again');
       }
