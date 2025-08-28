@@ -14,7 +14,7 @@ import {
     Image
 } from 'react-native';
 import styles from '../styles/LoginScreen.styles';
-import { authService } from '../../../shared/services';
+import authService from '../../../shared/services/authService';
 
 interface LoginData {
   username: string;

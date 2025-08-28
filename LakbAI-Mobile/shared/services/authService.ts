@@ -373,7 +373,7 @@ class AuthService {
 
   /**
    * Reset discovery document
-   */
+   */ 
   resetDiscovery(): void {
     this.discovery = null;
     console.log('🔄 Auth0 discovery reset');
