@@ -12,7 +12,8 @@ export interface UserSession {
   userType: 'passenger' | 'driver';
   loginTime: string;
   profileCompleted: boolean;
-  auth0Id: string;
+  auth0Id: string | null; // Allow null for traditional users
+  dbUserData?: any; // Store complete database user data
 }
 
 export interface SessionData {
@@ -24,6 +25,40 @@ export interface SessionData {
 }
 
 class SessionManager {
+  /**
+   * Store traditional user session (non-Auth0)
+   */
+  async storeTraditionalUserSession(userData: any, userType: 'passenger' | 'driver' = 'passenger'): Promise<void> {
+    try {
+      const session: UserSession = {
+        userId: userData.id.toString(),
+        username: userData.username || userData.name,
+        email: userData.email,
+        userType,
+        loginTime: new Date().toISOString(),
+        profileCompleted: userData.profile_completed || false,
+        auth0Id: null, // Traditional users don't have Auth0 ID
+        dbUserData: userData, // Store complete database user data
+      };
+
+      // Store session data
+      await AsyncStorage.setItem(AUTH_CONFIG.session.storageKeys.userSession, JSON.stringify(session));
+      
+      // For traditional users, we don't have tokens, so we'll use a placeholder
+      await AsyncStorage.setItem(AUTH_CONFIG.session.storageKeys.accessToken, 'traditional_user');
+      await AsyncStorage.setItem(AUTH_CONFIG.session.storageKeys.idToken, 'traditional_user');
+      
+      // Store expiration time (24 hours from now)
+      const expiresAt = Date.now() + (24 * 60 * 60 * 1000);
+      await AsyncStorage.setItem('session_expires_at', expiresAt.toString());
+
+      console.log('✅ Traditional user session stored successfully');
+    } catch (error) {
+      console.error('❌ Error storing traditional user session:', error);
+      throw error;
+    }
+  }
+
   /**
    * Store user session data
    */
@@ -301,6 +336,7 @@ class SessionManager {
       
       // Try primary endpoint first
       try {
+        console.log('🔗 Attempting primary endpoint:', primaryUrl);
         const response = await fetch(primaryUrl, {
           method: 'POST',
           headers: {
@@ -309,8 +345,11 @@ class SessionManager {
           body: JSON.stringify(userData)
         });
         
+        console.log('📡 Primary endpoint response status:', response.status);
+        
         if (response.ok) {
           const result = await response.json();
+          console.log('✅ Primary endpoint success:', result);
           
           if (result.status === 'error') {
             throw new Error(`Backend sync failed: ${result.message}`);
@@ -319,18 +358,24 @@ class SessionManager {
           return result;
         } else {
           const errorText = await response.text();
+          console.error('❌ Primary endpoint failed:', response.status, errorText);
           throw new Error(`Backend sync failed: ${response.status} - ${errorText}`);
         }
       } catch (primaryError) {
+        console.error('❌ Primary endpoint error:', primaryError);
+        
         // Try alternative endpoints if primary fails
         const alternativeEndpoints = [
           `http://${ip}/LakbAI/LakbAI-API/routes/auth0.php`,
-          `http://${ip}/LakbAI-API/routes/auth0_routes.php`,
-          `http://${ip}/LakbAI-API/api/auth0/sync-user`,
+          `http://${ip}/LakbAI/LakbAI-API/routes/auth0_routes.php`,
+          `http://${ip}/LakbAI/LakbAI-API/api/auth0/sync-user`,
         ];
+        
+        console.log('🔄 Trying alternative endpoints:', alternativeEndpoints);
         
         for (const endpoint of alternativeEndpoints) {
           try {
+            console.log('🔗 Trying endpoint:', endpoint);
             const response = await fetch(endpoint, {
               method: 'POST',
               headers: {
@@ -339,8 +384,11 @@ class SessionManager {
               body: JSON.stringify(userData)
             });
             
+            console.log('📡 Alternative endpoint response status:', response.status);
+            
             if (response.ok) {
               const result = await response.json();
+              console.log('✅ Alternative endpoint success:', result);
               
               if (result.status === 'error') {
                 throw new Error(`Backend sync failed: ${result.message}`);
@@ -349,11 +397,13 @@ class SessionManager {
               return result;
             }
           } catch (endpointError) {
+            console.error('❌ Alternative endpoint failed:', endpoint, endpointError);
             // Continue to next endpoint
           }
         }
         
         // If all endpoints fail, provide fallback response
+        console.warn('⚠️ All API endpoints failed, using fallback response');
         return {
           backend_available: false,
           status: 'success',
@@ -363,7 +413,7 @@ class SessionManager {
             created_at: new Date().toISOString(),
             email: userProfile.email,
             name: userProfile.name,
-            profile_completed: false,
+            profile_completed: false, // Default to false for safety
             updated_at: new Date().toISOString(),
             user_type: 'passenger'
           }

@@ -46,21 +46,45 @@ class AuthService {
   /**
    * Traditional login method for username/password authentication
    */
-  async login(credentials: { username: string; password: string }): Promise<{ status: 'success' | 'error'; message: string }> {
+  async login(credentials: { username: string; password: string }): Promise<{ status: 'success' | 'error'; message: string; user?: any }> {
     try {
       console.log('🔐 Attempting traditional login for user:', credentials.username);
       
-      // This is a placeholder - you can integrate with your backend API here
-      // For now, we'll simulate a successful login
-      if (credentials.username && credentials.password) {
+      // Call the backend traditional login endpoint
+      const response = await fetch(`${buildAuth0Url().replace('/routes/auth0.php', '/routes/auth_routes.php')}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'login',
+          username: credentials.username,
+          password: credentials.password,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Traditional login response error:', errorText);
+        return {
+          status: 'error',
+          message: 'Login failed. Please check your credentials and try again.'
+        };
+      }
+
+      const data = await response.json();
+      console.log('Traditional login response:', data);
+
+      if (data.status === 'success' && data.user) {
         return {
           status: 'success',
-          message: 'Login successful'
+          message: 'Login successful',
+          user: data.user
         };
       } else {
         return {
           status: 'error',
-          message: 'Invalid credentials'
+          message: data.message || 'Login failed. Please check your credentials and try again.'
         };
       }
     } catch (error) {

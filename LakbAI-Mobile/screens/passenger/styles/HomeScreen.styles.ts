@@ -76,6 +76,29 @@ const styles = StyleSheet.create({
     color: COLORS.warningDark,
     fontSize: 14,
   },
+  infoSection: {
+    backgroundColor: COLORS.white,
+    padding: SPACING.lg,
+    borderRadius: SPACING.md,
+    marginBottom: SPACING.xl,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  infoTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: COLORS.gray800,
+    marginBottom: SPACING.md,
+  },
+  infoItem: {
+    fontSize: 14,
+    color: COLORS.gray600,
+    marginBottom: SPACING.sm,
+    lineHeight: 20,
+  },
 });
 
 export default styles;

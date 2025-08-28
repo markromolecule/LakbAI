@@ -1,16 +1,15 @@
 // screens/passenger/views/HomeScreen.tsx
+import React, { useCallback } from 'react';
+import { ScrollView, View, Text, TouchableOpacity, Alert } from 'react-native';
+import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import React, { useCallback, useEffect, useState } from 'react';
-import { Alert, ScrollView, Text, TouchableOpacity, View } from 'react-native';
-import { InfoCard } from '../../../components/common/InfoCard';
+import { useFocusEffect } from '@react-navigation/native';
+import { PassengerRoutes, PassengerRouteHref } from '../../../routes/PassengerRoutes';
 import { COLORS } from '../../../shared/styles';
 import { globalStyles } from '../../../shared/styles/globalStyles';
+import { useAuthContext } from '../../../shared/providers/AuthProvider';
 import styles from '../styles/HomeScreen.styles';
-import { useRouter } from 'expo-router';
-import { PassengerRoutes, PassengerRouteHref } from '@/routes/PassengerRoutes';
 import type { Href } from 'expo-router';
-import { getUserSession, isGuestSession } from '../../../shared/utils/authUtils';
-import { useFocusEffect } from '@react-navigation/native';
 
 const GridItem: React.FC<{
   icon: keyof typeof Ionicons.glyphMap;
@@ -29,17 +28,11 @@ const GridItem: React.FC<{
 
 export const HomeScreen: React.FC = () => {
   const router = useRouter();
-  const [guest, setGuest] = useState(false);
-
-  useEffect(() => {
-    const load = async () => setGuest(await isGuestSession());
-    load();
-  }, []);
+  const { isAuthenticated, isLoading } = useAuthContext();
 
   useFocusEffect(
     useCallback(() => {
-      const load = async () => setGuest(await isGuestSession());
-      load();
+      // This will run every time the screen comes into focus
     }, [])
   );
 
@@ -55,11 +48,11 @@ export const HomeScreen: React.FC = () => {
     {
       icon: 'qr-code',
       title: 'Scan QR Code',
-      subtitle: guest ? 'Login required' : 'Get fare info',
+      subtitle: isAuthenticated ? 'Get fare info' : 'Login required',
       color: COLORS.primary,
       borderColor: COLORS.primaryLight,
       onPress: () => {
-        if (guest) {
+        if (!isAuthenticated) {
           Alert.alert(
             'Login required',
             'Please log in first to use Scan QR Code.',
@@ -79,11 +72,11 @@ export const HomeScreen: React.FC = () => {
     {
       icon: 'chatbubble',
       title: 'BiyaBot',
-      subtitle: guest ? 'Login required' : 'Ask questions',
+      subtitle: isAuthenticated ? 'Ask questions' : 'Login required',
       color: COLORS.success,
       borderColor: COLORS.successBiya,
       onPress: () => {
-        if (guest) {
+        if (!isAuthenticated) {
           Alert.alert(
             'Restricted',
             'Please log in to use BiyaBot.',
@@ -108,7 +101,6 @@ export const HomeScreen: React.FC = () => {
       borderColor: COLORS.orangeLight,
       route: PassengerRoutes.FARE
     },
-
     {
       icon: 'map',
       title: 'Routes & Fares',
@@ -166,7 +158,13 @@ export const HomeScreen: React.FC = () => {
         </View>
       </View>
 
-      <InfoCard title="How to use LakbAI:" items={infoItems} />
+      {/* Info section */}
+      <View style={styles.infoSection}>
+        <Text style={styles.infoTitle}>How to use LakbAI:</Text>
+        {infoItems.map((item, index) => (
+          <Text key={index} style={styles.infoItem}>{item}</Text>
+        ))}
+      </View>
     </ScrollView>
   );
 };

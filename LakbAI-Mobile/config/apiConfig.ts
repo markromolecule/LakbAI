@@ -66,6 +66,11 @@ export const API_CONFIG = {
   RETRY_ATTEMPTS: 3,
 };
 
+// Also export a function to get the base URL dynamically
+export const getBaseUrl = (): string => {
+  return getApiBaseUrl();
+};
+
 // Helper function for co-developers to easily set their IP
 export const setDeveloperIP = (developerName: string, ipAddress: string): void => {
   DEVELOPER_CONFIGS[developerName] = ipAddress;
@@ -98,7 +103,5 @@ export const configureForCoDeveloper = (developerName: string, useTunnel: boolea
   }
   console.log(`- API URL: ${getApiBaseUrl()}`);
 };
-
-
 
 export default API_CONFIG;

@@ -6,17 +6,18 @@ import { Header } from '../../components/common/Header';
 import { Footer } from '../../components/common/Footer';
 import { ScannerScreen } from '../../screens/passenger/views/ScannerView';
 import { COLORS } from '../../shared/styles';
-import { getUserSession, isGuestSession } from '../../shared/utils/authUtils';
+import { useAuthContext } from '../../shared/providers/AuthProvider';
 
 export default function PassengerScanner() {
   const router = useRouter();
   const [allowed, setAllowed] = useState(false);
+  const { isAuthenticated, isLoading } = useAuthContext();
 
   useEffect(() => {
     const checkAccess = async () => {
-      const guest = await isGuestSession();
-      const session = await getUserSession();
-      if (guest || !session.username) {
+      if (isLoading) return; // Wait for auth state to load
+      
+      if (!isAuthenticated) {
         Alert.alert(
           'Login required',
           'Please log in first to use Scan QR Code.',
@@ -33,7 +34,7 @@ export default function PassengerScanner() {
       setAllowed(true);
     };
     checkAccess();
-  }, [router]);
+  }, [router, isAuthenticated, isLoading]);
 
   const handleBackPress = () => {
     router.back();

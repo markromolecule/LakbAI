@@ -3,14 +3,32 @@ import { View, StyleSheet } from 'react-native';
 import LoginScreen from '../../screens/auth/views/LoginScreen';
 import { useRouter } from 'expo-router';
 import { PassengerRoutes } from '../../routes';
+import sessionManager from '../../shared/services/sessionManager';
 
 const LoginRoute: React.FC = () => {
   const router = useRouter();
 
-  const handleLogin = (data: any) => {
+  const handleLogin = async (data: any) => {
     console.log('Login successful:', data);
-    // Redirect to home after successful login
-    router.push(PassengerRoutes.HOME);
+    
+    try {
+      // Clear any existing Auth0 session data
+      await sessionManager.clearAllAuthData();
+      console.log('✅ Cleared existing Auth0 session data');
+      
+      // Store the new traditional user session
+      await sessionManager.storeTraditionalUserSession(data.user, 'passenger');
+      console.log('✅ Created traditional user session for:', data.user.username);
+      
+      // Don't call forceFreshAuth as it will clear our new session
+      // Instead, just redirect to home - the useAuth hook will detect the new session
+      console.log('🚀 Redirecting to home with new traditional session');
+      router.push(PassengerRoutes.HOME);
+    } catch (error) {
+      console.error('Error creating traditional session:', error);
+      // Fallback: just redirect to home
+      router.push(PassengerRoutes.HOME);
+    }
   };
 
   const handleForgotPassword = () => {

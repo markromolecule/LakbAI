@@ -168,6 +168,7 @@ export const useAuth = (): UseAuthReturn => {
           
           // Sync user with database
           const syncResult = await syncUser(userProfile);
+          console.log('🔍 Sync result:', syncResult);
           
           // Store session data
           const sessionData: SessionData = {
@@ -180,7 +181,7 @@ export const useAuth = (): UseAuthReturn => {
           
           await sessionManager.storeUserSession(sessionData, 'passenger');
           
-          // Create user session
+          // Create user session with complete database user data
           const session: UserSession = {
             userId: userProfile.sub,
             username: userProfile.nickname || userProfile.name,
@@ -189,6 +190,8 @@ export const useAuth = (): UseAuthReturn => {
             loginTime: new Date().toISOString(),
             profileCompleted: syncResult.data?.profile_completed || false,
             auth0Id: userProfile.sub,
+            // Store the complete database user data
+            dbUserData: syncResult.data?.user || null,
           };
           
           setAuthState({
@@ -200,6 +203,8 @@ export const useAuth = (): UseAuthReturn => {
           });
           
           console.log('🎉 Authentication completed successfully');
+          console.log('📊 Profile completion status:', syncResult.data?.profile_completed);
+          console.log('🔄 Redirecting to:', syncResult.data?.profile_completed ? 'Passenger Home' : 'Complete Profile');
           
           // Navigate to appropriate screen
           if (syncResult.data?.profile_completed) {
