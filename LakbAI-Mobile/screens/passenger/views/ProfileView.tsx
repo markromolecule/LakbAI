@@ -1,18 +1,20 @@
 import React from 'react';
 import { ScrollView, View, Text, TouchableOpacity, Image } from 'react-native';
-import { User, Mail, Phone, MapPin, Edit, FileText, LogOut, CreditCard } from 'lucide-react-native';
-import { PassengerProfile } from '../../../shared/types/passenger';
+import { User, Mail, Phone, MapPin, Edit, FileText, LogOut, CreditCard, Plus } from 'lucide-react-native';
+import { PassengerProfile } from '../../../shared/types/authentication';
 import { passengerStyles, profileStyles, homeStyles } from '../styles/ProfileScreen.styles';
 import { useLogout } from '../../../shared/utils/authUtils';
 
 interface ProfileViewProps {
   passengerProfile: PassengerProfile;
   onEditProfile?: () => void;
+  onApplyForDiscount?: () => void;
 }
 
 export const ProfileView: React.FC<ProfileViewProps> = ({
   passengerProfile,
-  onEditProfile
+  onEditProfile,
+  onApplyForDiscount
 }) => {
   const { logout } = useLogout();
 
@@ -40,6 +42,32 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
       default: return '💰';
     }
   };
+
+  const getDiscountStatusDisplay = (status: string) => {
+    switch (status) {
+      case 'pending':
+        return { text: '⏳ Pending Review', color: '#F59E0B' };
+      case 'approved':
+        return { text: '✓ Approved', color: '#10B981' };
+      case 'rejected':
+        return { text: '✗ Rejected', color: '#EF4444' };
+      default:
+        return { text: 'No discount applied', color: '#6B7280' };
+    }
+  };
+
+  const getDiscountPercentage = (type: string) => {
+    switch (type) {
+      case 'Student': return 15;
+      case 'PWD': return 20;
+      case 'Senior Citizen': return 30;
+      case 'Pregnant': return 0; // Pregnant discount not implemented yet
+      default: return 0;
+    }
+  };
+
+  const canApplyForDiscount = passengerProfile.fareDiscount.status === 'none' || 
+                              passengerProfile.fareDiscount.status === 'rejected';
 
   return (
     <ScrollView 
@@ -151,7 +179,17 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 {getDiscountTypeDisplay(passengerProfile.fareDiscount.type)}
               </Text>
               {passengerProfile.fareDiscount.type && (
-                <Text style={profileStyles.discountStatus}>✓ Verified</Text>
+                <Text style={[
+                  profileStyles.discountStatus,
+                  { color: getDiscountStatusDisplay(passengerProfile.fareDiscount.status).color }
+                ]}>
+                  {getDiscountStatusDisplay(passengerProfile.fareDiscount.status).text}
+                </Text>
+              )}
+              {passengerProfile.fareDiscount.type && passengerProfile.fareDiscount.percentage > 0 && (
+                <Text style={profileStyles.discountPercentage}>
+                  {passengerProfile.fareDiscount.percentage}% discount
+                </Text>
               )}
             </View>
           </View>
@@ -175,6 +213,29 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                   {passengerProfile.fareDiscount.document.name}
                 </Text>
               </View>
+            </View>
+          )}
+
+          {/* Apply for Discount Button */}
+          {canApplyForDiscount && onApplyForDiscount && (
+            <TouchableOpacity 
+              style={profileStyles.applyDiscountButton}
+              onPress={onApplyForDiscount}
+              accessibilityLabel="Apply for Discount"
+              accessibilityHint="Tap to apply for a fare discount"
+            >
+              <Plus size={16} color="#3B82F6" />
+              <Text style={profileStyles.applyDiscountButtonText}>Apply for Discount</Text>
+            </TouchableOpacity>
+          )}
+
+          {/* Application Date */}
+          {passengerProfile.fareDiscount.applicationDate && (
+            <View style={profileStyles.applicationDateContainer}>
+              <Text style={profileStyles.applicationDateLabel}>Application Date:</Text>
+              <Text style={profileStyles.applicationDateValue}>
+                {new Date(passengerProfile.fareDiscount.applicationDate).toLocaleDateString()}
+              </Text>
             </View>
           )}
         </View>

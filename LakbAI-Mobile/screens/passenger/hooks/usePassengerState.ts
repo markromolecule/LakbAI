@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { PassengerProfile } from '../../../shared/types/passenger';
+import { PassengerProfile } from '../../../shared/types/authentication';
 
 export const usePassengerState = () => {
   // Mock passenger profile data
@@ -23,11 +23,16 @@ export const usePassengerState = () => {
     },
     fareDiscount: {
       type: 'Student',
+      status: 'approved',
+      percentage: 15,
       document: {
         uri: 'https://example.com/student-id.jpg',
         name: 'student_id_2024.jpg',
         type: 'image/jpeg',
       },
+      applicationDate: '2024-01-15T10:30:00Z',
+      verifiedBy: 'Admin User',
+      verifiedAt: '2024-01-16T14:20:00Z',
     },
   };
 
