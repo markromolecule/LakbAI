@@ -411,6 +411,11 @@ class SessionManager {
         }
       };
       
+      console.log('🔍 SessionManager: Profile completion request:', {
+        primaryUrl,
+        completionData
+      });
+      
       // Try primary endpoint first
       try {
         const response = await fetch(primaryUrl, {
@@ -421,10 +426,18 @@ class SessionManager {
           body: JSON.stringify(completionData)
         });
         
+        console.log('📡 SessionManager: Primary endpoint response:', {
+          status: response.status,
+          ok: response.ok
+        });
+        
         if (response.ok) {
-          return await response.json();
+          const result = await response.json();
+          console.log('✅ SessionManager: Primary endpoint success:', result);
+          return result;
         } else {
           const errorText = await response.text();
+          console.error('❌ SessionManager: Primary endpoint failed:', errorText);
           throw new Error(`Profile completion failed: ${response.status} - ${errorText}`);
         }
       } catch (primaryError) {

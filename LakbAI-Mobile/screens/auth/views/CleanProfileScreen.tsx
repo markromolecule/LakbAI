@@ -84,10 +84,18 @@ const CleanProfileScreen: React.FC = () => {
 
     setIsLoading(true);
 
+    // Debug logging
+    console.log('🔍 Profile completion debug:', {
+      userSub: user.sub,
+      sessionUserId: session.userId,
+      sessionDbUserId: session.dbUserData?.id,
+      formData: formData
+    });
+
     try {
       const result = await completeProfile(
         user.sub,
-        session.userId,
+        session.dbUserData?.id?.toString() || session.userId, // Use database ID if available, fallback to session.userId
         {
           ...formData,
           birthday: `${formData.birthday.year}-${months.indexOf(formData.birthday.month) + 1}-${formData.birthday.date}`,
@@ -95,7 +103,11 @@ const CleanProfileScreen: React.FC = () => {
         }
       );
 
+      console.log('✅ Profile completion result:', result);
+
       if (result.status === 'success') {
+        console.log('✅ Profile completion successful!');
+        
         Alert.alert(
           'Success',
           'Profile completed successfully!',
@@ -110,6 +122,7 @@ const CleanProfileScreen: React.FC = () => {
         Alert.alert('Error', result.message || 'Failed to complete profile');
       }
     } catch (error) {
+      console.error('❌ Profile completion error:', error);
       Alert.alert('Error', 'Failed to complete profile. Please try again.');
     } finally {
       setIsLoading(false);
