@@ -8,7 +8,7 @@ import sessionManager from '../../shared/services/sessionManager';
 
 const LoginRoute: React.FC = () => {
   const router = useRouter();
-  const { forceFreshAuth } = useAuthContext();
+  const { refreshTraditionalSession } = useAuthContext();
 
   const handleLogin = async (data: any) => {
     console.log('Login successful:', data);
@@ -31,11 +31,11 @@ const LoginRoute: React.FC = () => {
       };
       
       // Store the new session
-      await sessionManager.setUserSession(traditionalSession);
+      await sessionManager.setTraditionalUserSession(traditionalSession);
       console.log('✅ Created traditional user session:', traditionalSession);
       
-      // Force fresh authentication to use the new session
-      await forceFreshAuth();
+      // Refresh the traditional session to update auth state
+      await refreshTraditionalSession();
       
       // Redirect to home after successful login
       router.push(PassengerRoutes.HOME);

@@ -21,6 +21,7 @@ export interface AuthMethods {
   logout: () => Promise<void>;
   checkSession: () => Promise<void>;
   forceFreshAuth: () => Promise<void>;
+  refreshTraditionalSession: () => Promise<void>;
   syncUser: (userProfile: Auth0User) => Promise<any>;
   completeProfile: (auth0Id: string, userId: string, profileData: any) => Promise<any>;
 }
@@ -299,12 +300,49 @@ export const useAuth = (): UseAuthReturn => {
     }
   }, []);
 
+  /**
+   * Refresh traditional user session without clearing Auth0 data
+   */
+  const refreshTraditionalSession = useCallback(async (): Promise<void> => {
+    try {
+      console.log('🔄 Refreshing traditional user session...');
+      
+      // Get the current session
+      const session = await sessionManager.getUserSession();
+      
+      if (session && !session.auth0Id) {
+        // This is a traditional user, update the auth state
+        setAuthState({
+          isAuthenticated: true,
+          isLoading: false,
+          user: {
+            sub: session.userId,
+            email: session.email,
+            name: session.username,
+            nickname: session.username,
+            picture: '',
+            email_verified: true,
+            provider: 'traditional',
+            connection: 'database',
+          } as Auth0User,
+          session,
+          error: null,
+        });
+        
+        console.log('✅ Traditional user session refreshed successfully');
+      }
+    } catch (error) {
+      console.error('❌ Error refreshing traditional session:', error);
+    }
+  }, []);
+
   return {
     ...authState,
     login,
     logout,
     checkSession,
     forceFreshAuth,
+    refreshTraditionalSession,
     syncUser,
     completeProfile,
   };
