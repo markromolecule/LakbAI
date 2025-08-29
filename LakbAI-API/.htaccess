@@ -14,11 +14,8 @@ RewriteEngine On
 # Handle /api/auth0/sync-user requests (for Auth0 action)
 RewriteRule ^api/auth0/sync-user$ api/auth0/sync-user.php [L,QSA]
 
-# Handle other API routes
-RewriteRule ^api/(.*)$ api/$1 [L,QSA]
-
-# Handle /routes/* requests (for mobile app)
-RewriteRule ^routes/(.*)$ routes/$1 [L,QSA]
+# Handle other API routes - route everything to index.php
+RewriteRule ^(.*)$ index.php [L,QSA]
 
 # Enable CORS for all requests
 Header always set Access-Control-Allow-Origin "*"

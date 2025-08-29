@@ -18,12 +18,15 @@ const LoginRoute: React.FC = () => {
       await sessionManager.clearAllAuthData();
       console.log('✅ Cleared existing Auth0 session data');
       
+      // Get user type from database response, default to 'passenger'
+      const userType = data.user.user_type || 'passenger';
+      
       // Create a new traditional user session
       const traditionalSession = {
         userId: data.user.id.toString(),
         username: data.user.username || data.user.name,
         email: data.user.email,
-        userType: 'passenger' as const,
+        userType: userType,
         loginTime: new Date().toISOString(),
         profileCompleted: data.user.profile_completed || false,
         auth0Id: null, // Traditional users don't have Auth0 ID
@@ -33,12 +36,17 @@ const LoginRoute: React.FC = () => {
       // Store the new session
       await sessionManager.setTraditionalUserSession(traditionalSession);
       console.log('✅ Created traditional user session:', traditionalSession);
+      console.log('👤 User type:', userType);
       
       // Refresh the traditional session to update auth state
       await refreshTraditionalSession();
       
-      // Redirect to home after successful login
-      router.push(PassengerRoutes.HOME);
+      // Redirect based on user type
+      if (userType === 'driver') {
+        router.push('/driver');
+      } else {
+        router.push(PassengerRoutes.HOME);
+      }
     } catch (error) {
       console.error('Error creating traditional session:', error);
       // Fallback: just redirect to home

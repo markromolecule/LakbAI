@@ -94,6 +94,16 @@ export const HomeView: React.FC<HomeViewProps> = ({
         </View>
         <View style={homeStyles.actionCardWrapper}>
           <ActionCard
+            title="Passenger QR"
+            subtitle="Generate ride QR"
+            icon={QrCode}
+            iconColor="#059669"
+            borderColor="#BBF7D0"
+            onPress={() => onNavigate('qrcode')}
+          />
+        </View>
+        <View style={homeStyles.actionCardWrapper}>
+          <ActionCard
             title="Fare Matrix"
             subtitle="View fares"
             icon={Calculator}

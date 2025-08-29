@@ -99,6 +99,46 @@ const styles = StyleSheet.create({
     fontSize: 16,
     textAlign: 'center',
   },
+  // Test button styles
+  testButtonsContainer: {
+    backgroundColor: COLORS.gray50,
+    borderRadius: SPACING.md,
+    padding: SPACING.md,
+    marginBottom: SPACING.lg,
+    borderWidth: 1,
+    borderColor: COLORS.gray200,
+  },
+  testSectionTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.gray700,
+    textAlign: 'center',
+    marginBottom: SPACING.sm,
+  },
+  testButtonsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginBottom: SPACING.sm,
+  },
+  testButton: {
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    borderRadius: SPACING.sm,
+    minWidth: 120,
+    alignItems: 'center',
+  },
+  testButtonText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  testNote: {
+    fontSize: 12,
+    color: COLORS.gray500,
+    textAlign: 'center',
+    fontStyle: 'italic',
+  },
 });
 
 export default styles;

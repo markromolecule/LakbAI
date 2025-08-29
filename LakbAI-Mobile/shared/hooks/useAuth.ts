@@ -180,14 +180,17 @@ export const useAuth = (): UseAuthReturn => {
             expiresAt: Date.now() + (tokenResponse.data.expires_in * 1000),
           };
           
-          await sessionManager.storeUserSession(sessionData, 'passenger');
+          // Get user type from database response, default to 'passenger'
+          const userType = syncResult.data?.user?.user_type || 'passenger';
+          
+          await sessionManager.storeUserSession(sessionData, userType);
           
           // Create user session with complete database user data
           const session: UserSession = {
             userId: userProfile.sub,
             username: userProfile.nickname || userProfile.name,
             email: userProfile.email,
-            userType: 'passenger',
+            userType: userType,
             loginTime: new Date().toISOString(),
             profileCompleted: syncResult.data?.profile_completed || false,
             auth0Id: userProfile.sub,
@@ -205,11 +208,16 @@ export const useAuth = (): UseAuthReturn => {
           
           console.log('🎉 Authentication completed successfully');
           console.log('📊 Profile completion status:', syncResult.data?.profile_completed);
-          console.log('🔄 Redirecting to:', syncResult.data?.profile_completed ? 'Passenger Home' : 'Complete Profile');
+          console.log('👤 User type:', userType);
+          console.log('🔄 Redirecting to:', syncResult.data?.profile_completed ? (userType === 'driver' ? 'Driver Home' : 'Passenger Home') : 'Complete Profile');
           
           // Navigate to appropriate screen
           if (syncResult.data?.profile_completed) {
-            router.replace(PassengerRoutes.HOME);
+            if (userType === 'driver') {
+              router.replace('/driver');
+            } else {
+              router.replace(PassengerRoutes.HOME);
+            }
           } else {
             router.replace('/auth/complete-profile');
           }
