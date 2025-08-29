@@ -24,9 +24,9 @@ class Auth0Controller {
 
             $auth0User = $data['auth0_user'];
             
-            // Validate required Auth0 fields
-            if (!isset($auth0User['sub']) || !isset($auth0User['email'])) {
-                return $this->errorResponse('Invalid Auth0 user data');
+            // Validate required Auth0 fields (require sub, email optional)
+            if (!isset($auth0User['sub'])) {
+                return $this->errorResponse('Invalid Auth0 user data: missing sub');
             }
 
             // Check if user already exists by Auth0 ID
@@ -56,7 +56,10 @@ class Auth0Controller {
                 ]);
             } else {
                 // Check if user exists by email
-                $existingUserByEmail = $this->userRepository->findByEmail($auth0User['email']);
+                $existingUserByEmail = null;
+                if (isset($auth0User['email']) && !empty($auth0User['email'])) {
+                    $existingUserByEmail = $this->userRepository->findByEmail($auth0User['email']);
+                }
                 
                 if ($existingUserByEmail) {
                     // Link existing user to Auth0
@@ -84,8 +87,11 @@ class Auth0Controller {
                     // Create new user with Auth0 data
                     $newUserData = [
                         'auth0_id' => $auth0User['sub'],
-                        'username' => $this->generateUsername($auth0User['email']),
-                        'email' => $auth0User['email'],
+                        // If email is missing, generate a deterministic username from sub
+                        'username' => isset($auth0User['email']) && !empty($auth0User['email'])
+                            ? $this->generateUsername($auth0User['email'])
+                            : ('auth0_' . substr(md5($auth0User['sub']), 0, 10)),
+                        'email' => $auth0User['email'] ?? null,
                         'email_verified' => $auth0User['email_verified'] ?? false,
                         'name' => $auth0User['name'] ?? null,
                         'nickname' => $auth0User['nickname'] ?? null,
@@ -100,7 +106,8 @@ class Auth0Controller {
                         'updated_at' => date('Y-m-d H:i:s')
                     ];
 
-                    $userId = $this->userRepository->create($newUserData);
+                    // Use Auth0-aware creation to persist auth0_id and related fields
+                    $userId = $this->userRepository->createWithAuth0($newUserData);
                     
                     if ($userId) {
                         $newUser = $this->userRepository->findById($userId);

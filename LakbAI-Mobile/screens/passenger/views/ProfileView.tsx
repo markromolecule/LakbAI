@@ -91,7 +91,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           </View>
           <View style={profileStyles.profileInfo}>
             <Text style={profileStyles.profileName}>
-              {passengerProfile.firstName} {passengerProfile.lastName}
+              {passengerProfile.firstName || passengerProfile.username} {passengerProfile.lastName}
             </Text>
             <Text style={profileStyles.profileTitle}>
               {passengerProfile.username === 'guest' ? 'Guest' : 'LakbAI Passenger'}
@@ -121,6 +121,26 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
         </View>
         
         <View style={profileStyles.infoRow}>
+          <User size={16} color="#6B7280" />
+          <View style={profileStyles.infoContent}>
+            <Text style={profileStyles.infoLabel}>First Name</Text>
+            <Text style={profileStyles.infoValue}>
+              {passengerProfile.firstName || 'Not provided'}
+            </Text>
+          </View>
+        </View>
+
+        <View style={profileStyles.infoRow}>
+          <User size={16} color="#6B7280" />
+          <View style={profileStyles.infoContent}>
+            <Text style={profileStyles.infoLabel}>Last Name</Text>
+            <Text style={profileStyles.infoValue}>
+              {passengerProfile.lastName || 'Not provided'}
+            </Text>
+          </View>
+        </View>
+
+        <View style={profileStyles.infoRow}>
           <Mail size={16} color="#6B7280" />
           <View style={profileStyles.infoContent}>
             <Text style={profileStyles.infoLabel}>Email</Text>
@@ -132,7 +152,19 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           <Phone size={16} color="#6B7280" />
           <View style={profileStyles.infoContent}>
             <Text style={profileStyles.infoLabel}>Phone Number</Text>
-            <Text style={profileStyles.infoValue}>{passengerProfile.phoneNumber}</Text>
+            <Text style={profileStyles.infoValue}>
+              {passengerProfile.phoneNumber || 'Not provided'}
+            </Text>
+          </View>
+        </View>
+
+        <View style={profileStyles.infoRow}>
+          <User size={16} color="#6B7280" />
+          <View style={profileStyles.infoContent}>
+            <Text style={profileStyles.infoLabel}>Birth Date</Text>
+            <Text style={profileStyles.infoValue}>
+              {passengerProfile.personalInfo.birthDate || 'Not provided'}
+            </Text>
           </View>
         </View>
 
@@ -141,7 +173,10 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           <View style={profileStyles.infoContent}>
             <Text style={profileStyles.infoLabel}>Gender</Text>
             <Text style={profileStyles.infoValue}>
-              {passengerProfile.personalInfo.gender === 'male' ? 'Male' : 'Female'}
+              {passengerProfile.personalInfo.gender ? 
+                (passengerProfile.personalInfo.gender === 'male' ? 'Male' : 'Female') : 
+                'Not provided'
+              }
             </Text>
           </View>
         </View>
@@ -156,16 +191,16 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
         
         <View style={profileStyles.addressContainer}>
           <Text style={profileStyles.addressText}>
-            {passengerProfile.address.houseNumber}, {passengerProfile.address.streetName}
+            {passengerProfile.address.houseNumber || 'Not provided'}, {passengerProfile.address.streetName || 'Not provided'}
           </Text>
           <Text style={profileStyles.addressText}>
-            {passengerProfile.address.barangay}
+            {passengerProfile.address.barangay || 'Not provided'}
           </Text>
           <Text style={profileStyles.addressText}>
-            {passengerProfile.address.cityMunicipality}, {passengerProfile.address.province}
+            {passengerProfile.address.cityMunicipality || 'Not provided'}, {passengerProfile.address.province || 'Not provided'}
           </Text>
           <Text style={profileStyles.addressText}>
-            {passengerProfile.address.postalCode}
+            {passengerProfile.address.postalCode || 'Not provided'}
           </Text>
         </View>
       </View>
