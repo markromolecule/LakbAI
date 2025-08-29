@@ -3,10 +3,12 @@ import { View, StyleSheet } from 'react-native';
 import LoginScreen from '../../screens/auth/views/LoginScreen';
 import { useRouter } from 'expo-router';
 import { PassengerRoutes } from '../../routes';
+import { useAuthContext } from '../../shared/providers/AuthProvider';
 import sessionManager from '../../shared/services/sessionManager';
 
 const LoginRoute: React.FC = () => {
   const router = useRouter();
+  const { forceFreshAuth } = useAuthContext();
 
   const handleLogin = async (data: any) => {
     console.log('Login successful:', data);
@@ -16,13 +18,26 @@ const LoginRoute: React.FC = () => {
       await sessionManager.clearAllAuthData();
       console.log('✅ Cleared existing Auth0 session data');
       
-      // Store the new traditional user session
-      await sessionManager.storeTraditionalUserSession(data.user, 'passenger');
-      console.log('✅ Created traditional user session for:', data.user.username);
+      // Create a new traditional user session
+      const traditionalSession = {
+        userId: data.user.id.toString(),
+        username: data.user.username || data.user.name,
+        email: data.user.email,
+        userType: 'passenger' as const,
+        loginTime: new Date().toISOString(),
+        profileCompleted: data.user.profile_completed || false,
+        auth0Id: null, // Traditional users don't have Auth0 ID
+        dbUserData: data.user, // Store the complete user data
+      };
       
-      // Don't call forceFreshAuth as it will clear our new session
-      // Instead, just redirect to home - the useAuth hook will detect the new session
-      console.log('🚀 Redirecting to home with new traditional session');
+      // Store the new session
+      await sessionManager.setUserSession(traditionalSession);
+      console.log('✅ Created traditional user session:', traditionalSession);
+      
+      // Force fresh authentication to use the new session
+      await forceFreshAuth();
+      
+      // Redirect to home after successful login
       router.push(PassengerRoutes.HOME);
     } catch (error) {
       console.error('Error creating traditional session:', error);

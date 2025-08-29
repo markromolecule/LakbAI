@@ -55,7 +55,7 @@ export interface PassengerProfile {
   };
   personalInfo: {
     birthDate: string;
-    gender: 'male' | 'female';
+    gender: 'male' | 'female' | '';
   };
   fareDiscount: {
     type: 'PWD' | 'Pregnant' | 'Senior Citizen' | 'Student' | '';

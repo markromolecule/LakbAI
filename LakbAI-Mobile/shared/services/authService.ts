@@ -75,11 +75,13 @@ class AuthService {
       const data = await response.json();
       console.log('Traditional login response:', data);
 
-      if (data.status === 'success' && data.user) {
+      const user = (data && data.data && data.data.user) ? data.data.user : data.user;
+
+      if (data.status === 'success' && user) {
         return {
           status: 'success',
           message: 'Login successful',
-          user: data.user
+          user: user
         };
       } else {
         return {
