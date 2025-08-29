@@ -134,26 +134,35 @@ export const usePassengerState = () => {
         }
 
         // For traditional users or Auth0 users without valid session data
-        if (isTraditionalUser) {
+        if (isTraditionalUser || (session?.dbUserData && !session.dbUserData.auth0_id)) {
           console.log('✅ usePassengerState: Creating profile for traditional user');
-          const traditionalUser = user as any; // Type assertion for traditional user
+          console.log('🔍 Traditional user data source:', { 
+            hasSessionData: !!session?.dbUserData, 
+            sessionAuth0Id: session?.dbUserData?.auth0_id,
+            userAuth0Id: user?.sub 
+          });
+          
+          // Use session.dbUserData for traditional users (contains the actual database data)
+          const traditionalUser = session?.dbUserData || user as any;
+          console.log('🔍 Traditional user data:', traditionalUser);
+          
           const profile: PassengerProfile = {
             firstName: traditionalUser.first_name || traditionalUser.name?.split(' ')[0] || 'User',
             lastName: traditionalUser.last_name || traditionalUser.name?.split(' ').slice(1).join(' ') || '',
             email: traditionalUser.email || '',
-            phoneNumber: traditionalUser.phone_number || 'N/A',
+            phoneNumber: traditionalUser.phone_number || '',
             username: traditionalUser.username || traditionalUser.name || 'user',
             picture: traditionalUser.picture || undefined,
             address: {
-              houseNumber: traditionalUser.house_number || 'N/A',
-              streetName: traditionalUser.street_name || 'N/A',
-              barangay: traditionalUser.barangay || 'N/A',
-              cityMunicipality: traditionalUser.city_municipality || 'N/A',
-              province: traditionalUser.province || 'N/A',
-              postalCode: traditionalUser.postal_code || 'N/A',
+              houseNumber: traditionalUser.house_number || '',
+              streetName: traditionalUser.street_name || '',
+              barangay: traditionalUser.barangay || '',
+              cityMunicipality: traditionalUser.city_municipality || '',
+              province: traditionalUser.province || '',
+              postalCode: traditionalUser.postal_code || '',
             },
             personalInfo: {
-              birthDate: traditionalUser.birthday || 'N/A',
+              birthDate: traditionalUser.birthday || '',
               gender: traditionalUser.gender?.toLowerCase() === 'male' ? 'male' : 'female',
             },
             fareDiscount: {

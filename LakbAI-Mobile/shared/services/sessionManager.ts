@@ -12,7 +12,7 @@ export interface UserSession {
   userType: 'passenger' | 'driver';
   loginTime: string;
   profileCompleted: boolean;
-  auth0Id: string;
+  auth0Id: string | null; // Allow null for traditional users
   dbUserData?: any; // Store complete database user data
 }
 
@@ -43,7 +43,6 @@ class SessionManager {
       // Store session data
       await AsyncStorage.setItem(AUTH_CONFIG.session.storageKeys.userSession, JSON.stringify(session));
       await AsyncStorage.setItem(AUTH_CONFIG.session.storageKeys.accessToken, sessionData.accessToken);
-      await AsyncStorage.setItem(AUTH_CONFIG.session.storageKeys.idToken, sessionData.idToken);
       await AsyncStorage.setItem(AUTH_CONFIG.session.storageKeys.userProfile, JSON.stringify(sessionData.userProfile));
       
       if (sessionData.refreshToken) {
@@ -56,6 +55,22 @@ class SessionManager {
       console.log('✅ User session stored successfully');
     } catch (error) {
       console.error('❌ Error storing user session:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Store traditional user session data (for non-Auth0 users)
+   */
+  async setTraditionalUserSession(session: UserSession): Promise<void> {
+    try {
+      // Store session data
+      await AsyncStorage.setItem(AUTH_CONFIG.session.storageKeys.userSession, JSON.stringify(session));
+      
+      // For traditional users, we don't store tokens, just the session
+      console.log('✅ Traditional user session stored successfully');
+    } catch (error) {
+      console.error('❌ Error storing traditional user session:', error);
       throw error;
     }
   }
