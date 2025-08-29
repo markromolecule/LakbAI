@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { PassengerProfile } from '../../../shared/types/authentication';
 import { useAuthContext } from '../../../shared/providers/AuthProvider';
+import sessionManager from '../../../shared/services/sessionManager';
 
 export const usePassengerState = () => {
   const { isAuthenticated, user, session } = useAuthContext();
@@ -69,9 +70,23 @@ export const usePassengerState = () => {
           hasSessionData: !!session?.dbUserData
         });
 
-        // For Auth0 users, only use session data if it matches the current user
+        // For Auth0 users, check if we need to refresh data from backend
         if (isAuth0User && session?.dbUserData) {
-          const dbUser = session.dbUserData;
+          let dbUser = session.dbUserData;
+          
+          // If profile is marked as incomplete but user is on home screen, refresh data
+          if (dbUser.profile_completed === 0 || dbUser.profile_completed === false) {
+            console.log('🔄 usePassengerState: Profile marked incomplete, refreshing from backend...');
+            try {
+              const syncResult = await sessionManager.syncUserWithDatabase(user);
+              if (syncResult.status === 'success' && syncResult.data?.user) {
+                dbUser = syncResult.data.user;
+                console.log('✅ usePassengerState: Got fresh user data from backend');
+              }
+            } catch (refreshError) {
+              console.error('❌ usePassengerState: Error refreshing data:', refreshError);
+            }
+          }
           
           // Verify the session data belongs to the current user
           if (dbUser.auth0_id === user.sub) {

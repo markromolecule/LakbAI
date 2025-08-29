@@ -52,7 +52,7 @@ class Auth0Controller {
                 return $this->successResponse('User synced successfully', [
                     'user' => $updatedUser,
                     'is_new_user' => false,
-                    'profile_completed' => $updatedUser['profile_completed'] ?? false
+                    'profile_completed' => $updatedUser['profile_completed'] ?? 0
                 ]);
             } else {
                 // Check if user exists by email
@@ -81,7 +81,7 @@ class Auth0Controller {
                     return $this->successResponse('User linked to Auth0 successfully', [
                         'user' => $updatedUser,
                         'is_new_user' => false,
-                        'profile_completed' => $updatedUser['profile_completed'] ?? false
+                        'profile_completed' => $updatedUser['profile_completed'] ?? 0
                     ]);
                 } else {
                     // Create new user with Auth0 data
@@ -101,7 +101,7 @@ class Auth0Controller {
                         'password' => password_hash(uniqid(), PASSWORD_DEFAULT), // Generate random password
                         'user_type' => 'passenger', // Default to passenger
                         'roles' => json_encode(['user']),
-                        'profile_completed' => false,
+                        'profile_completed' => 0, // Use integer 0 instead of boolean false
                         'created_at' => date('Y-m-d H:i:s'),
                         'updated_at' => date('Y-m-d H:i:s')
                     ];
@@ -114,7 +114,7 @@ class Auth0Controller {
                         return $this->successResponse('New user created successfully', [
                             'user' => $newUser,
                             'is_new_user' => true,
-                            'profile_completed' => false
+                            'profile_completed' => 0
                         ]);
                     } else {
                         return $this->errorResponse('Failed to create new user');
@@ -267,21 +267,21 @@ class Auth0Controller {
                 return $this->errorResponse('User not found');
             }
 
-            // Prepare update data
+            // Prepare update data - handle both camelCase and snake_case field names
             $updateData = [
-                'first_name' => $profileData['first_name'] ?? null,
-                'last_name' => $profileData['last_name'] ?? null,
-                'phone_number' => $profileData['phone_number'] ?? null,
+                'first_name' => $profileData['first_name'] ?? $profileData['firstName'] ?? null,
+                'last_name' => $profileData['last_name'] ?? $profileData['lastName'] ?? null,
+                'phone_number' => $profileData['phone_number'] ?? $profileData['phoneNumber'] ?? null,
                 'birthday' => $profileData['birthday'] ?? null,
                 'gender' => $profileData['gender'] ?? null,
-                'house_number' => $profileData['house_number'] ?? null,
-                'street_name' => $profileData['street_name'] ?? null,
+                'house_number' => $profileData['house_number'] ?? $profileData['houseNumber'] ?? null,
+                'street_name' => $profileData['street_name'] ?? $profileData['streetName'] ?? null,
                 'barangay' => $profileData['barangay'] ?? null,
-                'city_municipality' => $profileData['city_municipality'] ?? null,
+                'city_municipality' => $profileData['city_municipality'] ?? $profileData['cityMunicipality'] ?? null,
                 'province' => $profileData['province'] ?? null,
-                'postal_code' => $profileData['postal_code'] ?? null,
+                'postal_code' => $profileData['postal_code'] ?? $profileData['postalCode'] ?? null,
                 'user_type' => $profileData['user_type'] ?? 'passenger',
-                'profile_completed' => true,
+                'profile_completed' => 1, // Use integer 1 instead of boolean true
                 'updated_at' => date('Y-m-d H:i:s')
             ];
 
@@ -328,7 +328,7 @@ class Auth0Controller {
                 'discount_type' => $discountType,
                 'discount_document_path' => $documentPath,
                 'discount_document_name' => $documentName,
-                'discount_verified' => false, // Pending admin verification
+                'discount_verified' => 0, // Pending admin verification (0 = pending, 1 = verified)
                 'updated_at' => date('Y-m-d H:i:s')
             ];
 
