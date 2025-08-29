@@ -12,7 +12,7 @@ export interface UserSession {
   userType: 'passenger' | 'driver';
   loginTime: string;
   profileCompleted: boolean;
-  auth0Id: string | null; // Allow null for traditional users
+  auth0Id: string;
   dbUserData?: any; // Store complete database user data
 }
 
@@ -25,40 +25,6 @@ export interface SessionData {
 }
 
 class SessionManager {
-  /**
-   * Store traditional user session (non-Auth0)
-   */
-  async storeTraditionalUserSession(userData: any, userType: 'passenger' | 'driver' = 'passenger'): Promise<void> {
-    try {
-      const session: UserSession = {
-        userId: userData.id.toString(),
-        username: userData.username || userData.name,
-        email: userData.email,
-        userType,
-        loginTime: new Date().toISOString(),
-        profileCompleted: userData.profile_completed || false,
-        auth0Id: null, // Traditional users don't have Auth0 ID
-        dbUserData: userData, // Store complete database user data
-      };
-
-      // Store session data
-      await AsyncStorage.setItem(AUTH_CONFIG.session.storageKeys.userSession, JSON.stringify(session));
-      
-      // For traditional users, we don't have tokens, so we'll use a placeholder
-      await AsyncStorage.setItem(AUTH_CONFIG.session.storageKeys.accessToken, 'traditional_user');
-      await AsyncStorage.setItem(AUTH_CONFIG.session.storageKeys.idToken, 'traditional_user');
-      
-      // Store expiration time (24 hours from now)
-      const expiresAt = Date.now() + (24 * 60 * 60 * 1000);
-      await AsyncStorage.setItem('session_expires_at', expiresAt.toString());
-
-      console.log('✅ Traditional user session stored successfully');
-    } catch (error) {
-      console.error('❌ Error storing traditional user session:', error);
-      throw error;
-    }
-  }
-
   /**
    * Store user session data
    */
@@ -445,6 +411,11 @@ class SessionManager {
         }
       };
       
+      console.log('🔍 SessionManager: Profile completion request:', {
+        primaryUrl,
+        completionData
+      });
+      
       // Try primary endpoint first
       try {
         const response = await fetch(primaryUrl, {
@@ -455,10 +426,18 @@ class SessionManager {
           body: JSON.stringify(completionData)
         });
         
+        console.log('📡 SessionManager: Primary endpoint response:', {
+          status: response.status,
+          ok: response.ok
+        });
+        
         if (response.ok) {
-          return await response.json();
+          const result = await response.json();
+          console.log('✅ SessionManager: Primary endpoint success:', result);
+          return result;
         } else {
           const errorText = await response.text();
+          console.error('❌ SessionManager: Primary endpoint failed:', errorText);
           throw new Error(`Profile completion failed: ${response.status} - ${errorText}`);
         }
       } catch (primaryError) {

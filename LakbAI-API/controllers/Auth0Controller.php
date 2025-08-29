@@ -24,9 +24,9 @@ class Auth0Controller {
 
             $auth0User = $data['auth0_user'];
             
-            // Validate required Auth0 fields
-            if (!isset($auth0User['sub']) || !isset($auth0User['email'])) {
-                return $this->errorResponse('Invalid Auth0 user data');
+            // Validate required Auth0 fields (require sub, email optional)
+            if (!isset($auth0User['sub'])) {
+                return $this->errorResponse('Invalid Auth0 user data: missing sub');
             }
 
             // Check if user already exists by Auth0 ID
@@ -52,11 +52,14 @@ class Auth0Controller {
                 return $this->successResponse('User synced successfully', [
                     'user' => $updatedUser,
                     'is_new_user' => false,
-                    'profile_completed' => $updatedUser['profile_completed'] ?? false
+                    'profile_completed' => $updatedUser['profile_completed'] ?? 0
                 ]);
             } else {
                 // Check if user exists by email
-                $existingUserByEmail = $this->userRepository->findByEmail($auth0User['email']);
+                $existingUserByEmail = null;
+                if (isset($auth0User['email']) && !empty($auth0User['email'])) {
+                    $existingUserByEmail = $this->userRepository->findByEmail($auth0User['email']);
+                }
                 
                 if ($existingUserByEmail) {
                     // Link existing user to Auth0
@@ -78,14 +81,17 @@ class Auth0Controller {
                     return $this->successResponse('User linked to Auth0 successfully', [
                         'user' => $updatedUser,
                         'is_new_user' => false,
-                        'profile_completed' => $updatedUser['profile_completed'] ?? false
+                        'profile_completed' => $updatedUser['profile_completed'] ?? 0
                     ]);
                 } else {
                     // Create new user with Auth0 data
                     $newUserData = [
                         'auth0_id' => $auth0User['sub'],
-                        'username' => $this->generateUsername($auth0User['email']),
-                        'email' => $auth0User['email'],
+                        // If email is missing, generate a deterministic username from sub
+                        'username' => isset($auth0User['email']) && !empty($auth0User['email'])
+                            ? $this->generateUsername($auth0User['email'])
+                            : ('auth0_' . substr(md5($auth0User['sub']), 0, 10)),
+                        'email' => $auth0User['email'] ?? null,
                         'email_verified' => $auth0User['email_verified'] ?? false,
                         'name' => $auth0User['name'] ?? null,
                         'nickname' => $auth0User['nickname'] ?? null,
@@ -95,19 +101,20 @@ class Auth0Controller {
                         'password' => password_hash(uniqid(), PASSWORD_DEFAULT), // Generate random password
                         'user_type' => 'passenger', // Default to passenger
                         'roles' => json_encode(['user']),
-                        'profile_completed' => false,
+                        'profile_completed' => 0, // Use integer 0 instead of boolean false
                         'created_at' => date('Y-m-d H:i:s'),
                         'updated_at' => date('Y-m-d H:i:s')
                     ];
 
-                    $userId = $this->userRepository->create($newUserData);
+                    // Use Auth0-aware creation to persist auth0_id and related fields
+                    $userId = $this->userRepository->createWithAuth0($newUserData);
                     
                     if ($userId) {
                         $newUser = $this->userRepository->findById($userId);
                         return $this->successResponse('New user created successfully', [
                             'user' => $newUser,
                             'is_new_user' => true,
-                            'profile_completed' => false
+                            'profile_completed' => 0
                         ]);
                     } else {
                         return $this->errorResponse('Failed to create new user');
@@ -260,21 +267,21 @@ class Auth0Controller {
                 return $this->errorResponse('User not found');
             }
 
-            // Prepare update data
+            // Prepare update data - handle both camelCase and snake_case field names
             $updateData = [
-                'first_name' => $profileData['first_name'] ?? null,
-                'last_name' => $profileData['last_name'] ?? null,
-                'phone_number' => $profileData['phone_number'] ?? null,
+                'first_name' => $profileData['first_name'] ?? $profileData['firstName'] ?? null,
+                'last_name' => $profileData['last_name'] ?? $profileData['lastName'] ?? null,
+                'phone_number' => $profileData['phone_number'] ?? $profileData['phoneNumber'] ?? null,
                 'birthday' => $profileData['birthday'] ?? null,
                 'gender' => $profileData['gender'] ?? null,
-                'house_number' => $profileData['house_number'] ?? null,
-                'street_name' => $profileData['street_name'] ?? null,
+                'house_number' => $profileData['house_number'] ?? $profileData['houseNumber'] ?? null,
+                'street_name' => $profileData['street_name'] ?? $profileData['streetName'] ?? null,
                 'barangay' => $profileData['barangay'] ?? null,
-                'city_municipality' => $profileData['city_municipality'] ?? null,
+                'city_municipality' => $profileData['city_municipality'] ?? $profileData['cityMunicipality'] ?? null,
                 'province' => $profileData['province'] ?? null,
-                'postal_code' => $profileData['postal_code'] ?? null,
+                'postal_code' => $profileData['postal_code'] ?? $profileData['postalCode'] ?? null,
                 'user_type' => $profileData['user_type'] ?? 'passenger',
-                'profile_completed' => true,
+                'profile_completed' => 1, // Use integer 1 instead of boolean true
                 'updated_at' => date('Y-m-d H:i:s')
             ];
 
@@ -321,7 +328,7 @@ class Auth0Controller {
                 'discount_type' => $discountType,
                 'discount_document_path' => $documentPath,
                 'discount_document_name' => $documentName,
-                'discount_verified' => false, // Pending admin verification
+                'discount_verified' => 0, // Pending admin verification (0 = pending, 1 = verified)
                 'updated_at' => date('Y-m-d H:i:s')
             ];
 

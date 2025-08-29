@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { PassengerProfile } from '../../../shared/types/authentication';
 import { useAuthContext } from '../../../shared/providers/AuthProvider';
+import sessionManager from '../../../shared/services/sessionManager';
 
 export const usePassengerState = () => {
   const { isAuthenticated, user, session } = useAuthContext();
@@ -59,42 +60,55 @@ export const usePassengerState = () => {
 
         // Check if this is an Auth0 user or traditional user
         const isAuth0User = user.sub && (user.sub.startsWith('google-oauth2|') || user.sub.startsWith('auth0|'));
-        const isTraditionalUser = !isAuth0User && session?.dbUserData && !session.dbUserData.auth0_id; // Traditional users have dbUserData but no auth0_id
+        const isTraditionalUser = !isAuth0User && 'id' in user; // Check if user has 'id' property
 
         console.log('🔍 usePassengerState: User type detection:', { 
           isAuth0User, 
           isTraditionalUser, 
           userSub: user.sub, 
           hasId: 'id' in user,
-          hasSessionData: !!session?.dbUserData,
-          sessionAuth0Id: session?.dbUserData?.auth0_id
+          hasSessionData: !!session?.dbUserData
         });
 
-        // For Auth0 users, only use session data if it matches the current user
+        // For Auth0 users, check if we need to refresh data from backend
         if (isAuth0User && session?.dbUserData) {
-          const dbUser = session.dbUserData;
+          let dbUser = session.dbUserData;
+          
+          // If profile is marked as incomplete but user is on home screen, refresh data
+          if (dbUser.profile_completed === 0 || dbUser.profile_completed === false) {
+            console.log('🔄 usePassengerState: Profile marked incomplete, refreshing from backend...');
+            try {
+              const syncResult = await sessionManager.syncUserWithDatabase(user);
+              if (syncResult.status === 'success' && syncResult.data?.user) {
+                dbUser = syncResult.data.user;
+                console.log('✅ usePassengerState: Got fresh user data from backend');
+              }
+            } catch (refreshError) {
+              console.error('❌ usePassengerState: Error refreshing data:', refreshError);
+            }
+          }
           
           // Verify the session data belongs to the current user
           if (dbUser.auth0_id === user.sub) {
             console.log('✅ usePassengerState: Using stored database user data for Auth0 user');
             const profile: PassengerProfile = {
-              firstName: dbUser.first_name || dbUser.name?.split(' ')[0] || 'User',
+              firstName: dbUser.first_name || dbUser.name?.split(' ')[0] || '',
               lastName: dbUser.last_name || dbUser.name?.split(' ').slice(1).join(' ') || '',
               email: dbUser.email || '',
-              phoneNumber: dbUser.phone_number || 'N/A',
+              phoneNumber: dbUser.phone_number || '',
               username: dbUser.username || dbUser.nickname || 'user',
               picture: dbUser.picture || undefined,
               address: {
-                houseNumber: dbUser.house_number || 'N/A',
-                streetName: dbUser.street_name || 'N/A',
-                barangay: dbUser.barangay || 'N/A',
-                cityMunicipality: dbUser.city_municipality || 'N/A',
-                province: dbUser.province || 'N/A',
-                postalCode: dbUser.postal_code || 'N/A',
+                houseNumber: dbUser.house_number || '',
+                streetName: dbUser.street_name || '',
+                barangay: dbUser.barangay || '',
+                cityMunicipality: dbUser.city_municipality || '',
+                province: dbUser.province || '',
+                postalCode: dbUser.postal_code || '',
               },
               personalInfo: {
-                birthDate: dbUser.birthday || 'N/A',
-                gender: dbUser.gender?.toLowerCase() === 'male' ? 'male' : 'female',
+                birthDate: dbUser.birthday || '',
+                gender: dbUser.gender ? (dbUser.gender.toLowerCase() === 'male' ? 'male' : 'female') : '',
               },
               fareDiscount: {
                 type: dbUser.discount_type || '' as const,
@@ -120,43 +134,42 @@ export const usePassengerState = () => {
         }
 
         // For traditional users or Auth0 users without valid session data
-        if (isTraditionalUser && session?.dbUserData) {
-          // Traditional user - use session data
-          console.log('✅ usePassengerState: Creating profile for traditional user from session data');
-          const dbUser = session.dbUserData;
+        if (isTraditionalUser) {
+          console.log('✅ usePassengerState: Creating profile for traditional user');
+          const traditionalUser = user as any; // Type assertion for traditional user
           const profile: PassengerProfile = {
-            firstName: dbUser.first_name || dbUser.name?.split(' ')[0] || 'User',
-            lastName: dbUser.last_name || dbUser.name?.split(' ').slice(1).join(' ') || '',
-            email: dbUser.email || '',
-            phoneNumber: dbUser.phone_number || 'N/A',
-            username: dbUser.username || dbUser.name || 'user',
-            picture: dbUser.picture || undefined,
+            firstName: traditionalUser.first_name || traditionalUser.name?.split(' ')[0] || 'User',
+            lastName: traditionalUser.last_name || traditionalUser.name?.split(' ').slice(1).join(' ') || '',
+            email: traditionalUser.email || '',
+            phoneNumber: traditionalUser.phone_number || 'N/A',
+            username: traditionalUser.username || traditionalUser.name || 'user',
+            picture: traditionalUser.picture || undefined,
             address: {
-              houseNumber: dbUser.house_number || 'N/A',
-              streetName: dbUser.street_name || 'N/A',
-              barangay: dbUser.barangay || 'N/A',
-              cityMunicipality: dbUser.city_municipality || 'N/A',
-              province: dbUser.province || 'N/A',
-              postalCode: dbUser.postal_code || 'N/A',
+              houseNumber: traditionalUser.house_number || 'N/A',
+              streetName: traditionalUser.street_name || 'N/A',
+              barangay: traditionalUser.barangay || 'N/A',
+              cityMunicipality: traditionalUser.city_municipality || 'N/A',
+              province: traditionalUser.province || 'N/A',
+              postalCode: traditionalUser.postal_code || 'N/A',
             },
             personalInfo: {
-              birthDate: dbUser.birthday || 'N/A',
-              gender: dbUser.gender?.toLowerCase() === 'male' ? 'male' : 'female',
+              birthDate: traditionalUser.birthday || 'N/A',
+              gender: traditionalUser.gender?.toLowerCase() === 'male' ? 'male' : 'female',
             },
             fareDiscount: {
-              type: dbUser.discount_type || '' as const,
-              status: dbUser.discount_verified ? 'approved' as const : 'none' as const,
-              percentage: dbUser.discount_type === 'Student' ? 15 : 
-                         dbUser.discount_type === 'PWD' ? 20 :
-                         dbUser.discount_type === 'Senior Citizen' ? 30 : 0,
-              document: dbUser.discount_document_path ? {
-                uri: dbUser.discount_document_path,
-                name: dbUser.discount_document_name || 'document',
+              type: traditionalUser.discount_type || '' as const,
+              status: traditionalUser.discount_verified ? 'approved' as const : 'none' as const,
+              percentage: traditionalUser.discount_type === 'Student' ? 15 : 
+                         traditionalUser.discount_type === 'PWD' ? 20 :
+                         traditionalUser.discount_type === 'Senior Citizen' ? 30 : 0,
+              document: traditionalUser.discount_document_path ? {
+                uri: traditionalUser.discount_document_path,
+                name: traditionalUser.discount_document_name || 'document',
                 type: 'image/jpeg',
               } : null,
             },
           };
-          console.log('✅ usePassengerState: Profile created from traditional user session data:', profile);
+          console.log('✅ usePassengerState: Profile created from traditional user data:', profile);
           setPassengerProfile(profile);
         } else {
           // Auth0 user without valid session data
