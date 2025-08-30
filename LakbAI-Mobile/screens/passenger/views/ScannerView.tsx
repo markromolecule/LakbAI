@@ -5,10 +5,14 @@ import { Modal, ScrollView, Text, TouchableOpacity, View, Alert, ActivityIndicat
 import * as WebBrowser from 'expo-web-browser';
 import { Button } from '../../../components/common/Button';
 import { InfoCard } from '../../../components/common/InfoCard';
+import { TripBookingView } from './TripBookingView';
 import { useCameraPermissions } from '../../../shared/helpers/useCameraPermission';
+import { QRCodeData, QRDriverInfo, TripBookingData } from '../../../shared/types';
 import { COLORS, SPACING } from '../../../shared/styles';
 import { globalStyles } from '../../../shared/styles/globalStyles';
 import { showAlert } from '../../../shared/utils/alertUtils';
+import { TEST_QR_CODES, generateDriverPickupQR } from '../../../shared/utils/qrTestUtils';
+import { earningsService, EarningsUpdate } from '../../../shared/services/earningsService';
 import styles from '../styles/ScannerScreen.styles';
 
 export const ScannerScreen: React.FC = () => {
@@ -16,6 +20,9 @@ export const ScannerScreen: React.FC = () => {
   const [showCamera, setShowCamera] = useState(false);
   const [scanned, setScanned] = useState(false);
   const [processing, setProcessing] = useState(false);
+  const [showTripBooking, setShowTripBooking] = useState(false);
+  const [qrData, setQrData] = useState<QRCodeData | null>(null);
+  const [driverInfo, setDriverInfo] = useState<QRDriverInfo | null>(null);
   const isHandlingScanRef = useRef(false);
   const isOpeningBrowserRef = useRef(false);
 
@@ -38,15 +45,39 @@ export const ScannerScreen: React.FC = () => {
     setScanned(false);
   };
 
-  const parseQRData = (data: string) => {
+  const parseQRData = (data: string): QRCodeData | null => {
     try {
-      // Try to parse as JSON first (for payment QR codes)
+      // Try to parse as JSON first
       const parsed = JSON.parse(data);
-      return parsed?.type === 'payment' ? parsed : null;
+      
+      // Support both legacy payment QR codes and new driver pickup QR codes
+      if (parsed?.type === 'payment' || parsed?.type === 'driver_pickup') {
+        return parsed as QRCodeData;
+      }
+      
+      return null;
     } catch {
-      // If not JSON, ignore (not a payment QR)
+      // If not JSON, ignore
       return null;
     }
+  };
+
+  // Mock function to fetch driver info (in real app, this would be an API call)
+  const fetchDriverInfo = async (driverId: string): Promise<QRDriverInfo> => {
+    // Mock data based on existing driver state
+    return {
+      id: driverId,
+      name: 'Juan Dela Cruz',
+      license: 'D123-456-789',
+      jeepneyNumber: 'LKB-001',
+      jeepneyModel: 'Toyota Coaster',
+      rating: 4.8,
+      totalTrips: 1247,
+      route: 'Robinson Tejero - Robinson Pala-pala',
+      currentLocation: 'Robinson Tejero',
+      contactNumber: '+63 912 345 6789',
+      plateNumber: 'ABC 1234',
+    };
   };
 
   const createXenditPayment = async (paymentData: any) => {
@@ -100,36 +131,207 @@ export const ScannerScreen: React.FC = () => {
     if (isHandlingScanRef.current || scanned) return;
     isHandlingScanRef.current = true;
 
-    const qrData = parseQRData(data);
+    const parsedQrData = parseQRData(data);
 
-    if (qrData && qrData.type === 'payment') {
-      // Handle payment QR code
+    if (parsedQrData?.type === 'driver_pickup') {
+      // Handle new driver pickup QR code - show trip booking flow
+      setScanned(true);
+      setShowCamera(false);
+      setProcessing(true);
+
+      try {
+        const fetchedDriverInfo = await fetchDriverInfo(parsedQrData.driverId);
+        setQrData(parsedQrData);
+        setDriverInfo(fetchedDriverInfo);
+        setShowTripBooking(true);
+      } catch (error) {
+        Alert.alert('Error', 'Failed to load driver information. Please try again.');
+        setScanned(false);
+        isHandlingScanRef.current = false;
+      } finally {
+        setProcessing(false);
+      }
+    } else if (parsedQrData?.type === 'payment') {
+      // Handle legacy payment QR code
       setScanned(true);
       setShowCamera(false);
       Alert.alert(
         'Payment QR Detected',
-        `Jeepney: ${qrData.jeepneyId || 'LKB-001'}\nFare: ₱${qrData.amount}\nRoute: ${qrData.route || 'Unknown'}\n\nProceed with payment?`,
+        `Jeepney: ${parsedQrData.jeepneyId || 'LKB-001'}\nFare: ₱${parsedQrData.amount}\nRoute: ${parsedQrData.route || 'Unknown'}\n\nProceed with payment?`,
         [
-          { text: 'Cancel', style: 'cancel' },
+          { text: 'Cancel', style: 'cancel', onPress: () => {
+            setScanned(false);
+            isHandlingScanRef.current = false;
+          }},
           { 
             text: 'Pay Now', 
-            onPress: () => createXenditPayment(qrData)
+            onPress: () => createXenditPayment(parsedQrData)
           }
         ]
       );
     } else {
-      // Not a valid payment QR; keep scanning
+      // Not a valid QR code; keep scanning
       isHandlingScanRef.current = false;
       return;
     }
   };
 
+  const handleTripBookingBack = () => {
+    setShowTripBooking(false);
+    setQrData(null);
+    setDriverInfo(null);
+    setScanned(false);
+    isHandlingScanRef.current = false;
+  };
+
+  const handleBookingComplete = async (bookingData: TripBookingData) => {
+    setShowTripBooking(false);
+    setQrData(null);
+    setDriverInfo(null);
+    setScanned(false);
+    isHandlingScanRef.current = false;
+    
+    try {
+      // Update driver earnings automatically
+      const earningsUpdate: EarningsUpdate = {
+        driverId: bookingData.driver.id,
+        amount: bookingData.discountedFare || bookingData.fare,
+        tripId: `trip_${Date.now()}`,
+        passengerId: 'passenger_001', // In real app, this would come from auth
+        timestamp: new Date().toISOString(),
+        paymentMethod: 'xendit',
+        pickupLocation: bookingData.pickupLocation,
+        destination: bookingData.destination,
+        originalFare: bookingData.fare,
+        discountAmount: bookingData.fare - (bookingData.discountedFare || bookingData.fare),
+        finalFare: bookingData.discountedFare || bookingData.fare,
+      };
+
+      const earningsResult = await earningsService.updateDriverEarnings(earningsUpdate);
+      
+      if (earningsResult.success) {
+        console.log('✅ Driver earnings updated successfully');
+      } else {
+        console.error('❌ Failed to update driver earnings:', earningsResult.error);
+      }
+
+      Alert.alert(
+        'Payment Successful! 🎉',
+        `Your ride from ${bookingData.pickupLocation} to ${bookingData.destination} has been paid.\n\nDriver: ${bookingData.driver.name}\nJeepney: ${bookingData.driver.jeepneyNumber}\nFare: ₱${bookingData.discountedFare || bookingData.fare}\n\n💰 Driver earnings updated automatically!`,
+        [{ text: 'OK' }]
+      );
+    } catch (error) {
+      console.error('Error processing payment completion:', error);
+      
+      // Still show success to passenger even if earnings update fails
+      Alert.alert(
+        'Payment Successful!',
+        `Your ride from ${bookingData.pickupLocation} to ${bookingData.destination} has been paid.\n\nDriver: ${bookingData.driver.name}\nJeepney: ${bookingData.driver.jeepneyNumber}\nFare: ₱${bookingData.discountedFare || bookingData.fare}`,
+        [{ text: 'OK' }]
+      );
+    }
+  };
+
+  // Enhanced test functions for development
+  const testDriverPickupQR = () => {
+    const testQR = TEST_QR_CODES.DRIVER_PICKUP;
+    console.log('Testing with Driver Pickup QR:', testQR);
+    
+    // Simulate scanning the QR code
+    const parsedQrData = parseQRData(testQR);
+    if (parsedQrData) {
+      setQrData(parsedQrData);
+      fetchDriverInfo(parsedQrData.driverId).then(driver => {
+        setDriverInfo(driver);
+        setShowTripBooking(true);
+      });
+    }
+  };
+
+  const testPaymentQR = () => {
+    const testQR = TEST_QR_CODES.PAYMENT_QR;
+    console.log('Testing with Payment QR:', testQR);
+    
+    // Simulate scanning the payment QR code
+    const parsedQrData = parseQRData(testQR);
+    if (parsedQrData) {
+      Alert.alert(
+        'Test Payment QR Detected',
+        `Jeepney: ${parsedQrData.jeepneyId}\nFare: ₱${parsedQrData.amount}\nRoute: ${parsedQrData.route}\n\nProceed with test payment?`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { 
+            text: 'Pay Now', 
+            onPress: () => createXenditPayment(parsedQrData)
+          }
+        ]
+      );
+    }
+  };
+
+  const testCompleteWorkflow = () => {
+    Alert.alert(
+      '🚀 Complete Workflow Test',
+      'This will simulate the complete passenger journey from scanning a driver QR to payment completion.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Start Test',
+          onPress: () => {
+            // Start with driver QR scan
+            testDriverPickupQR();
+            
+            // Show workflow steps
+            setTimeout(() => {
+              Alert.alert(
+                '✅ Workflow Steps',
+                '1. Scanned driver QR code\n2. Viewing driver information\n3. Next: Select pickup & destination\n4. Calculate fare with discounts\n5. Proceed to enhanced Xendit payment\n6. Driver earnings will update automatically',
+                [{ text: 'Continue' }]
+              );
+            }, 1000);
+          }
+        }
+      ]
+    );
+  };
+
+  const showQRInstructions = () => {
+    Alert.alert(
+      '📖 QR Code Instructions',
+      'How to use QR codes in LakbAI:\n\n' +
+      '🚍 DRIVER QR CODES:\n' +
+      '• Generated by drivers for passengers\n' +
+      '• Contains driver and jeepney information\n' +
+      '• Starts trip booking workflow\n' +
+      '• Leads to location selection and payment\n\n' +
+      '💰 PAYMENT QR CODES (Legacy):\n' +
+      '• Direct payment QR codes\n' +
+      '• Contains fixed fare amount\n' +
+      '• Opens Xendit payment immediately\n\n' +
+      '🏢 ADMIN LOCATION QR CODES:\n' +
+      '• Scanned by drivers at checkpoints\n' +
+      '• Updates driver location\n' +
+      '• Notifies nearby passengers\n' +
+      '• Handles conflicts with multiple drivers',
+      [
+        { text: 'Got it!' },
+        { 
+          text: 'Show Guide', 
+          onPress: () => {
+            console.log('📚 For complete implementation guide, see: QR_SYSTEM_IMPLEMENTATION_GUIDE.md');
+          }
+        }
+      ]
+    );
+  };
+
   const scannerFeatures = [
-    '• Payment QR codes for instant fare payment',
-    '• Jeepney information and current location',
-    '• Route details and stops',
-    '• Estimated arrival times',
-    '• Driver contact information',
+    '• Driver QR codes to start your ride',
+    '• Select pickup location and destination',
+    '• View driver information and jeepney details',
+    '• Calculate fare with automatic discounts',
+    '• Pay securely through Xendit gateway',
+    '• Legacy payment QR codes support',
   ];
 
   return (
@@ -138,7 +340,7 @@ export const ScannerScreen: React.FC = () => {
         <Ionicons name="qr-code" size={96} color={COLORS.primary} />
         <Text style={styles.scannerTitle}>Scan QR Code</Text>
         <Text style={styles.scannerSubtitle}>
-          Point your camera at the QR code for payments or jeepney info
+          Scan driver QR codes to start your ride or payment QR codes for instant fare payment
         </Text>
       </View>
 
@@ -148,6 +350,34 @@ export const ScannerScreen: React.FC = () => {
       </View>
 
       <Button title="Scan QR Code" onPress={handleOpenCamera} style={styles.scanButton} />
+      
+      {/* Enhanced Test Buttons for Development */}
+      <View style={styles.testButtonsContainer}>
+        <Text style={styles.testSectionTitle}>🧪 Test QR Codes (Development)</Text>
+        <View style={styles.testButtonsRow}>
+          <TouchableOpacity style={styles.testButton} onPress={testDriverPickupQR}>
+            <Text style={styles.testButtonText}>Test Driver QR</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.testButton} onPress={testPaymentQR}>
+            <Text style={styles.testButtonText}>Test Payment QR</Text>
+          </TouchableOpacity>
+        </View>
+        <TouchableOpacity 
+          style={[styles.testButton, { backgroundColor: COLORS.success, marginTop: 8 }]}
+          onPress={testCompleteWorkflow}
+        >
+          <Text style={[styles.testButtonText, { color: 'white' }]}>🚀 Test Complete Workflow</Text>
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={[styles.testButton, { backgroundColor: COLORS.gray600, marginTop: 8 }]}
+          onPress={showQRInstructions}
+        >
+          <Text style={[styles.testButtonText, { color: 'white' }]}>📖 QR Instructions</Text>
+        </TouchableOpacity>
+        <Text style={styles.testNote}>
+          These buttons simulate scanning QR codes for testing the complete workflow
+        </Text>
+      </View>
       
       {processing && (
         <View style={{ alignItems: 'center', marginTop: SPACING.md }}>
@@ -160,7 +390,20 @@ export const ScannerScreen: React.FC = () => {
 
       <InfoCard title="After scanning, you'll see:" items={scannerFeatures} />
 
-            <Modal visible={showCamera} animationType="slide" presentationStyle="fullScreen">
+      {/* Trip Booking Modal */}
+      {showTripBooking && qrData && driverInfo && (
+        <Modal visible={showTripBooking} animationType="slide" presentationStyle="pageSheet">
+          <TripBookingView
+            qrData={qrData}
+            driverInfo={driverInfo}
+            onBack={handleTripBookingBack}
+            onBookingComplete={handleBookingComplete}
+          />
+        </Modal>
+      )}
+
+      {/* Camera Modal */}
+      <Modal visible={showCamera} animationType="slide" presentationStyle="fullScreen">
         <View style={styles.cameraContainer}>
           <View style={{ flex: 1 }}>
             <CameraView

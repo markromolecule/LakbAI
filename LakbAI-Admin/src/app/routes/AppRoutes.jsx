@@ -64,6 +64,9 @@ const AppRoutes = () => {
             </ProtectedRoute>
           } 
         />
+        
+        {/* Catch-all route for unmatched paths */}
+        <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
       </Routes>
     </Router>
   );

@@ -6,6 +6,7 @@ import {
 } from 'react-native';
 import { useDriverState } from './hooks';
 import { HomeView, ScannerView, FareView, ProfileView, LogsView } from './views';
+import { QRGenerator } from './components/QRGenerator';
 import { Header } from '../../components/common/Header';
 import { Footer } from '../../components/common/Footer';
 import { COLORS } from '../../shared/themes/colors';
@@ -22,7 +23,8 @@ export const DriverScreen: React.FC = () => {
     driverProfile,
     recentLogs,
     simulateQRScan,
-    toggleDuty
+    toggleDuty,
+    updateLocation
   } = useDriverState();
 
   const renderCurrentView = () => {
@@ -44,6 +46,13 @@ export const DriverScreen: React.FC = () => {
             driverLocation={driverLocation}
             lastScanTime={lastScanTime}
             onSimulateScan={simulateQRScan}
+            onLocationUpdate={updateLocation}
+            driverInfo={{
+              id: `driver_${driverProfile.license}`,
+              name: driverProfile.name,
+              jeepneyNumber: driverProfile.jeepneyNumber,
+              route: driverProfile.route,
+            }}
           />
         );
       case 'fare':
@@ -64,6 +73,18 @@ export const DriverScreen: React.FC = () => {
         return (
           <LogsView
             recentLogs={recentLogs}
+          />
+        );
+      case 'qrcode':
+        return (
+          <QRGenerator
+            driverInfo={{
+              id: `driver_${driverProfile.license}`,
+              name: driverProfile.name,
+              jeepneyNumber: driverProfile.jeepneyNumber,
+              route: driverProfile.route,
+              currentLocation: driverLocation,
+            }}
           />
         );
       default:
