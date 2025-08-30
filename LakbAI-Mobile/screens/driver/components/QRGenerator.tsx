@@ -11,7 +11,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import QRCode from 'react-native-qrcode-svg';
 import { COLORS, SPACING } from '../../../shared/styles';
-import { generateDriverPickupQR } from '../../../shared/utils/qrTestUtils';
+
 
 interface QRGeneratorProps {
   driverInfo: {
@@ -38,13 +38,18 @@ export const QRGenerator: React.FC<QRGeneratorProps> = ({ driverInfo }) => {
   }, [driverInfo]);
 
   const generateQRCode = () => {
-    const qrData = generateDriverPickupQR(
-      driverInfo.id,
-      driverInfo.jeepneyNumber,
-      driverInfo.route
-    );
-    setQrValue(qrData);
-    console.log('Generated Driver QR Code:', qrData);
+    // Create QR data with real driver information
+    const qrData = {
+      type: 'driver_pickup',
+      driverId: driverInfo.id.toString(), // Use actual database ID
+      jeepneyId: driverInfo.jeepneyNumber,
+      route: driverInfo.route,
+      timestamp: new Date().toISOString(),
+    };
+    
+    const qrString = JSON.stringify(qrData);
+    setQrValue(qrString);
+    console.log('Generated Driver QR Code:', qrString);
   };
 
   const handleShareQR = async () => {

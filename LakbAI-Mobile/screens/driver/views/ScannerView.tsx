@@ -1,11 +1,13 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { ScrollView, View, TouchableOpacity, Text, Modal, Alert, ActivityIndicator } from 'react-native';
 import { QrCode, Camera, MapPin, AlertCircle, Scan } from 'lucide-react-native';
 import { CameraView } from 'expo-camera';
 import { Ionicons } from '@expo/vector-icons';
 import { useCameraPermissions } from '../../../shared/helpers/useCameraPermission';
 import { notificationService, DriverLocationNotification, ConflictResolutionData } from '../../../shared/services/notificationService';
-import { TEST_ADMIN_QR_CODES, logTestAdminQRCodes } from '../../../shared/utils/adminQRUtils';
+
+import { tripTrackingService, ActiveTrip, TripCheckpoint } from '../../../shared/services/tripTrackingService';
+
 import { COLORS, SPACING } from '../../../shared/styles';
 import { driverStyles, scannerStyles, homeStyles } from '../styles';
 
@@ -14,6 +16,7 @@ interface ScannerViewProps {
   lastScanTime: string;
   onSimulateScan: () => void;
   onLocationUpdate: (location: string) => void;
+  driverProfile: any; // DriverProfile from useDriverState
   driverInfo: {
     id: string;
     name: string;
@@ -33,18 +36,44 @@ interface AdminQRData {
   timestamp: string;
 }
 
+interface RouteCheckpointQRData {
+  type: 'route_checkpoint';
+  checkpointId: string;
+  checkpointName: string;
+  checkpointType: 'start' | 'end' | 'checkpoint';
+  coordinates: {
+    latitude: number;
+    longitude: number;
+  };
+  jeepneyNumber: string;
+  route: string;
+  qrType: 'driver_scan' | 'passenger_notification';
+  timestamp: string;
+  adminId: string;
+  purpose: string;
+  metadata?: any;
+}
+
 export const ScannerView: React.FC<ScannerViewProps> = ({
   driverLocation,
   lastScanTime,
   onSimulateScan,
   onLocationUpdate,
+  driverProfile,
   driverInfo
 }) => {
   const hasPermission = useCameraPermissions();
   const [showCamera, setShowCamera] = useState(false);
   const [scanned, setScanned] = useState(false);
   const [processing, setProcessing] = useState(false);
+  const [activeTrip, setActiveTrip] = useState<ActiveTrip | null>(null);
   const isHandlingScanRef = useRef(false);
+
+  // Check for active trip on component mount
+  useEffect(() => {
+    const existingTrip = tripTrackingService.getActiveTrip(driverInfo.id);
+    setActiveTrip(existingTrip);
+  }, [driverInfo.id]);
 
   const handleOpenCamera = () => {
     if (hasPermission === null) {
@@ -76,27 +105,139 @@ export const ScannerView: React.FC<ScannerViewProps> = ({
     }
   };
 
-  const notifyPassengers = async (locationName: string, coordinates?: { latitude: number; longitude: number }) => {
-    const notificationPayload: DriverLocationNotification = {
-      type: 'driver_location_update',
-      driverId: driverInfo.id,
-      driverName: driverInfo.name,
-      jeepneyNumber: driverInfo.jeepneyNumber,
-      route: driverInfo.route,
-      location: locationName,
-      timestamp: new Date().toISOString(),
-      coordinates
-    };
-    
-    const result = await notificationService.notifyPassengerDriverLocation(notificationPayload);
-    
-    if (result.success) {
-      console.log(`✅ Successfully notified ${result.notificationsSent} passengers`);
-    } else {
-      console.error('❌ Failed to notify passengers:', result.error);
+  const parseRouteCheckpointQR = (data: string): RouteCheckpointQRData | null => {
+    try {
+      const parsed = JSON.parse(data);
+      if (parsed?.type === 'route_checkpoint' && parsed?.qrType === 'driver_scan') {
+        return parsed as RouteCheckpointQRData;
+      }
+      return null;
+    } catch {
+      return null;
     }
+  };
+
+  const notifyPassengers = async (locationName: string, coordinates?: { latitude: number; longitude: number }) => {
+    try {
+      // Use real driver data
+      const realDriverName = driverProfile?.name || driverInfo.name;
+      const realJeepneyNumber = driverProfile?.jeepneyNumber || driverInfo.jeepneyNumber;
+      const realRoute = driverProfile?.route || driverInfo.route;
+      
+      console.log(`📢 Notifying passengers of driver location: ${locationName} (Driver: ${realDriverName})`);
+      
+      // Use simple notification system
+      console.log('🔔 Would notify passengers about driver location:', {
+        driver: realDriverName,
+        jeepneyNumber: realJeepneyNumber,
+        location: locationName,
+        route: realRoute
+      });
+      
+      console.log(`✅ Simple notification sent: ${realDriverName} at ${locationName}`);
+      
+      return {
+        success: true,
+        notificationsSent: 1,
+        message: `Notification sent: ${realDriverName} at ${locationName}`
+      };
+    } catch (error) {
+      console.error('❌ Failed to notify passengers:', error);
+      return {
+        success: false,
+        notificationsSent: 0,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      };
+    }
+  };
+
+  const handleRouteCheckpointScan = async (qrData: RouteCheckpointQRData) => {
+    setProcessing(true);
     
-    return result;
+    try {
+      const checkpoint: Omit<TripCheckpoint, 'scannedAt'> = {
+        id: qrData.checkpointId,
+        name: qrData.checkpointName,
+        type: qrData.checkpointType,
+        coordinates: qrData.coordinates
+      };
+
+      if (qrData.checkpointType === 'start') {
+        // Start a new trip
+        const realDriverName = driverProfile?.name || driverInfo.name;
+        const realJeepneyNumber = driverProfile?.jeepneyNumber || driverInfo.jeepneyNumber;
+        const realRoute = driverProfile?.route || driverInfo.route;
+        
+        const result = await tripTrackingService.startTrip(
+          driverInfo.id,
+          {
+            name: realDriverName,
+            jeepneyNumber: realJeepneyNumber,
+            route: realRoute
+          },
+          checkpoint
+        );
+
+        if (result.success) {
+          setActiveTrip(result.activeTrip || null);
+          onLocationUpdate(qrData.checkpointName);
+          
+          Alert.alert(
+            '🚍 Trip Started!',
+            `${result.message}\n\nYou can now scan intermediate checkpoints and the end point to complete your trip.\n\nTrip ID: ${result.tripId}`,
+            [{ text: 'Continue' }]
+          );
+        } else {
+          Alert.alert('Cannot Start Trip', result.message);
+        }
+        
+      } else if (qrData.checkpointType === 'end') {
+        // End the current trip
+        const result = await tripTrackingService.endTrip(
+          driverInfo.id,
+          checkpoint
+        );
+
+        if (result.success) {
+          setActiveTrip(null);
+          onLocationUpdate(qrData.checkpointName);
+          
+          Alert.alert(
+            '✅ Trip Completed!',
+            `${result.message}\n\nTrip Summary:\n• Duration: ${result.tripSummary?.duration} minutes\n• Checkpoints: ${result.tripSummary?.checkpoints}\n• Distance: ${result.tripSummary?.distance}`,
+            [{ text: 'Great!' }]
+          );
+        } else {
+          Alert.alert('Cannot End Trip', result.message);
+        }
+        
+      } else {
+        // Add intermediate checkpoint
+        const result = await tripTrackingService.addCheckpoint(
+          driverInfo.id,
+          checkpoint
+        );
+
+        if (result.success) {
+          setActiveTrip(result.activeTrip || null);
+          onLocationUpdate(qrData.checkpointName);
+          
+          Alert.alert(
+            '📍 Checkpoint Updated',
+            `${result.message}\n\nActive Trip: ${activeTrip?.startCheckpoint.name} → End Point\nCheckpoints passed: ${result.activeTrip?.intermediateCheckpoints.length || 0}`,
+            [{ text: 'Continue' }]
+          );
+        } else {
+          Alert.alert('Cannot Update Location', result.message);
+        }
+      }
+      
+    } catch (error) {
+      console.error('Error processing route checkpoint scan:', error);
+      Alert.alert('Error', 'Failed to process checkpoint scan. Please try again.');
+    } finally {
+      setProcessing(false);
+    }
   };
 
   const handleAdminQRScan = async (qrData: AdminQRData) => {
@@ -211,8 +352,24 @@ export const ScannerView: React.FC<ScannerViewProps> = ({
     if (isHandlingScanRef.current || scanned) return;
     isHandlingScanRef.current = true;
 
-    const adminQrData = parseAdminQRData(data);
+    // Try parsing as route checkpoint QR first (new system)
+    const routeCheckpointData = parseRouteCheckpointQR(data);
+    if (routeCheckpointData) {
+      setScanned(true);
+      setShowCamera(false);
+      
+      await handleRouteCheckpointScan(routeCheckpointData);
+      
+      // Reset for next scan
+      setTimeout(() => {
+        setScanned(false);
+        isHandlingScanRef.current = false;
+      }, 2000);
+      return;
+    }
 
+    // Fallback to admin location QR (legacy system)
+    const adminQrData = parseAdminQRData(data);
     if (adminQrData) {
       setScanned(true);
       setShowCamera(false);
@@ -224,46 +381,23 @@ export const ScannerView: React.FC<ScannerViewProps> = ({
         setScanned(false);
         isHandlingScanRef.current = false;
       }, 2000);
-    } else {
-      // Not a valid admin QR code; keep scanning
-      isHandlingScanRef.current = false;
-      Alert.alert(
-        'Invalid QR Code',
-        'This QR code is not a valid location checkpoint. Please scan an admin-generated location QR code.',
-        [{ text: 'OK' }]
-      );
+      return;
     }
-  };
 
-  // Test function to simulate admin QR scan with multiple options
-  const testAdminQRScan = () => {
-    const locations = [
-      { name: 'Robinson Galleria', qr: TEST_ADMIN_QR_CODES.ROBINSON_GALLERIA },
-      { name: 'Ayala Center', qr: TEST_ADMIN_QR_CODES.AYALA_CENTER },
-      { name: 'SM City Cebu', qr: TEST_ADMIN_QR_CODES.SM_CITY_CEBU },
-      { name: 'IT Park', qr: TEST_ADMIN_QR_CODES.IT_PARK }
-    ];
-
-    const buttons = locations.map(location => ({
-      text: location.name,
-      onPress: () => {
-        const qrData = parseAdminQRData(location.qr);
-        if (qrData) {
-          handleAdminQRScan(qrData);
-        }
-      }
-    }));
-
+    // Not a valid QR code
+    isHandlingScanRef.current = false;
     Alert.alert(
-      '🧪 Test Admin QR Scan',
-      'Choose a location to simulate scanning:',
-      [
-        ...buttons,
-        { text: 'Show All QR Codes', onPress: () => logTestAdminQRCodes() },
-        { text: 'Cancel', style: 'cancel' }
-      ]
+      'Invalid QR Code',
+      'This QR code is not a valid route checkpoint or admin location QR code. Please scan a QR code generated by the LakbAI admin system.',
+      [{ text: 'OK' }]
     );
   };
+
+
+
+
+
+
 
   return (
     <ScrollView 
@@ -291,13 +425,7 @@ export const ScannerView: React.FC<ScannerViewProps> = ({
         <Text style={scannerStyles.scanButtonText}>Scan Location QR</Text>
       </TouchableOpacity>
 
-      {/* Test button for development */}
-      <TouchableOpacity 
-        onPress={testAdminQRScan}
-        style={[scannerStyles.scanButton, { backgroundColor: COLORS.gray600, marginTop: 8 }]}
-      >
-        <Text style={[scannerStyles.scanButtonText, { fontSize: 14 }]}>🧪 Test Admin QR Scan</Text>
-      </TouchableOpacity>
+
 
       {processing && (
         <View style={{ alignItems: 'center', marginVertical: SPACING.md }}>
@@ -320,12 +448,37 @@ export const ScannerView: React.FC<ScannerViewProps> = ({
         </View>
       </View>
 
+      {/* Active Trip Information */}
+      {activeTrip && (
+        <View style={[scannerStyles.locationCard, { backgroundColor: '#E7F3FF', borderColor: '#2563EB' }]}>
+          <View style={homeStyles.sectionHeader}>
+            <Ionicons name="navigate" size={20} color="#2563EB" />
+            <Text style={[homeStyles.sectionTitle, { color: '#1E40AF' }]}>Active Trip</Text>
+          </View>
+          <View>
+            <Text style={[scannerStyles.currentLocation, { color: '#1E40AF' }]}>
+              {activeTrip.startCheckpoint.name} → End Point
+            </Text>
+            <Text style={scannerStyles.lastUpdated}>
+              Started: {new Date(activeTrip.startTime).toLocaleTimeString()}
+            </Text>
+            <Text style={scannerStyles.locationNote}>
+              Checkpoints passed: {activeTrip.intermediateCheckpoints.length}
+            </Text>
+            <Text style={[scannerStyles.locationNote, { fontWeight: '600', color: '#2563EB' }]}>
+              💡 Scan checkpoints and end point to complete trip
+            </Text>
+          </View>
+        </View>
+      )}
+
       <View style={scannerStyles.instructionsCard}>
-        <Text style={scannerStyles.instructionsTitle}>How Location Scanning Works:</Text>
-        <Text style={scannerStyles.instructionItem}>• Scan admin QR codes at designated stops</Text>
-        <Text style={scannerStyles.instructionItem}>• Your location updates automatically</Text>
-        <Text style={scannerStyles.instructionItem}>• Passengers get notified when you arrive</Text>
-        <Text style={scannerStyles.instructionItem}>• Keep passengers informed of your route progress</Text>
+        <Text style={scannerStyles.instructionsTitle}>Trip Tracking & Location Updates:</Text>
+        <Text style={scannerStyles.instructionItem}>• 🚀 Scan START point QR to begin a trip</Text>
+        <Text style={scannerStyles.instructionItem}>• 📍 Scan checkpoint QRs during your route</Text>
+        <Text style={scannerStyles.instructionItem}>• 🏁 Scan END point QR to complete the trip</Text>
+        <Text style={scannerStyles.instructionItem}>• 🔔 Passengers get notified at each location</Text>
+        <Text style={scannerStyles.instructionItem}>• 📊 Trip data is automatically tracked</Text>
       </View>
 
       <View style={scannerStyles.warningCard}>

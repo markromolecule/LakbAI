@@ -21,6 +21,7 @@ export const DriverScreen: React.FC = () => {
     lastScanTime,
     isOnDuty,
     driverProfile,
+    userSession,
     recentLogs,
     simulateQRScan,
     toggleDuty,
@@ -47,8 +48,9 @@ export const DriverScreen: React.FC = () => {
             lastScanTime={lastScanTime}
             onSimulateScan={simulateQRScan}
             onLocationUpdate={updateLocation}
+            driverProfile={driverProfile}
             driverInfo={{
-              id: `driver_${driverProfile.license}`,
+              id: driverProfile.id?.toString() || userSession?.userId || '16',
               name: driverProfile.name,
               jeepneyNumber: driverProfile.jeepneyNumber,
               route: driverProfile.route,
@@ -79,7 +81,7 @@ export const DriverScreen: React.FC = () => {
         return (
           <QRGenerator
             driverInfo={{
-              id: `driver_${driverProfile.license}`,
+              id: driverProfile.id?.toString() || userSession?.userId || '16', // Use actual database ID
               name: driverProfile.name,
               jeepneyNumber: driverProfile.jeepneyNumber,
               route: driverProfile.route,

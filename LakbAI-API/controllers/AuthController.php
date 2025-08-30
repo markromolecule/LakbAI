@@ -108,6 +108,50 @@ class AuthController {
     }
 
     /**
+     * Get driver information by ID
+     */
+    public function getDriverInfo($driverId) {
+        try {
+            if (empty($driverId)) {
+                return $this->errorResponse('Driver ID is required');
+            }
+
+            // Get driver profile from database
+            $driverProfile = $this->authService->getProfile($driverId);
+            
+            if ($driverProfile['status'] !== 'success') {
+                return $this->errorResponse('Driver not found: ' . ($driverProfile['message'] ?? 'Unknown error'));
+            }
+
+            $driver = $driverProfile['user'];
+            
+            // Transform database data to QRDriverInfo format
+            $driverInfo = [
+                'id' => $driver['id'],
+                'name' => $driver['first_name'] . ' ' . $driver['last_name'],
+                'license' => $driver['drivers_license_name'] ?? 'N/A',
+                'jeepneyNumber' => 'LKB-' . str_pad($driver['id'], 3, '0', STR_PAD_LEFT),
+                'jeepneyModel' => 'Toyota Coaster', // Default for now
+                'rating' => 4.5, // Default rating
+                'totalTrips' => 0, // Will be updated when trip system is implemented
+                'route' => $driver['route'] ?? 'N/A',
+                'currentLocation' => 'N/A', // Will be updated when location system is implemented
+                'contactNumber' => $driver['phone_number'] ?? 'N/A',
+                'plateNumber' => 'N/A', // Will be updated when jeepney assignment is implemented
+            ];
+
+            return [
+                'success' => true,
+                'driverInfo' => $driverInfo,
+                'message' => 'Driver information retrieved successfully'
+            ];
+
+        } catch (Exception $e) {
+            return $this->errorResponse('Failed to get driver info: ' . $e->getMessage());
+        }
+    }
+
+    /**
      * Get users by type (admin function)
      */
     public function getUsersByType($userType) {

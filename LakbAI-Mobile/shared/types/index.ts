@@ -20,6 +20,7 @@ export interface QuickQuestion {
 
 // Driver-related interfaces
 export interface DriverProfile {
+  id: string | number; // Add ID field for database reference
   name: string;
   license: string;
   jeepneyNumber: string;
