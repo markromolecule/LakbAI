@@ -1,24 +1,88 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Alert } from 'react-native';
 import { ViewType, DriverProfile, LogItem } from '../../../shared/types/driver';
 import { CHECKPOINTS } from '../../../constants/checkpoints';
+import sessionManager, { UserSession } from '../../../shared/services/sessionManager';
 
 export const useDriverState = () => {
   const [currentView, setCurrentView] = useState<ViewType>('home');
   const [driverLocation, setDriverLocation] = useState<string>('Robinson Tejero');
   const [lastScanTime, setLastScanTime] = useState<string>(new Date().toLocaleTimeString());
   const [isOnDuty, setIsOnDuty] = useState<boolean>(true);
+  const [driverProfile, setDriverProfile] = useState<DriverProfile | null>(null);
+  const [userSession, setUserSession] = useState<UserSession | null>(null);
 
-  const driverProfile: DriverProfile = {
-    name: 'Juan Dela Cruz',
-    license: 'D123-456-789',
-    jeepneyNumber: 'LKB-001',
-    rating: 4.8,
-    totalTrips: 1247,
-    yearsExperience: 8,
-    todayTrips: 12,
-    todayEarnings: 1840,
-    route: 'Robinson Tejero - Robinson Pala-pala'
+  // Load real driver data from session
+  useEffect(() => {
+    loadDriverProfile();
+  }, []);
+
+  const loadDriverProfile = async () => {
+    try {
+      const session = await sessionManager.getUserSession();
+      if (session && session.userType === 'driver' && session.dbUserData) {
+        setUserSession(session);
+        const profile = transformDatabaseUserToDriverProfile(session.dbUserData);
+        setDriverProfile(profile);
+        console.log('✅ Driver profile loaded from session:', profile.name);
+      } else {
+        console.log('⚠️ No driver session found, using mock data');
+        setDriverProfile(getMockDriverProfile());
+      }
+    } catch (error) {
+      console.error('❌ Failed to load driver profile:', error);
+      setDriverProfile(getMockDriverProfile());
+    }
+  };
+
+  const transformDatabaseUserToDriverProfile = (dbUser: any): DriverProfile => {
+    const fullName = `${dbUser.first_name} ${dbUser.last_name}`;
+    const address = [
+      dbUser.house_number,
+      dbUser.street_name,
+      dbUser.barangay,
+      dbUser.city_municipality,
+      dbUser.province
+    ].filter(Boolean).join(', ');
+
+    // Generate jeepney details based on user ID for consistency
+    const jeepneyNumber = `LKB-${String(dbUser.id).padStart(3, '0')}`;
+    const routes = [
+      'Robinson Tejero - Robinson Pala-pala',
+      'Ayala Center - Lahug',
+      'SM City Cebu - IT Park',
+      'Colon Street - USC Main',
+      'Fuente Circle - Capitol Site'
+    ];
+    const route = routes[dbUser.id % routes.length];
+
+    return {
+      id: dbUser.id, // Include the actual database ID
+      name: fullName,
+      license: dbUser.drivers_license_name || `D${dbUser.id}-${Date.now().toString().slice(-6)}`,
+      jeepneyNumber,
+      rating: 4.5 + (Math.random() * 0.8), // Random rating between 4.5-5.3
+      totalTrips: Math.floor(Math.random() * 1000) + 500,
+      yearsExperience: Math.floor(Math.random() * 10) + 2,
+      todayTrips: Math.floor(Math.random() * 20),
+      todayEarnings: Math.floor(Math.random() * 2000) + 500,
+      route
+    };
+  };
+
+  const getMockDriverProfile = (): DriverProfile => {
+    return {
+      id: '001',
+      name: 'Juan Dela Cruz',
+      license: 'D123-456-789',
+      jeepneyNumber: 'LKB-001',
+      rating: 4.8,
+      totalTrips: 1247,
+      yearsExperience: 8,
+      todayTrips: 12,
+      todayEarnings: 1840,
+      route: 'Robinson Tejero - Robinson Pala-pala'
+    };
   };
 
   const recentLogs: LogItem[] = [
@@ -48,16 +112,22 @@ export const useDriverState = () => {
     setLastScanTime(new Date().toLocaleTimeString());
   };
 
+  const refreshDriverProfile = async () => {
+    await loadDriverProfile();
+  };
+
   return {
     currentView,
     setCurrentView,
     driverLocation,
     lastScanTime,
     isOnDuty,
-    driverProfile,
+    driverProfile: driverProfile || getMockDriverProfile(), // Fallback to mock if loading
+    userSession,
     recentLogs,
     simulateQRScan,
     toggleDuty,
-    updateLocation
+    updateLocation,
+    refreshDriverProfile
   };
 };

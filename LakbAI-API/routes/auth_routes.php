@@ -74,6 +74,14 @@ try {
             response($result);
             break;
 
+        case 'get_driver_info':
+            if (!isset($input['driver_id'])) {
+                errorResponse('Driver ID required', 400);
+            }
+            $result = $authController->getDriverInfo($input['driver_id']);
+            response($result);
+            break;
+
         default:
             errorResponse('Invalid action: ' . $input['action'], 400);
     }
