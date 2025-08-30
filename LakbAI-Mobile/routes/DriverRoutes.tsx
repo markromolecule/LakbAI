@@ -1,11 +1,11 @@
 import { Href } from "expo-router";
 
 export enum DriverRoutes {
-  HOME = "/driver",
-  SCANNER = "/driver/scanner",
-  FARE = "/driver/fare", 
-  PROFILE = "/driver/profile",
-  LOGS = "/driver/logs"
+	HOME = "/driver",
+	SCANNER = "/driver/scanner",
+	FARE = "/driver/fare", 
+	PROFILE = "/driver/profile",
+	LOGS = "/driver/logs"
 }
 
 // Extracts enum values ("/driver/...")

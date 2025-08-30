@@ -37,13 +37,57 @@ export interface TripLog {
   passengers: number;
 }
 
+// QR Code Workflow Interfaces
+export interface QRDriverInfo {
+  id: string;
+  name: string;
+  license: string;
+  jeepneyNumber: string;
+  jeepneyModel?: string;
+  rating: number;
+  totalTrips: number;
+  route: string;
+  currentLocation: string;
+  contactNumber?: string;
+  plateNumber?: string;
+}
+
+export interface QRCodeData {
+  type: 'driver_pickup' | 'payment';
+  driverId: string;
+  jeepneyId: string;
+  route: string;
+  timestamp: string;
+  // For legacy payment QR codes
+  amount?: number;
+  description?: string;
+}
+
+export interface TripBookingData {
+  driver: QRDriverInfo;
+  pickupLocation: string;
+  destination: string;
+  fare: number;
+  discountedFare?: number;
+  distance: string;
+  estimatedTime: string;
+  qrCodeData: QRCodeData;
+}
+
+export interface BookingConfirmation {
+  bookingId: string;
+  tripData: TripBookingData;
+  paymentUrl: string;
+  expiresAt: string;
+}
+
 export interface EmergencyContact {
   label: string;
   number: string;
   type: "tel" | "emergency";
 }
 
-export type DriverView = 'home' | 'scanner' | 'fare' | 'profile' | 'logs';
+export type DriverView = 'home' | 'scanner' | 'fare' | 'profile' | 'logs' | 'qrcode';
 
 // Export passenger types
 export * from './authentication';

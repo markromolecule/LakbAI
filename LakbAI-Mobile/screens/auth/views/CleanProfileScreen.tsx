@@ -93,13 +93,16 @@ const CleanProfileScreen: React.FC = () => {
     });
 
     try {
+      // Preserve existing user type from database or default to 'passenger'
+      const userType = session.dbUserData?.user_type || session.userType || 'passenger';
+      
       const result = await completeProfile(
         user.sub,
         session.dbUserData?.id?.toString() || session.userId, // Use database ID if available, fallback to session.userId
         {
           ...formData,
           birthday: `${formData.birthday.year}-${months.indexOf(formData.birthday.month) + 1}-${formData.birthday.date}`,
-          user_type: 'passenger',
+          user_type: userType,
         }
       );
 
@@ -114,7 +117,14 @@ const CleanProfileScreen: React.FC = () => {
           [
             {
               text: 'Continue',
-              onPress: () => router.replace(PassengerRoutes.HOME),
+              onPress: () => {
+                // Redirect based on user type
+                if (userType === 'driver') {
+                  router.replace('/driver');
+                } else {
+                  router.replace(PassengerRoutes.HOME);
+                }
+              },
             },
           ]
         );

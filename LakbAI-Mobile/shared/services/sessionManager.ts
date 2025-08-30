@@ -309,8 +309,7 @@ class SessionManager {
           nickname: userProfile.nickname,
           picture: userProfile.picture,
           provider: userProfile.provider || 'auth0',
-          user_type: 'passenger',
-          roles: ['passenger'],
+          // Don't set user_type here - let the database determine it
           created_at: new Date().toISOString()
         }
       };

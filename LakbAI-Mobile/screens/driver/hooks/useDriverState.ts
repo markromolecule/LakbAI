@@ -43,6 +43,11 @@ export const useDriverState = () => {
     setIsOnDuty(!isOnDuty);
   };
 
+  const updateLocation = (location: string) => {
+    setDriverLocation(location);
+    setLastScanTime(new Date().toLocaleTimeString());
+  };
+
   return {
     currentView,
     setCurrentView,
@@ -52,6 +57,7 @@ export const useDriverState = () => {
     driverProfile,
     recentLogs,
     simulateQRScan,
-    toggleDuty
+    toggleDuty,
+    updateLocation
   };
 };
