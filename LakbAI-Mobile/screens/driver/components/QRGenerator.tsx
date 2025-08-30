@@ -9,7 +9,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-// import QRCode from 'react-native-qrcode-svg'; // Uncomment when library is installed
+import QRCode from 'react-native-qrcode-svg';
 import { COLORS, SPACING } from '../../../shared/styles';
 import { generateDriverPickupQR } from '../../../shared/utils/qrTestUtils';
 
@@ -89,11 +89,16 @@ export const QRGenerator: React.FC<QRGeneratorProps> = ({ driverInfo }) => {
       {/* QR Code Display */}
       <View style={styles.qrContainer}>
         {qrValue ? (
-          <View style={[styles.qrPlaceholder, { width: qrSize, height: qrSize }]}>
-            <Ionicons name="qr-code" size={qrSize * 0.4} color={COLORS.driverPrimary} />
-            <Text style={styles.qrGeneratedText}>QR Code Ready</Text>
-            <Text style={styles.qrSubtext}>Tap "View Data" to see QR content</Text>
-          </View>
+          <QRCode
+            value={qrValue}
+            size={qrSize}
+            color={COLORS.black}
+            backgroundColor={COLORS.white}
+            logoSize={qrSize * 0.15}
+            logoBackgroundColor={COLORS.white}
+            logoMargin={2}
+            logoBorderRadius={8}
+          />
         ) : (
           <View style={[styles.qrPlaceholder, { width: qrSize, height: qrSize }]}>
             <Ionicons name="qr-code" size={qrSize * 0.3} color={COLORS.gray400} />

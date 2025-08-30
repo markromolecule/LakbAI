@@ -23,7 +23,8 @@ export const DriverScreen: React.FC = () => {
     driverProfile,
     recentLogs,
     simulateQRScan,
-    toggleDuty
+    toggleDuty,
+    updateLocation
   } = useDriverState();
 
   const renderCurrentView = () => {
@@ -45,6 +46,13 @@ export const DriverScreen: React.FC = () => {
             driverLocation={driverLocation}
             lastScanTime={lastScanTime}
             onSimulateScan={simulateQRScan}
+            onLocationUpdate={updateLocation}
+            driverInfo={{
+              id: `driver_${driverProfile.license}`,
+              name: driverProfile.name,
+              jeepneyNumber: driverProfile.jeepneyNumber,
+              route: driverProfile.route,
+            }}
           />
         );
       case 'fare':

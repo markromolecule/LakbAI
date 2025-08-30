@@ -125,17 +125,60 @@ export const TripBookingView: React.FC<TripBookingViewProps> = ({
   const createXenditPayment = async (tripData: TripBookingData) => {
     try {
       const finalFare = tripData.discountedFare ?? tripData.fare;
+      const originalFare = tripData.fare;
+      const discountAmount = originalFare - finalFare;
       
-      // Construct payment description
-      const description = `LakbAI Trip: ${tripData.pickupLocation} to ${tripData.destination} (${tripData.driver.jeepneyNumber})`;
+      // Construct detailed payment description with all trip information
+      const description = `LakbAI Jeepney Ride | Driver: ${tripData.driver.name} | Jeepney: ${tripData.driver.jeepneyNumber} | Route: ${tripData.pickupLocation} → ${tripData.destination} | Distance: ${tripData.distance} | Time: ${tripData.estimatedTime}${discountAmount > 0 ? ` | Original: ₱${originalFare} | Discount: ₱${discountAmount}` : ''}`;
       
-      // For now, use the static Xendit URL with trip parameters
-      const paymentUrl = `https://checkout-staging.xendit.co/od/lakbai?amount=${finalFare}&description=${encodeURIComponent(description)}`;
+      // Generate unique booking/external ID
+      const externalId = `lakbai_trip_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      
+      // Construct enhanced payment URL with all trip details auto-filled
+      const paymentParams = new URLSearchParams({
+        amount: finalFare.toString(),
+        description: description,
+        external_id: externalId,
+        payer_email: passengerProfile.email || 'passenger@lakbai.com',
+        customer_name: passengerProfile.fullName || 'LakbAI Passenger',
+        success_redirect_url: 'lakbai://payment-success',
+        failure_redirect_url: 'lakbai://payment-failure',
+        // Custom data for webhook processing
+        custom_data: JSON.stringify({
+          type: 'jeepney_fare',
+          driver_id: tripData.driver.id,
+          driver_name: tripData.driver.name,
+          jeepney_number: tripData.driver.jeepneyNumber,
+          pickup_location: tripData.pickupLocation,
+          destination: tripData.destination,
+          original_fare: originalFare,
+          discount_amount: discountAmount,
+          final_fare: finalFare,
+          passenger_id: passengerProfile.id || 'passenger_001',
+          booking_timestamp: new Date().toISOString(),
+          distance: tripData.distance,
+          estimated_time: tripData.estimatedTime
+        })
+      });
+      
+      const paymentUrl = `https://checkout-staging.xendit.co/od/lakbai?${paymentParams.toString()}`;
+      
+      // Log payment creation for debugging
+      console.log('💳 Creating Xendit payment:', {
+        externalId,
+        amount: finalFare,
+        description,
+        customerName: passengerProfile.fullName,
+        customerEmail: passengerProfile.email
+      });
       
       return {
         success: true,
         paymentUrl,
-        bookingId: `booking_${Date.now()}`,
+        bookingId: externalId,
+        amount: finalFare,
+        description,
+        externalId
       };
 
       // TODO: Replace with actual API call when backend is available
@@ -146,6 +189,7 @@ export const TripBookingView: React.FC<TripBookingViewProps> = ({
       //     tripData,
       //     passengerProfile,
       //     amount: finalFare,
+      //     externalId,
       //     description,
       //   })
       // });
