@@ -4,7 +4,8 @@
  */
 
 // CHANGE THIS TO YOUR LOCAL IP ADDRESS
-export const DEVELOPER_IP = '192.168.254.105:8000'; // Joseph's IP
+// export const DEVELOPER_IP = '192.168.254.105:8000'; // Joseph's IP
+export const DEVELOPER_IP = '192.168.1.9:8000';
 
 // Instructions for co-developers:
 // 1. Find your computer's IP address:
@@ -26,12 +27,12 @@ export const DEVELOPER_IP = '192.168.254.105:8000'; // Joseph's IP
 
 // Alternative configuration for different developers
 export const DEVELOPER_IPS = {
-  joseph: '192.168.254.105:8000',
-  jiro: 'localhost:8000', // For tunnel mode users
+//  joseph: '192.168.254.105:8000',
+  jiro: '192.168.1.9:8000', // For tunnel mode users
 };
 
 // Set which developer to use (change this to your name)
-export const CURRENT_DEVELOPER = 'joseph';
+export const CURRENT_DEVELOPER = 'jiro';
 
 // Get the current developer's IP
 export const getCurrentDeveloperIP = (): string => {
