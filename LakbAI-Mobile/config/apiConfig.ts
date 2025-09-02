@@ -3,11 +3,8 @@ import Constants from 'expo-constants';
 
 // Network configuration for different developers
 const DEVELOPER_CONFIGS: { [key: string]: string } = {
-  joseph: '192.168.254.105',  // Your local IP address (without port)
-  jiro: '192.168.254.111',    // Updated to match your actual network
-  // Add your name and IP here:
-  // maria: '192.168.1.105',
-  // john: '10.0.0.23',
+  joseph: '192.168.254.105',
+  jiro: '192.168.254.111',  
 };
 
 // Tunnel mode configuration
