@@ -12,7 +12,7 @@ const DEVELOPER_CONFIGS: { [key: string]: string } = {
 
 // Tunnel mode configuration
 const TUNNEL_CONFIG = {
-  enabled: false,  // Set to true if using tunnel mode
+  enabled: true,  // Set to true if using tunnel mode
   port: 8000,     // Port for your PHP server
 };
 
