@@ -6,10 +6,16 @@ require_once __DIR__ . '/AuthServiceProvider.php';
 class AppServiceProvider {
     private $container;
     private $dbConnection;
+    private $pdoConnection;
 
     public function __construct($dbConnection) {
         $this->container = new ServiceContainer();
         $this->dbConnection = $dbConnection;
+        
+        // Get PDO connection from global scope
+        global $pdo;
+        $this->pdoConnection = $pdo;
+        
         $this->registerServices();
     }
 
@@ -17,9 +23,14 @@ class AppServiceProvider {
      * Register all application services
      */
     private function registerServices() {
-        // Register database connection
+        // Register mysqli database connection (for backward compatibility)
         $this->container->register('Database', function($container) {
             return $this->dbConnection;
+        });
+        
+        // Register PDO database connection (for new Driver CRUD)
+        $this->container->register('PDO', function($container) {
+            return $this->pdoConnection;
         });
 
         // Register auth services
