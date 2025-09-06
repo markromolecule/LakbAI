@@ -266,11 +266,172 @@ The main `users` table includes:
 
 ## 🔧 Troubleshooting
 
-### Common Issues
+### 🚨 Critical Connection Issues (Windows Developers)
+
+#### **Mobile App Connection Problems**
+
+**Issue 1: API Connection Failed**
+```bash
+# Error: Network request failed / Connection refused
+# Error: Unable to connect to http://192.168.x.x:8000
+```
+
+**Solutions:**
+1. **Check Developer Configuration** (`config/developerConfig.ts`):
+   ```typescript
+   // Windows developers need to update this:
+   export const DEVELOPER_IP = 'YOUR_WINDOWS_IP:8000';
+   
+   // Find your Windows IP:
+   # Command Prompt:
+   ipconfig
+   # Look for "IPv4 Address" under your WiFi adapter
+   ```
+
+2. **Enable Tunnel Mode** (Recommended for Windows):
+   ```bash
+   # In LakbAI-Mobile directory:
+   npx expo start --tunnel
+   
+   # Then update developerConfig.ts:
+   export const DEVELOPER_IP = 'localhost:8000';
+   ```
+
+3. **Windows Firewall Issues**:
+   ```bash
+   # Allow Node.js through Windows Firewall:
+   # Control Panel > System and Security > Windows Defender Firewall
+   # > Allow an app through firewall > Add Node.js
+   
+   # Or temporarily disable firewall for testing
+   ```
+
+**Issue 2: PHP Server Not Accessible**
+```bash
+# Error: Connection refused on port 8000
+```
+
+**Solutions:**
+1. **Start PHP Server Correctly**:
+   ```bash
+   # In LakbAI-API directory:
+   php -S 0.0.0.0:8000
+   # NOT: php -S localhost:8000 (won't work for mobile)
+   ```
+
+2. **XAMPP Configuration**:
+   ```bash
+   # Ensure XAMPP Apache is running
+   # Check XAMPP Control Panel
+   # Verify port 80 is not blocked
+   ```
+
+3. **Windows Network Discovery**:
+   ```bash
+   # Enable Network Discovery:
+   # Settings > Network & Internet > Status > Network and Sharing Center
+   # > Change advanced sharing settings > Turn on network discovery
+   ```
+
+**Issue 3: Auth0 Connection Issues**
+```bash
+# Error: Auth0 authentication failed
+# Error: Redirect URI mismatch
+```
+
+**Solutions:**
+1. **Update Auth0 Dashboard**:
+   ```
+   Allowed Callback URLs:
+   - lakbaimobile://auth
+   - exp://127.0.0.1:8081/--/auth
+   - exp://localhost:8081/--/auth
+   - exp://YOUR_TUNNEL_URL/--/auth (if using tunnel)
+   ```
+
+2. **Tunnel Mode Auth0 Setup**:
+   ```bash
+   # When using tunnel, get the tunnel URL:
+   npx expo start --tunnel
+   # Copy the tunnel URL (e.g., https://abc123.tunnel.dev)
+   # Add to Auth0: exp://abc123.tunnel.dev/--/auth
+   ```
+
+### 📱 Mobile App Configuration Fixes
+
+#### **Step-by-Step Windows Setup**
+
+1. **Configure Developer IP**:
+   ```typescript
+   // File: LakbAI-Mobile/config/developerConfig.ts
+   
+   // Option 1: Use your Windows IP
+   export const DEVELOPER_IP = '192.168.1.100:8000'; // Replace with your IP
+   
+   // Option 2: Use tunnel mode (recommended)
+   export const DEVELOPER_IP = 'localhost:8000';
+   ```
+
+2. **Configure API Config**:
+   ```typescript
+   // File: LakbAI-Mobile/config/apiConfig.ts
+   
+   // Enable tunnel mode:
+   const TUNNEL_CONFIG = {
+     enabled: true,  // Set to true for Windows developers
+     port: 8000,
+   };
+   ```
+
+3. **Start Services Correctly**:
+   ```bash
+   # Terminal 1: Start PHP API
+   cd LakbAI-API
+   php -S 0.0.0.0:8000
+   
+   # Terminal 2: Start Mobile App with Tunnel
+   cd LakbAI-Mobile
+   npx expo start --tunnel
+   ```
+
+#### **Network Configuration**
+
+**Windows Network Setup:**
+```bash
+# 1. Find your IP address:
+ipconfig
+
+# 2. Ensure all devices are on same network:
+# - Your Windows PC
+# - Your mobile device (phone/tablet)
+# - Must be on same WiFi network
+
+# 3. Test API connection:
+# Open browser on mobile: http://YOUR_IP:8000/LakbAI/LakbAI-API/routes/api.php
+# Should show API response or error page (not connection refused)
+```
+
+**Tunnel Mode (Recommended for Windows):**
+```bash
+# Benefits of tunnel mode:
+# - Works through firewalls
+# - No need to find IP addresses
+# - Works on different networks
+# - More reliable for Windows developers
+
+# Start with tunnel:
+npx expo start --tunnel
+
+# Update config to use localhost:
+export const DEVELOPER_IP = 'localhost:8000';
+```
+
+### 🔧 Common Issues & Solutions
 
 1. **Expo CLI not found**:
    ```bash
    npm install -g @expo/cli
+   # Or use npx: npx expo start
    ```
 
 2. **PHP Composer issues**:
@@ -284,17 +445,28 @@ The main `users` table includes:
    - Check database credentials in `config/db.php`
    - Ensure database `lakbai_db` exists
 
-4. **Auth0 configuration errors**:
-   - Verify Auth0 domain and client ID
-   - Check redirect URIs in Auth0 dashboard
-   - Ensure mobile app scheme matches Auth0 settings
-
-5. **Port conflicts**:
+4. **Port conflicts**:
    - Admin (Vite): Change port in `vite.config.js`
    - Mobile (Expo): Use `--port` flag
    - API: Change XAMPP port or use different server
 
-### Platform-Specific Issues
+5. **Windows-specific issues**:
+   ```bash
+   # PowerShell execution policy:
+   Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+   
+   # Node.js path issues:
+   # Add Node.js to PATH environment variable
+   # Restart Command Prompt/PowerShell after installation
+   ```
+
+### 🖥️ Platform-Specific Issues
+
+**Windows Development**:
+- Use tunnel mode for mobile app (`npx expo start --tunnel`)
+- Ensure Windows Firewall allows Node.js and PHP
+- Use `0.0.0.0:8000` for PHP server (not `localhost:8000`)
+- Enable Network Discovery in Windows settings
 
 **iOS Development**:
 - Ensure Xcode is installed
@@ -305,6 +477,39 @@ The main `users` table includes:
 - Install Android Studio
 - Set up Android SDK
 - Create virtual device or connect physical device
+- Enable USB Debugging on physical devices
+
+### 🚀 Quick Fix Commands
+
+**For Windows Developers Having Connection Issues:**
+```bash
+# 1. Clear all caches
+cd LakbAI-Mobile
+npx expo start --clear
+
+# 2. Use tunnel mode
+npx expo start --tunnel
+
+# 3. Update config to localhost
+# Edit config/developerConfig.ts:
+export const DEVELOPER_IP = 'localhost:8000';
+
+# 4. Restart PHP server
+cd LakbAI-API
+php -S 0.0.0.0:8000
+```
+
+**Debug Connection Issues:**
+```bash
+# Test API from mobile browser:
+# http://YOUR_IP:8000/LakbAI/LakbAI-API/routes/api.php
+
+# Check if PHP server is accessible:
+# From mobile device, open browser and navigate to:
+# http://YOUR_IP:8000/LakbAI/LakbAI-API/routes/api.php
+
+# Should see JSON response or error page (not connection refused)
+```
 
 ## 📁 Project Structure
 
