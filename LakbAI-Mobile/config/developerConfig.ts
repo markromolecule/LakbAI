@@ -27,12 +27,12 @@ export const DEVELOPER_IP = '192.168.1.9:8000';
 
 // Alternative configuration for different developers
 export const DEVELOPER_IPS = {
-//  joseph: '192.168.254.105:8000',
-  jiro: '192.168.1.9:8000', // For tunnel mode users
+    joseph: '192.168.254.105:8000',
+  // jiro: '192.168.1.9:8000',
 };
 
 // Set which developer to use (change this to your name)
-export const CURRENT_DEVELOPER = 'jiro';
+export const CURRENT_DEVELOPER = 'joseph';
 
 // Get the current developer's IP
 export const getCurrentDeveloperIP = (): string => {
