@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Container, Button, Row, Col } from 'react-bootstrap';
 import styles from '../styles/RouteSection.module.css';
 
@@ -34,8 +34,30 @@ const RouteSection = () => {
     variant: idx === 0 ? 'primary' : idx === checkpoints.length - 1 ? 'warning' : 'outline-secondary',
   }));
 
+  // Mobile: show first N and toggle to reveal all
+  const MOBILE_VISIBLE = 6;
+  const [expanded, setExpanded] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 576px)');
+    const update = () => setIsMobile(mq.matches);
+    update();
+    mq.addEventListener ? mq.addEventListener('change', update) : mq.addListener(update);
+    return () => {
+      mq.removeEventListener ? mq.removeEventListener('change', update) : mq.removeListener(update);
+    };
+  }, []);
+
+  // No sticky behavior here; main page header handles stickiness
+  const visibleStops = useMemo(() => {
+    if (!isMobile) return routeStops; // Always show all on desktop/tablet
+    if (expanded) return routeStops;
+    return routeStops.slice(0, MOBILE_VISIBLE);
+  }, [expanded, routeStops, isMobile]);
+
   return (
-    <section className={styles.jeepneyRoute}>
+    <section id="route-section" className={styles.jeepneyRoute}>
       <Container>
         <Row>
           <Col lg={12} className="text-center mb-5">
@@ -56,9 +78,9 @@ const RouteSection = () => {
               </div>
               
               <div className={styles.routeStops}>
-                <Row>
-                  {routeStops.map((stop, index) => (
-                    <Col lg={2} md={4} sm={6} className="mb-3" key={index}>
+                <Row className={`align-items-center g-1 ${styles.routeRow}`}>
+                  {visibleStops.map((stop, index) => (
+                    <Col key={`stop-${index}`} lg={3} md={4} sm={6} xs={12} className="mb-2">
                       <div className={styles.stopItem}>
                         <Button 
                           variant={stop.variant} 
@@ -67,10 +89,22 @@ const RouteSection = () => {
                         >
                           {stop.name}
                         </Button>
+                        {index !== visibleStops.length - 1 && (
+                          <span className={styles.stopArrow}>
+                            <i className="bi bi-arrow-right"></i>
+                          </span>
+                        )}
                       </div>
                     </Col>
                   ))}
                 </Row>
+                <div className={`d-sm-none text-center mt-2`}>
+                  {isMobile && routeStops.length > MOBILE_VISIBLE && (
+                    <button className={styles.seeMoreBtn} onClick={() => setExpanded((v) => !v)}>
+                      {expanded ? 'See less' : 'See more'}
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           </Col>

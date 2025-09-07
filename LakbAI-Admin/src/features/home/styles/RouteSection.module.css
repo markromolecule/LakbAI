@@ -27,7 +27,7 @@
   padding: clamp(2rem, 5vw, 3rem) clamp(1.5rem, 4vw, 2.5rem) clamp(1.5rem, 4vw, 2.5rem);
   box-shadow: 0 15px 50px rgba(44, 90, 160, 0.1);
   position: relative;
-  overflow: hidden;
+  overflow: visible; /* allow sticky children */
   border: 1px solid rgba(44, 90, 160, 0.1);
   margin: 0 clamp(5px, 1vw, 15px);
   backdrop-filter: blur(10px);
@@ -55,6 +55,8 @@
   gap: clamp(0.5rem, 1vw, 1rem);
   text-align: left;
 }
+
+/* Route header is static; sticky behavior handled by main site header */
 
 .routeHeader h4 {
   color: #2c3e50;
@@ -89,14 +91,85 @@
   position: relative;
   background: transparent;
   padding-top: clamp(0.5rem, 1vh, 1rem);
+  overflow-x: visible;
+}
+
+.routeRow {
+  justify-content: center;
+  row-gap: 10px;
 }
 
 .stopItem {
-  margin-bottom: clamp(0.5rem, 1.5vh, 1rem);
+  margin-bottom: clamp(0.35rem, 1vh, 0.75rem);
   position: relative;
   z-index: 2;
   display: flex;
   justify-content: center;
+  align-items: center;
+}
+
+.stopArrow {
+  display: inline-flex;
+  margin-left: 8px;
+  color: #9aa3af;
+  opacity: 0.9;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+@media (min-width: 992px) {
+  .stopArrow {
+    display: block;
+  }
+}
+
+.arrowCol {
+  flex: 0 0 auto;
+}
+
+.arrowIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  color: #9aa3af;
+  background: transparent;
+}
+
+.arrowIcon i {
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+/* Small/mobile arrows inline */
+@media (max-width: 576px) {
+  .arrowIcon {
+    width: 20px;
+    height: 20px;
+    font-size: 0.9rem;
+    color: #b0b8c4;
+  }
+
+  .arrowIcon i {
+    font-size: 0.9rem;
+  }
+}
+
+.seeMoreBtn {
+  background: none;
+  border: none;
+  color: #2c5aa0;
+  font-weight: 600;
+  padding: 8px 12px;
+  border-radius: 9999px;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.seeMoreBtn:hover {
+  background: #eef2f7;
+  color: #1e3d72;
 }
 
 .stopBtn {
@@ -109,6 +182,7 @@
   position: relative;
   overflow: hidden;
   min-height: clamp(36px, 8vw, 44px);
+  min-width: clamp(120px, 16vw, 180px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -133,20 +207,20 @@
   left: 100%;
 }
 
-.stopBtn:global(.btn-primary) {
+:global(.btn-primary).stopBtn {
   background: linear-gradient(135deg, #2c5aa0, #1e3d72) !important;
   border-color: #2c5aa0 !important;
   box-shadow: 0 4px 15px rgba(44, 90, 160, 0.3);
 }
 
-.stopBtn:global(.btn-warning) {
+:global(.btn-warning).stopBtn {
   background: linear-gradient(135deg, #ffc107, #e0a800) !important;
   border-color: #ffc107 !important;
   color: #000 !important;
   box-shadow: 0 4px 15px rgba(255, 193, 7, 0.3);
 }
 
-.stopBtn:global(.btn-outline-secondary) {
+:global(.btn-outline-secondary).stopBtn {
   background: #ffffff !important;
   border-color: #dee2e6 !important;
   color: #6c757d !important;
@@ -158,17 +232,17 @@
   z-index: 10;
 }
 
-.stopBtn:global(.btn-primary):hover {
+:global(.btn-primary).stopBtn:hover {
   background: linear-gradient(135deg, #1e3d72, #2c5aa0) !important;
   box-shadow: 0 8px 25px rgba(44, 90, 160, 0.4) !important;
 }
 
-.stopBtn:global(.btn-warning):hover {
+:global(.btn-warning).stopBtn:hover {
   background: linear-gradient(135deg, #e0a800, #ffc107) !important;
   box-shadow: 0 8px 25px rgba(255, 193, 7, 0.4) !important;
 }
 
-.stopBtn:global(.btn-outline-secondary):hover {
+:global(.btn-outline-secondary).stopBtn:hover {
   background: #f8f9fa !important;
   border-color: #2c5aa0 !important;
   color: #2c5aa0 !important;
@@ -204,7 +278,7 @@
   }
 }
 
-@media (max-width: 992px) {
+@media (max-width: 1024px) {
   .jeepneyRoute {
     padding: clamp(40px, 7vh, 60px) 0;
   }
@@ -227,6 +301,12 @@
   
   .routeMarker {
     margin: 0 auto clamp(0.5rem, 1vh, 1rem);
+  }
+
+  .arrowIcon {
+    width: 22px;
+    height: 22px;
+    font-size: 1rem;
   }
 }
 
@@ -268,6 +348,7 @@
   /* Improve route stops layout for mobile */
   .routeStops .row {
     justify-content: center;
+    row-gap: 8px;
   }
   
   .routeStops .col-sm-6 {
@@ -277,7 +358,7 @@
   }
 }
 
-@media (max-width: 576px) {
+@media (max-width: 768px) {
   .jeepneyRoute {
     padding: clamp(30px, 5vh, 50px) 0;
   }
@@ -324,7 +405,7 @@
   /* Better mobile grid layout */
   .routeStops .row {
     justify-content: center;
-    gap: clamp(0.25rem, 0.5vw, 0.5rem);
+    gap: clamp(0.15rem, 0.4vw, 0.35rem);
   }
   
   .routeStops .col-sm-6 {
@@ -332,6 +413,11 @@
     width: auto;
     max-width: 180px;
     min-width: 120px;
+  }
+
+  .arrowCol,
+  .arrowIcon {
+    display: none !important;
   }
 }
 
