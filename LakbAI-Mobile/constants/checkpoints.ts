@@ -1,4 +1,5 @@
 export const CHECKPOINTS = [
+  'SM Epza',
   'Robinson Tejero',
   'Malabon',
   'Riverside',
@@ -13,7 +14,8 @@ export const CHECKPOINTS = [
   'Monterey',
   'Langkaan',
   'Tierra Vista',
-  'Robinson Pala-pala'
+  'Robinson Dasmariñas',
+  'SM Dasmariñas',
 ] as const;
 
 export type Checkpoint = typeof CHECKPOINTS[number];
