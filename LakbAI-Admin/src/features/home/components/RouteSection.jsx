@@ -3,23 +3,36 @@ import { Container, Button, Row, Col } from 'react-bootstrap';
 import styles from '../styles/RouteSection.module.css';
 
 const RouteSection = () => {
-  const routeStops = [
-    { name: 'Robinson Tejero', variant: 'primary', isStart: true },
-    { name: 'Malabon', variant: 'outline-secondary' },
-    { name: 'Riverside', variant: 'outline-secondary' },
-    { name: 'Lancaster New City', variant: 'outline-secondary' },
-    { name: 'Pasong Camachile I', variant: 'outline-secondary' },
-    { name: 'Open Canal', variant: 'outline-secondary' },
-    { name: 'Santiago', variant: 'outline-secondary' },
-    { name: 'Bella Vista', variant: 'outline-secondary' },
-    { name: 'San Francisco', variant: 'outline-secondary' },
-    { name: 'Country Meadow', variant: 'outline-secondary' },
-    { name: 'Pabahay', variant: 'outline-secondary' },
-    { name: 'Monterey', variant: 'outline-secondary' },
-    { name: 'Langkaan', variant: 'outline-secondary' },
-    { name: 'Tierra Vista', variant: 'outline-secondary' },
-    { name: 'Robinson Pala-pala', variant: 'warning', isEnd: true }
+  // Static checkpoints list based on mobile constants
+  const checkpoints = [
+    'SM Epza',
+    'Robinson Tejero',
+    'Malabon',
+    'Riverside',
+    'Lancaster New City',
+    'Pasong Camachile I',
+    'Open Canal',
+    'Santiago',
+    'Bella Vista',
+    'San Francisco',
+    'Country Meadow',
+    'Pabahay',
+    'Monterey',
+    'Langkaan',
+    'Tierra Vista',
+    'Robinson Dasmariñas',
+    'SM Dasmariñas',
   ];
+
+  const startName = checkpoints[0];
+  const endName = checkpoints[checkpoints.length - 1];
+
+  const routeStops = checkpoints.map((name, idx) => ({
+    name,
+    isStart: idx === 0,
+    isEnd: idx === checkpoints.length - 1,
+    variant: idx === 0 ? 'primary' : idx === checkpoints.length - 1 ? 'warning' : 'outline-secondary',
+  }));
 
   return (
     <section className={styles.jeepneyRoute}>
@@ -28,7 +41,7 @@ const RouteSection = () => {
           <Col lg={12} className="text-center mb-5">
             <h2 className={styles.sectionTitle}>Jeepney Route</h2>
             <p className={styles.sectionSubtitle}>
-              Map of all checkpoints along Tejero → Pala-pala
+              Map of all checkpoints along {startName} → {endName}
             </p>
           </Col>
         </Row>
@@ -39,7 +52,7 @@ const RouteSection = () => {
                 <div className={styles.routeMarker}>
                   <i className="bi bi-geo-alt-fill"></i>
                 </div>
-                <h4 className="mb-0 ms-3">Tejero → Pala-pala Route</h4>
+                <h4 className="mb-0 ms-3">{startName} → {endName} Route</h4>
               </div>
               
               <div className={styles.routeStops}>
