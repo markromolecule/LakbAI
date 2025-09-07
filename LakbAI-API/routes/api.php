@@ -25,10 +25,13 @@ error_reporting(E_ALL);
 $app = require_once __DIR__ . '/../bootstrap/app.php';
 require_once __DIR__ . '/../controllers/AuthController.php';
 require_once __DIR__ . '/../controllers/Auth0Controller.php';
+require_once __DIR__ . '/../controllers/JeepneyController.php';
+
 
 // Initialize controller with database connection
 $authController = new AuthController($app->get('Database'));
 $auth0Controller = new Auth0Controller($app->get('Database'));
+$jeepneyController = new JeepneyController($app->get('Database'));
 
 // Get the request method and path
 $method = $_SERVER['REQUEST_METHOD'];
@@ -118,6 +121,44 @@ function transformMobileRegistrationData($mobileData) {
 
 // Route handling
 try {
+    // ---------------------------
+    // Jeepney CRUD Routes
+    // ---------------------------
+    if ($pathParts[0] === 'admin' && isset($pathParts[1]) && $pathParts[1] === 'jeepneys') {
+        // GET /admin/jeepneys
+        if ($method === 'GET' && count($pathParts) === 2) {
+            $page = $_GET['page'] ?? 1;
+            $limit = $_GET['limit'] ?? 10;
+
+            $result = $jeepneyController->getJeepneys($page, $limit);
+            echo json_encode($result);
+            exit;
+        }
+
+        // POST /admin/jeepneys
+        if ($method === 'POST' && count($pathParts) === 2) {
+            $result = $jeepneyController->createJeepney($input);
+            echo json_encode($result);
+            exit;
+        }
+
+        // PUT /admin/jeepneys/{id}
+        if ($method === 'PUT' && count($pathParts) === 3) {
+            $jeepneyId = $pathParts[2];
+            $result = $jeepneyController->updateJeepney($jeepneyId, $input);
+            echo json_encode($result);
+            exit;
+        }
+
+        // DELETE /admin/jeepneys/{id}
+        if ($method === 'DELETE' && count($pathParts) === 3) {
+            $jeepneyId = $pathParts[2];
+            $result = $jeepneyController->deleteJeepney($jeepneyId);
+            echo json_encode($result);
+            exit;
+        }
+    }
+
     // Handle requests with actions in the request body (for mobile app)
     if (isset($input['action']) && $method === 'POST') {
         switch ($input['action']) {
@@ -296,7 +337,11 @@ try {
                 'GET /admin/pending-approvals' => 'Get pending approvals',
                 'POST /register' => 'User registration',
                 'POST /login' => 'User login',
-                'POST /auth0' => 'Auth0 integration (token exchange, sync, profile completion)'
+                'POST /auth0' => 'Auth0 integration (token exchange, sync, profile completion)',
+                'GET /jeepneys' => 'Get all jeepneys',
+                'POST /jeepneys' => 'Create jeepney',
+                'PUT /jeepneys/{id}' => 'Update jeepney',
+                'DELETE /jeepneys/{id}' => 'Delete jeepney'
             ]
         ]);
         exit;
@@ -418,6 +463,10 @@ try {
             'POST /admin/approve-discount' => 'Approve discount application',
             'POST /admin/approve-license' => 'Approve driver license',
             'GET /admin/pending-approvals' => 'Get pending approvals',
+            'GET /admin/jeepneys' => 'Get all jeepneys (admin)',
+            'POST /admin/jeepneys' => 'Create jeepney (admin)',
+            'PUT /admin/jeepneys/{id}' => 'Update jeepney (admin)',
+            'DELETE /admin/jeepneys/{id}' => 'Delete jeepney (admin)',
             'GET /test' => 'API test endpoint'
         ]
     ]);
