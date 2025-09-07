@@ -13,6 +13,7 @@ import { globalStyles } from '../../../shared/styles/globalStyles';
 import { showAlert } from '../../../shared/utils/alertUtils';
 
 import { earningsService, EarningsUpdate } from '../../../shared/services/earningsService';
+import { buildAuth0Url } from '../../../config/developerConfig';
 
 import styles from '../styles/ScannerScreen.styles';
 
@@ -77,7 +78,7 @@ export const ScannerScreen: React.FC = () => {
       console.log('🔍 Using actual driver ID:', actualDriverId);
       
       // Call the backend API to get driver information
-      const response = await fetch('http://192.168.254.105:8000/routes/auth_routes.php', {
+      const response = await fetch(`${buildAuth0Url().replace('/routes/auth0.php', '/routes/auth_routes.php')}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
