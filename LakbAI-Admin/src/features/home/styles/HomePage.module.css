@@ -5,6 +5,7 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  padding-top: var(--site-header-height, 64px);
 }
 
 /* Responsive Design - Mobile First Approach */
