@@ -7,6 +7,24 @@
   transition: all 0.3s ease;
 }
 
+/* Ensure stickiness even if Bootstrap utility is unavailable/overridden */
+.stickyHeader {
+  position: -webkit-sticky;
+  position: sticky;
+  top: 0;
+  z-index: 1100;
+}
+
+/* Fixed header variant that ignores ancestor overflow */
+.fixedHeader {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  z-index: 1200;
+}
+
 .brandText {
   font-size: clamp(1.1rem, 2.5vw, 1.25rem);
   color: #2c5aa0 !important;

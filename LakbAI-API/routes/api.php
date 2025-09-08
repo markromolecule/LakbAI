@@ -368,6 +368,33 @@ try {
         ]);
         exit;
     }
+
+    // Public: checkpoints for routes (shared admin/mobile)
+    if (end($pathParts) === 'checkpoints' && $method === 'GET') {
+        echo json_encode([
+            'status' => 'success',
+            'data' => [
+                'SM Epza',
+                'Robinson Tejero',
+                'Malabon',
+                'Riverside',
+                'Lancaster New City',
+                'Pasong Camachile I',
+                'Open Canal',
+                'Santiago',
+                'Bella Vista',
+                'San Francisco',
+                'Country Meadow',
+                'Pabahay',
+                'Monterey',
+                'Langkaan',
+                'Tierra Vista',
+                'Robinson Dasmariñas',
+                'SM Dasmariñas',
+            ]
+        ]);
+        exit;
+    }
     
     // Auth0 Integration Routes - Single endpoint for all Auth0 actions
     if (in_array('auth0', $pathParts) && $method === 'POST') {

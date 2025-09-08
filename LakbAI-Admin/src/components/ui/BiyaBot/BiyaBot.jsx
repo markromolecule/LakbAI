@@ -7,7 +7,7 @@ const BiyaBot = () => {
   const [messages, setMessages] = useState([
     {
       id: 1,
-      text: "Hi! I'm BiyaBot, your smart commute assistant. How can I help you today?",
+      text: "Hi! I'm Biya!, your smart commute assistant. How can I help you today?",
       sender: 'bot',
       timestamp: new Date()
     }

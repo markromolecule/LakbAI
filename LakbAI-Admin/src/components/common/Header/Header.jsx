@@ -5,7 +5,7 @@ import styles from './Header.module.css';
 
 const Header = () => {
   return (
-    <Navbar bg="white" expand="lg" className={`${styles.customHeader} shadow-sm py-2 sticky-top`}>
+    <Navbar bg="white" expand="lg" className={`${styles.customHeader} ${styles.fixedHeader} shadow-sm py-2`}>
       <Container>
         <Navbar.Brand as={Link} to="/" className="d-flex align-items-center">
           <img
@@ -22,16 +22,18 @@ const Header = () => {
         
         <Navbar.Collapse id="basic-navbar-nav">
           <Nav className={`${styles.navRight} ms-auto`}>
-            <Nav.Link href="#biyabot" className={`${styles.navLinkCustom} me-4`}>
-              <i className="bi bi-robot me-1"></i>
-              BiyaBot
+            <Nav.Link href="#how-it-works" className={`${styles.navLinkCustom} me-4`}>
+              <i className="bi bi-play-circle me-1"></i>
+              How It Works
+            </Nav.Link>
+            <Nav.Link href="#route-section" className={`${styles.navLinkCustom}`}>
+              <i className="bi bi-signpost-2 me-1"></i>
+              Route
             </Nav.Link>
             <Nav.Link href="#about" className={`${styles.navLinkCustom} me-4`}>
               <i className="bi bi-info-circle me-1"></i>
               About Us
             </Nav.Link>
-            
-            {/* Profile removed as requested */}
           </Nav>
         </Navbar.Collapse>
       </Container>

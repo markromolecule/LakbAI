@@ -20,6 +20,11 @@ body {
   overflow-x: hidden;
 }
 
+/* Compute header height variable for fixed header spacing */
+:root {
+  --site-header-height: 64px;
+}
+
 /* Fluid Typography */
 html {
   font-size: clamp(14px, 1vw, 16px);

@@ -35,7 +35,7 @@ const HowItWorks = () => {
   ];
 
   return (
-    <section className={styles.howItWorks}>
+    <section id="how-it-works" className={styles.howItWorks}>
       <Container>
         <Row>
           <Col lg={12} className="text-center mb-5">
