@@ -54,7 +54,11 @@ const PendingUsersContainer = ({ onDataUpdate }) => {
       if (actionData.type === 'license') {
         result = await UserService.approveDriverLicense(actionData.user.id, actionData.approved);
       } else {
-        result = await UserService.approveDiscount(actionData.user.id, actionData.approved);
+        result = await UserService.approveDiscount(
+          actionData.user.id, 
+          actionData.approved, 
+          actionData.rejectionReason || null
+        );
       }
 
       if (result.success) {
@@ -163,10 +167,13 @@ const PendingUsersContainer = ({ onDataUpdate }) => {
           const user = currentUsers.find(u => u.id === selectedDocument.userId);
           if (user) handleApprovalAction(user, true);
         }}
-        onReject={() => {
+        onReject={(rejectionReason) => {
           setShowDocumentModal(false);
           const user = currentUsers.find(u => u.id === selectedDocument.userId);
-          if (user) handleApprovalAction(user, false);
+          if (user) {
+            setActionData({ user, approved: false, type: 'discount', rejectionReason });
+            setShowConfirmModal(true);
+          }
         }}
       />
     </div>

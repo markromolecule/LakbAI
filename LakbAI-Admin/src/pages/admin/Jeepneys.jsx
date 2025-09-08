@@ -30,7 +30,7 @@ const Jeepneys = () => {
 
       const result = await JeepneyService.getJeepneys();
 
-      if (result.status === "success") {
+      if (result.success) {
         const data = result.jeepneys || [];
 
         setJeepneys(data);
@@ -40,7 +40,7 @@ const Jeepneys = () => {
           inactive: data.filter((j) => j.status === "inactive").length,
         });
       } else {
-        setError(result.message || "Failed to load jeepneys");
+        setError(result.error || result.message || "Failed to load jeepneys");
       }
     } catch (err) {
       console.error("Error loading jeepneys:", err);

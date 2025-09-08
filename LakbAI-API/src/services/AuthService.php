@@ -312,7 +312,7 @@ class AuthService {
     /**
      * Approve or reject discount application
      */
-    public function approveDiscount($userId, $approved) {
+    public function approveDiscount($userId, $approved, $rejectionReason = null) {
         try {
             $user = $this->userRepository->findById($userId);
             if (!$user) {
@@ -324,15 +324,17 @@ class AuthService {
             }
 
             if ($approved) {
-                // Approve: set discount_verified = 1
+                // Approve: set discount_verified = 1, clear rejection reason
                 $updateData = [
-                    'discount_verified' => 1
+                    'discount_verified' => 1,
+                    'discount_rejection_reason' => null
                 ];
-                $message = 'Discount application approved';
+                $message = 'Discount application approved successfully';
             } else {
                 // Reject: set discount_verified = -1 (rejected status)
                 $updateData = [
-                    'discount_verified' => -1
+                    'discount_verified' => -1,
+                    'discount_rejection_reason' => $rejectionReason
                 ];
                 $message = 'Discount application rejected';
             }
@@ -340,7 +342,11 @@ class AuthService {
             $success = $this->userRepository->update($userId, $updateData);
 
             if ($success) {
-                return $this->successResponse($message);
+                return $this->successResponse($message, [
+                    'user_id' => $userId,
+                    'approved' => $approved,
+                    'rejection_reason' => $rejectionReason
+                ]);
             } else {
                 return $this->errorResponse('Failed to update discount status');
             }

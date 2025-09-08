@@ -28,31 +28,38 @@ require_once __DIR__ . '/../controllers/Auth0Controller.php';
 require_once __DIR__ . '/../controllers/JeepneyController.php';
 require_once __DIR__ . '/../controllers/DriverController.php';
 require_once __DIR__ . '/../controllers/RouteController.php';
+require_once __DIR__ . '/../controllers/CheckpointController.php';
 
 
 // Initialize controller with database connection
 $authController = new AuthController($app->get('Database'));
 $auth0Controller = new Auth0Controller($app->get('Database'));
-$jeepneyController = new JeepneyController($app->get('Database'));
-$driverController = new DriverController($app->get('Database'));
-$routeController = new RouteController($app->get('Database'));
+// Controllers below expect PDO; provide the PDO service registered in bootstrap/app.php
+$jeepneyController = new JeepneyController($app->get('PDO'));
+$driverController = new DriverController($app->get('PDO'));
+$routeController = new RouteController($app->get('PDO'));
+$checkpointController = new CheckpointController($app->get('PDO'));
 
 // Get the request method and path
 $method = $_SERVER['REQUEST_METHOD'];
 $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
-$pathParts = explode('/', trim($path, '/'));
+$rawParts = array_values(array_filter(explode('/', trim($path, '/'))));
 
-// Remove the base path parts (LakbAI/LakbAI-API) to get the actual API path
-$apiBaseParts = ['LakbAI', 'LakbAI-API'];
-$actualPathParts = array_slice($pathParts, count($apiBaseParts));
+// Normalize path: support both /LakbAI/LakbAI-API/api/... and /api/...
+$idxApiRoot = array_search('LakbAI-API', $rawParts, true);
+if ($idxApiRoot !== false) {
+    $rawParts = array_slice($rawParts, $idxApiRoot + 1);
+}
+if (isset($rawParts[0]) && $rawParts[0] === 'api') {
+    $rawParts = array_slice($rawParts, 1);
+}
 
 // Debug logging (remove in production)
 error_log("API Request - Method: $method, Path: $path");
-error_log("PathParts: " . json_encode($pathParts));
-error_log("ActualPathParts: " . json_encode($actualPathParts));
+error_log("RawParts: " . json_encode($rawParts));
 
-// Use the actual path parts for routing
-$pathParts = $actualPathParts;
+// Use normalized parts
+$pathParts = $rawParts;
 
 // Get request data
 $input = [];
@@ -239,6 +246,57 @@ try {
         if ($method === 'DELETE' && count($pathParts) === 3) {
             $routeId = $pathParts[2];
             $result = $routeController->deleteRoute($routeId);
+            echo json_encode($result);
+            exit;
+        }
+    }
+
+    // ---------------------------
+    // Checkpoint Routes
+    // ---------------------------
+    if ($pathParts[0] === 'admin' && isset($pathParts[1]) && $pathParts[1] === 'checkpoints') {
+        // GET /admin/checkpoints
+        if ($method === 'GET' && count($pathParts) === 2) {
+            $result = $checkpointController->getAllCheckpoints();
+            echo json_encode($result);
+            exit;
+        }
+
+        // GET /admin/checkpoints/route/{routeId}
+        if ($method === 'GET' && count($pathParts) === 4 && $pathParts[2] === 'route') {
+            $routeId = $pathParts[3];
+            $result = $checkpointController->getCheckpointsByRoute($routeId);
+            echo json_encode($result);
+            exit;
+        }
+
+        // GET /admin/checkpoints/{id}
+        if ($method === 'GET' && count($pathParts) === 3 && is_numeric($pathParts[2])) {
+            $checkpointId = $pathParts[2];
+            $result = $checkpointController->getCheckpointById($checkpointId);
+            echo json_encode($result);
+            exit;
+        }
+
+        // POST /admin/checkpoints
+        if ($method === 'POST' && count($pathParts) === 2) {
+            $result = $checkpointController->createCheckpoint($input);
+            echo json_encode($result);
+            exit;
+        }
+
+        // PUT /admin/checkpoints/{id}
+        if ($method === 'PUT' && count($pathParts) === 3) {
+            $checkpointId = $pathParts[2];
+            $result = $checkpointController->updateCheckpoint($checkpointId, $input);
+            echo json_encode($result);
+            exit;
+        }
+
+        // DELETE /admin/checkpoints/{id}
+        if ($method === 'DELETE' && count($pathParts) === 3) {
+            $checkpointId = $pathParts[2];
+            $result = $checkpointController->deleteCheckpoint($checkpointId);
             echo json_encode($result);
             exit;
         }
@@ -496,7 +554,8 @@ try {
         if ($pathParts[1] === 'approve-discount' && $method === 'POST') {
             $userId = $input['user_id'] ?? null;
             $approved = $input['approved'] ?? false;
-            $result = $authController->approveDiscount($userId, $approved);
+            $rejectionReason = $input['rejection_reason'] ?? null;
+            $result = $authController->approveDiscount($userId, $approved, $rejectionReason);
             echo json_encode($result);
             exit;
         }

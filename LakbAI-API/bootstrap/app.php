@@ -11,8 +11,13 @@ require_once __DIR__ . '/../config/db.php';
 // Load the main service provider
 require_once __DIR__ . '/../src/providers/AppServiceProvider.php';
 
-// Initialize the application service provider
+// Initialize the application service provider with the mysqli connection
 $app = new AppServiceProvider($conn);
+
+// Also expose PDO for components that expect it
+$app->getContainer()->register('PDO', function($container) use ($pdo) {
+    return $pdo;
+});
 
 // Make the container globally available (optional)
 $GLOBALS['app'] = $app;

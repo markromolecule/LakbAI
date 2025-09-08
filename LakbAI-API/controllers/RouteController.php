@@ -11,9 +11,21 @@ class RouteController {
      */
     public function getAllRoutes() {
         try {
-            $stmt = $this->db->prepare("SELECT * FROM routes WHERE status = 'active' ORDER BY route_name");
+            $stmt = $this->db->prepare("SELECT * FROM routes ORDER BY route_name");
             $stmt->execute();
             $routes = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            // Get checkpoints for each route
+            foreach ($routes as &$route) {
+                $checkpointStmt = $this->db->prepare("
+                    SELECT checkpoint_name, sequence_order, fare_from_origin, is_origin, is_destination
+                    FROM checkpoints 
+                    WHERE route_id = ? AND status = 'active'
+                    ORDER BY sequence_order ASC
+                ");
+                $checkpointStmt->execute([$route['id']]);
+                $route['checkpoints'] = $checkpointStmt->fetchAll(PDO::FETCH_ASSOC);
+            }
 
             return [
                 "status" => "success",

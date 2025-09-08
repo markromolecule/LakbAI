@@ -27,24 +27,35 @@ class JeepneyController {
     public function create($data) {
         // Sanitize input data
         $sanitizedData = [
+            'jeepney_number' => htmlspecialchars(strip_tags($data['jeepney_number'] ?? '')),
             'plate_number' => htmlspecialchars(strip_tags($data['plate_number'] ?? '')),
-            'route' => htmlspecialchars(strip_tags($data['route'] ?? '')),
+            'model' => htmlspecialchars(strip_tags($data['model'] ?? '')),
+            'route_id' => isset($data['route_id']) ? intval($data['route_id']) : null,
             'capacity' => intval($data['capacity'] ?? 0),
             'status' => htmlspecialchars(strip_tags($data['status'] ?? 'active')),
             'driver_id' => isset($data['driver_id']) ? intval($data['driver_id']) : null
         ];
 
         // Validate required fields
-        if (empty($sanitizedData['plate_number']) || empty($sanitizedData['route']) || $sanitizedData['capacity'] <= 0) {
+        if (empty($sanitizedData['plate_number']) || empty($sanitizedData['route_id']) || $sanitizedData['capacity'] <= 0) {
             return ["status" => "error", "message" => "Missing or invalid required fields"];
         }
 
         try {
-            $stmt = $this->db->prepare("INSERT INTO jeepneys (plate_number, route, capacity, status, driver_id) VALUES (?, ?, ?, ?, ?)");
+            // Auto-generate jeepney_number if not provided
+            if (empty($sanitizedData['jeepney_number'])) {
+                $nextStmt = $this->db->query("SELECT LPAD(COALESCE(MAX(id)+1,1),3,'0') AS seq FROM jeepneys");
+                $seq = $nextStmt->fetch(PDO::FETCH_ASSOC)['seq'] ?? '001';
+                $sanitizedData['jeepney_number'] = 'LKB-' . $seq;
+            }
+
+            $stmt = $this->db->prepare("INSERT INTO jeepneys (jeepney_number, plate_number, model, capacity, route_id, status, driver_id) VALUES (?, ?, ?, ?, ?, ?, ?)");
             $stmt->execute([
+                $sanitizedData['jeepney_number'],
                 $sanitizedData['plate_number'],
-                $sanitizedData['route'],
+                $sanitizedData['model'],
                 $sanitizedData['capacity'],
+                $sanitizedData['route_id'],
                 $sanitizedData['status'],
                 $sanitizedData['driver_id']
             ]);
@@ -52,7 +63,7 @@ class JeepneyController {
             return [
                 "status" => "success",
                 "message" => "Jeepney added successfully",
-                "jeepney_id" => $this->db->insert_id
+                "jeepney_id" => $this->db->lastInsertId()
             ];
         } catch (Exception $e) {
             return [
@@ -78,17 +89,17 @@ class JeepneyController {
         }
 
         try {
-            $stmt = $this->db->prepare("UPDATE jeepneys SET plate_number=?, route=?, capacity=?, status=?, driver_id=? WHERE id=?");
+            $stmt = $this->db->prepare("UPDATE jeepneys SET plate_number=?, route_id=?, capacity=?, status=?, driver_id=? WHERE id=?");
             $stmt->execute([
                 $sanitizedData['plate_number'],
-                $sanitizedData['route'],
+                $sanitizedData['route_id'],
                 $sanitizedData['capacity'],
                 $sanitizedData['status'],
                 $sanitizedData['driver_id'],
                 $id
             ]);
 
-            if ($stmt->affected_rows > 0) {
+            if ($stmt->rowCount() > 0) {
                 return [
                     "status" => "success",
                     "message" => "Jeepney updated successfully"
@@ -142,24 +153,35 @@ class JeepneyController {
     public function createJeepney($data) {
         // Sanitize input data
         $sanitizedData = [
+            'jeepney_number' => htmlspecialchars(strip_tags($data['jeepney_number'] ?? '')),
             'plate_number' => htmlspecialchars(strip_tags($data['plate_number'] ?? '')),
-            'route' => htmlspecialchars(strip_tags($data['route'] ?? '')),
+            'model' => htmlspecialchars(strip_tags($data['model'] ?? '')),
+            'route_id' => isset($data['route_id']) ? intval($data['route_id']) : null,
             'capacity' => intval($data['capacity'] ?? 0),
             'status' => htmlspecialchars(strip_tags($data['status'] ?? 'active')),
             'driver_id' => isset($data['driver_id']) ? intval($data['driver_id']) : null
         ];
 
         // Validate required fields
-        if (empty($sanitizedData['plate_number']) || empty($sanitizedData['route']) || $sanitizedData['capacity'] <= 0) {
+        if (empty($sanitizedData['plate_number']) || empty($sanitizedData['route_id']) || $sanitizedData['capacity'] <= 0) {
             return ["status" => "error", "message" => "Missing or invalid required fields"];
         }
 
         try {
-            $stmt = $this->db->prepare("INSERT INTO jeepneys (plate_number, route, capacity, status, driver_id) VALUES (?, ?, ?, ?, ?)");
+            // Auto-generate jeepney_number if not provided
+            if (empty($sanitizedData['jeepney_number'])) {
+                $nextStmt = $this->db->query("SELECT LPAD(COALESCE(MAX(id)+1,1),3,'0') AS seq FROM jeepneys");
+                $seq = $nextStmt->fetch(PDO::FETCH_ASSOC)['seq'] ?? '001';
+                $sanitizedData['jeepney_number'] = 'LKB-' . $seq;
+            }
+
+            $stmt = $this->db->prepare("INSERT INTO jeepneys (jeepney_number, plate_number, model, capacity, route_id, status, driver_id) VALUES (?, ?, ?, ?, ?, ?, ?)");
             $stmt->execute([
+                $sanitizedData['jeepney_number'],
                 $sanitizedData['plate_number'],
-                $sanitizedData['route'],
+                $sanitizedData['model'],
                 $sanitizedData['capacity'],
+                $sanitizedData['route_id'],
                 $sanitizedData['status'],
                 $sanitizedData['driver_id']
             ]);
@@ -167,7 +189,7 @@ class JeepneyController {
             return [
                 "status" => "success",
                 "message" => "Jeepney added successfully",
-                "jeepney_id" => $this->db->insert_id
+                "jeepney_id" => $this->db->lastInsertId()
             ];
         } catch (Exception $e) {
             return [
@@ -203,7 +225,7 @@ class JeepneyController {
                 $id
             ]);
 
-            if ($stmt->affected_rows > 0) {
+            if ($stmt->rowCount() > 0) {
                 return [
                     "status" => "success",
                     "message" => "Jeepney updated successfully"
@@ -226,7 +248,7 @@ class JeepneyController {
             $stmt = $this->db->prepare("DELETE FROM jeepneys WHERE id=?");
             $stmt->execute([$id]);
 
-            if ($stmt->affected_rows > 0) {
+            if ($stmt->rowCount() > 0) {
                 return [
                     "status" => "success",
                     "message" => "Jeepney deleted successfully"
@@ -263,8 +285,7 @@ class JeepneyController {
                     j.*,
                     u.first_name,
                     u.last_name,
-                    u.phone_number,
-                    u.drivers_license_name
+                    u.phone_number
                 FROM jeepneys j
                 LEFT JOIN users u ON j.driver_id = u.id
                 ORDER BY j.id DESC

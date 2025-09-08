@@ -11,7 +11,19 @@ const AllUsersTable = ({ users, onUserAction, onViewDocument }) => {
     if (user.discount_verified === 1) {
       return <Badge className={`${styles.badge} ${styles.badgeSuccess}`}>{user.discount_type} - Approved</Badge>;
     } else if (user.discount_verified === -1) {
-      return <Badge className={`${styles.badge} ${styles.badgeDanger}`}>{user.discount_type} - Rejected</Badge>;
+      return (
+        <div>
+          <Badge className={`${styles.badge} ${styles.badgeDanger}`}>{user.discount_type} - Rejected</Badge>
+          {user.discount_rejection_reason && (
+            <div className="mt-1">
+              <small className="text-muted">
+                <i className="bi bi-info-circle me-1"></i>
+                {user.discount_rejection_reason}
+              </small>
+            </div>
+          )}
+        </div>
+      );
     } else {
       return <Badge className={`${styles.badge} ${styles.badgeWarning}`}>{user.discount_type} - Pending</Badge>;
     }
