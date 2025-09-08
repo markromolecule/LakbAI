@@ -1,122 +1,137 @@
-import React, { useState, useEffect } from 'react';
-import { Card, Table, Button, Modal, Form, Input, Select, message, Space, Tag, Popconfirm } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, QrcodeOutlined, UserOutlined } from '@ant-design/icons';
-import RouteQRGeneration from './RouteQRGeneration';
-
-const { Option } = Select;
+import React, { useState, useEffect } from "react";
+import {
+  Card,
+  Table,
+  Button,
+  Modal,
+  Form,
+  Row,
+  Col,
+  Alert,
+  Badge,
+  Spinner
+} from "react-bootstrap";
+import { FaPlus, FaEdit, FaTrash, FaQrcode } from "react-icons/fa";
+import RouteQRGeneration from "../admin/RouteQRGeneration";
+import JeepneyService from "../../services/jeepneyService";
+import RouteService from "../../services/routeService";
+import DriverService from "../../services/driverService";
 
 const JeepneyManagement = () => {
   const [jeepneys, setJeepneys] = useState([]);
   const [drivers, setDrivers] = useState([]);
+  const [routes, setRoutes] = useState([]);
   const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
-  const [assignDriverModalVisible, setAssignDriverModalVisible] = useState(false);
-  const [routeQRModalVisible, setRouteQRModalVisible] = useState(false);
   const [editingJeepney, setEditingJeepney] = useState(null);
-  const [selectedJeepney, setSelectedJeepney] = useState(null);
   const [qrJeepney, setQrJeepney] = useState(null);
-  const [form] = Form.useForm();
-  const [assignForm] = Form.useForm();
+  const [routeQRModalVisible, setRouteQRModalVisible] = useState(false);
+  const [formData, setFormData] = useState({
+    jeepney_number: "",
+    plate_number: "",
+    model: "",
+    capacity: "",
+    route_id: "",
+    driver_id: "",
+    status: "active"
+  });
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
 
-  // Mock data - in production, fetch from API
+  // Fetch data on mount
   useEffect(() => {
-    fetchJeepneys();
-    fetchDrivers();
+    fetchAllData();
   }, []);
+
+  const fetchAllData = async () => {
+    await Promise.all([fetchRoutes(), fetchDrivers(), fetchJeepneys()]);
+  };
 
   const fetchJeepneys = async () => {
     setLoading(true);
     try {
-      // Mock data - replace with actual API call
-      const mockJeepneys = [
-        {
-          id: 'jeep_001',
-          jeepneyNumber: 'LKB-001',
-          plateNumber: 'ABC 1234',
-          model: 'Toyota Coaster',
-          capacity: 18,
-          route: 'Robinson Tejero - Robinson Pala-pala',
-          status: 'active',
-          assignedDriver: {
-            id: 'driver_001',
-            name: 'Juan Dela Cruz',
-            license: 'D123-456-789'
-          },
-          createdAt: '2024-01-15',
-          lastMaintenance: '2024-01-10'
-        },
-        {
-          id: 'jeep_002',
-          jeepneyNumber: 'LKB-002',
-          plateNumber: 'DEF 5678',
-          model: 'Toyota Coaster',
-          capacity: 20,
-          route: 'Ayala Center - Lahug',
-          status: 'active',
-          assignedDriver: null,
-          createdAt: '2024-01-12',
-          lastMaintenance: '2024-01-08'
-        }
-      ];
-      setJeepneys(mockJeepneys);
+      const data = await JeepneyService.getAllJeepneys();
+      if (data.status === "success") {
+        const transformedJeepneys = data.jeepneys.map((jeepney) => {
+          const routeObj = routes.find((r) => r.id === jeepney.route_id);
+          const driverObj = drivers.find((d) => d.id === jeepney.driver_id);
+
+          return {
+            id: jeepney.id,
+            jeepney_number: jeepney.jeepney_number,
+            plate_number: jeepney.plate_number,
+            model: jeepney.model,
+            capacity: jeepney.capacity,
+            route: routeObj ? routeObj.route_name : "Unknown Route",
+            driver: driverObj
+              ? `${driverObj.first_name} ${driverObj.last_name}`
+              : "No Driver Assigned",
+            status: jeepney.status,
+            created_at: jeepney.created_at,
+            updated_at: jeepney.updated_at
+          };
+        });
+        setJeepneys(transformedJeepneys);
+      } else {
+        setError(data.message || "Failed to fetch jeepneys");
+      }
     } catch (error) {
-      message.error('Failed to fetch jeepneys');
+      console.error("Error fetching jeepneys:", error);
+      setError("Failed to fetch jeepneys");
     }
     setLoading(false);
   };
 
+  const fetchRoutes = async () => {
+    try {
+      const result = await RouteService.getAllRoutes();
+      if (result.success) {
+        setRoutes(result.routes);
+      }
+    } catch (error) {
+      console.error("Error fetching routes:", error);
+      setError("Failed to fetch routes");
+    }
+  };
+
   const fetchDrivers = async () => {
     try {
-      // Mock data - replace with actual API call
-      const mockDrivers = [
-        {
-          id: 'driver_001',
-          name: 'Juan Dela Cruz',
-          license: 'D123-456-789',
-          phone: '+63 912 345 6789',
-          email: 'juan@lakbai.com',
-          status: 'active',
-          assignedJeepney: 'jeep_001'
-        },
-        {
-          id: 'driver_002',
-          name: 'Maria Santos',
-          license: 'D987-654-321',
-          phone: '+63 998 765 4321',
-          email: 'maria@lakbai.com',
-          status: 'active',
-          assignedJeepney: null
-        },
-        {
-          id: 'driver_003',
-          name: 'Pedro Garcia',
-          license: 'D555-666-777',
-          phone: '+63 917 888 9999',
-          email: 'pedro@lakbai.com',
-          status: 'active',
-          assignedJeepney: null
-        }
-      ];
-      setDrivers(mockDrivers);
+      const result = await DriverService.getAllDrivers();
+      if (result.success) {
+        setDrivers(result.drivers);
+      }
     } catch (error) {
-      message.error('Failed to fetch drivers');
+      console.error("Error fetching drivers:", error);
+      setError("Failed to fetch drivers");
     }
   };
 
   const handleAddJeepney = () => {
     setEditingJeepney(null);
-    form.resetFields();
+    setFormData({
+      jeepney_number: "",
+      plate_number: "",
+      model: "",
+      capacity: "",
+      route_id: "",
+      driver_id: "",
+      status: "active"
+    });
     setModalVisible(true);
   };
 
   const handleEditJeepney = (jeepney) => {
     setEditingJeepney(jeepney);
-    form.setFieldsValue({
-      jeepneyNumber: jeepney.jeepneyNumber,
-      plateNumber: jeepney.plateNumber,
+    setFormData({
+      jeepney_number: jeepney.jeepney_number,
+      plate_number: jeepney.plate_number,
       model: jeepney.model,
       capacity: jeepney.capacity,
-      route: jeepney.route,
+      route_id: routes.find((r) => r.route_name === jeepney.route)?.id || "",
+      driver_id:
+        drivers.find(
+          (d) => `${d.first_name} ${d.last_name}` === jeepney.driver
+        )?.id || "",
       status: jeepney.status
     });
     setModalVisible(true);
@@ -124,84 +139,48 @@ const JeepneyManagement = () => {
 
   const handleDeleteJeepney = async (jeepneyId) => {
     try {
-      // API call to delete jeepney
-      setJeepneys(jeepneys.filter(j => j.id !== jeepneyId));
-      message.success('Jeepney deleted successfully');
+      const result = await JeepneyService.deleteJeepney(jeepneyId);
+      if (result.status === "success") {
+        setJeepneys(jeepneys.filter((j) => j.id !== jeepneyId));
+        setSuccess("Jeepney deleted successfully");
+      } else {
+        setError(result.message || "Failed to delete jeepney");
+      }
     } catch (error) {
-      message.error('Failed to delete jeepney');
+      console.error("Error deleting jeepney:", error);
+      setError("Failed to delete jeepney");
     }
   };
 
-  const handleSubmit = async (values) => {
+  const handleSubmit = async (e) => {
+    e.preventDefault();
     try {
       if (editingJeepney) {
-        // Update existing jeepney
-        const updatedJeepneys = jeepneys.map(j => 
-          j.id === editingJeepney.id 
-            ? { ...j, ...values, updatedAt: new Date().toISOString() }
-            : j
+        // Update
+        const result = await JeepneyService.updateJeepney(
+          editingJeepney.id,
+          formData
         );
-        setJeepneys(updatedJeepneys);
-        message.success('Jeepney updated successfully');
+        if (result.status === "success") {
+          setSuccess("Jeepney updated successfully");
+          fetchJeepneys();
+        } else {
+          setError(result.message || "Failed to update jeepney");
+        }
       } else {
-        // Add new jeepney
-        const newJeepney = {
-          id: `jeep_${Date.now()}`,
-          ...values,
-          assignedDriver: null,
-          createdAt: new Date().toISOString(),
-          lastMaintenance: new Date().toISOString()
-        };
-        setJeepneys([...jeepneys, newJeepney]);
-        message.success('Jeepney added successfully');
+        // Create
+        const result = await JeepneyService.createJeepney(formData);
+        if (result.status === "success") {
+          setSuccess("Jeepney added successfully");
+          fetchJeepneys();
+        } else {
+          setError(result.message || "Failed to add jeepney");
+        }
       }
       setModalVisible(false);
-      form.resetFields();
     } catch (error) {
-      message.error('Failed to save jeepney');
-    }
-  };
-
-  const handleAssignDriver = (jeepney) => {
-    setSelectedJeepney(jeepney);
-    assignForm.setFieldsValue({
-      driverId: jeepney.assignedDriver?.id || null
-    });
-    setAssignDriverModalVisible(true);
-  };
-
-  const handleDriverAssignment = async (values) => {
-    try {
-      const { driverId } = values;
-      const selectedDriver = drivers.find(d => d.id === driverId);
-      
-      // Update jeepney with assigned driver
-      const updatedJeepneys = jeepneys.map(j => 
-        j.id === selectedJeepney.id 
-          ? { 
-              ...j, 
-              assignedDriver: selectedDriver ? {
-                id: selectedDriver.id,
-                name: selectedDriver.name,
-                license: selectedDriver.license
-              } : null
-            }
-          : j
-      );
-      
-      // Update drivers assignment status
-      const updatedDrivers = drivers.map(d => ({
-        ...d,
-        assignedJeepney: d.id === driverId ? selectedJeepney.id : 
-                        (d.assignedJeepney === selectedJeepney.id ? null : d.assignedJeepney)
-      }));
-      
-      setJeepneys(updatedJeepneys);
-      setDrivers(updatedDrivers);
-      setAssignDriverModalVisible(false);
-      message.success('Driver assignment updated successfully');
-    } catch (error) {
-      message.error('Failed to assign driver');
+      console.error("Error saving jeepney:", error);
+      setError("Failed to save jeepney");
     }
   };
 
@@ -210,264 +189,239 @@ const JeepneyManagement = () => {
     setRouteQRModalVisible(true);
   };
 
-  const columns = [
-    {
-      title: 'Jeepney Number',
-      dataIndex: 'jeepneyNumber',
-      key: 'jeepneyNumber',
-      render: (text) => <strong style={{ color: '#1890ff' }}>{text}</strong>
-    },
-    {
-      title: 'Plate Number',
-      dataIndex: 'plateNumber',
-      key: 'plateNumber'
-    },
-    {
-      title: 'Model',
-      dataIndex: 'model',
-      key: 'model'
-    },
-    {
-      title: 'Capacity',
-      dataIndex: 'capacity',
-      key: 'capacity',
-      render: (capacity) => `${capacity} passengers`
-    },
-    {
-      title: 'Route',
-      dataIndex: 'route',
-      key: 'route',
-      render: (route) => <Tag color="blue">{route}</Tag>
-    },
-    {
-      title: 'Assigned Driver',
-      dataIndex: 'assignedDriver',
-      key: 'assignedDriver',
-      render: (driver) => (
-        driver ? (
-          <div>
-            <div style={{ fontWeight: 500 }}>{driver.name}</div>
-            <div style={{ fontSize: '12px', color: '#666' }}>{driver.license}</div>
-          </div>
-        ) : (
-          <Tag color="orange">No Driver Assigned</Tag>
-        )
-      )
-    },
-    {
-      title: 'Status',
-      dataIndex: 'status',
-      key: 'status',
-      render: (status) => (
-        <Tag color={status === 'active' ? 'green' : 'red'}>
-          {status.toUpperCase()}
-        </Tag>
-      )
-    },
-    {
-      title: 'Actions',
-      key: 'actions',
-      render: (_, record) => (
-        <Space>
-          <Button 
-            icon={<UserOutlined />} 
-            onClick={() => handleAssignDriver(record)}
-            title="Assign Driver"
-          >
-            Assign
-          </Button>
-          <Button 
-            icon={<QrcodeOutlined />} 
-            onClick={() => generateRouteQR(record)}
-            title="Generate Route QR"
-          >
-            QR
-          </Button>
-          <Button 
-            icon={<EditOutlined />} 
-            onClick={() => handleEditJeepney(record)}
-            title="Edit Jeepney"
-          />
-          <Popconfirm
-            title="Are you sure you want to delete this jeepney?"
-            onConfirm={() => handleDeleteJeepney(record.id)}
-            okText="Yes"
-            cancelText="No"
-          >
-            <Button 
-              icon={<DeleteOutlined />} 
-              danger
-              title="Delete Jeepney"
-            />
-          </Popconfirm>
-        </Space>
-      )
-    }
-  ];
-
-  const availableDrivers = drivers.filter(d => !d.assignedJeepney || d.assignedJeepney === selectedJeepney?.id);
-
   return (
     <div>
-      <Card 
-        title="Jeepney Management" 
-        extra={
-          <Button 
-            type="primary" 
-            icon={<PlusOutlined />} 
-            onClick={handleAddJeepney}
-          >
-            Add Jeepney
+      <Card className="p-3 mb-3">
+        <div className="d-flex justify-content-between align-items-center">
+          <h5>Jeepney Management</h5>
+          <Button variant="primary" onClick={handleAddJeepney}>
+            <FaPlus /> Add Jeepney
           </Button>
-        }
-      >
-        <Table 
-          columns={columns} 
-          dataSource={jeepneys} 
-          rowKey="id"
-          loading={loading}
-          pagination={{ pageSize: 10 }}
-        />
+        </div>
       </Card>
 
-      {/* Add/Edit Jeepney Modal */}
-      <Modal
-        title={editingJeepney ? 'Edit Jeepney' : 'Add New Jeepney'}
-        open={modalVisible}
-        onCancel={() => setModalVisible(false)}
-        footer={null}
-        width={600}
-      >
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={handleSubmit}
-        >
-          <Form.Item
-            name="jeepneyNumber"
-            label="Jeepney Number"
-            rules={[{ required: true, message: 'Please enter jeepney number' }]}
-          >
-            <Input placeholder="e.g., LKB-003" />
-          </Form.Item>
+      {error && <Alert variant="danger">{error}</Alert>}
+      {success && <Alert variant="success">{success}</Alert>}
 
-          <Form.Item
-            name="plateNumber"
-            label="Plate Number"
-            rules={[{ required: true, message: 'Please enter plate number' }]}
-          >
-            <Input placeholder="e.g., ABC 1234" />
-          </Form.Item>
-
-          <Form.Item
-            name="model"
-            label="Model"
-            rules={[{ required: true, message: 'Please enter jeepney model' }]}
-          >
-            <Select placeholder="Select jeepney model">
-              <Option value="Toyota Coaster">Toyota Coaster</Option>
-              <Option value="Isuzu Elf">Isuzu Elf</Option>
-              <Option value="Mitsubishi Rosa">Mitsubishi Rosa</Option>
-              <Option value="Hyundai County">Hyundai County</Option>
-            </Select>
-          </Form.Item>
-
-          <Form.Item
-            name="capacity"
-            label="Passenger Capacity"
-            rules={[{ required: true, message: 'Please enter passenger capacity' }]}
-          >
-            <Input type="number" placeholder="e.g., 18" min="10" max="30" />
-          </Form.Item>
-
-          <Form.Item
-            name="route"
-            label="Route"
-            rules={[{ required: true, message: 'Please enter route' }]}
-          >
-            <Select placeholder="Select route">
-              <Option value="Robinson Tejero - Robinson Pala-pala">Robinson Tejero - Robinson Pala-pala</Option>
-              <Option value="Ayala Center - Lahug">Ayala Center - Lahug</Option>
-              <Option value="SM City Cebu - IT Park">SM City Cebu - IT Park</Option>
-              <Option value="Colon Street - USC Main">Colon Street - USC Main</Option>
-              <Option value="Fuente Circle - Capitol Site">Fuente Circle - Capitol Site</Option>
-            </Select>
-          </Form.Item>
-
-          <Form.Item
-            name="status"
-            label="Status"
-            rules={[{ required: true, message: 'Please select status' }]}
-          >
-            <Select placeholder="Select status">
-              <Option value="active">Active</Option>
-              <Option value="maintenance">Under Maintenance</Option>
-              <Option value="inactive">Inactive</Option>
-            </Select>
-          </Form.Item>
-
-          <Form.Item>
-            <Space>
-              <Button type="primary" htmlType="submit">
-                {editingJeepney ? 'Update Jeepney' : 'Add Jeepney'}
-              </Button>
-              <Button onClick={() => setModalVisible(false)}>
-                Cancel
-              </Button>
-            </Space>
-          </Form.Item>
-        </Form>
-      </Modal>
-
-      {/* Assign Driver Modal */}
-      <Modal
-        title={`Assign Driver to ${selectedJeepney?.jeepneyNumber}`}
-        open={assignDriverModalVisible}
-        onCancel={() => setAssignDriverModalVisible(false)}
-        footer={null}
-        width={500}
-      >
-        <Form
-          form={assignForm}
-          layout="vertical"
-          onFinish={handleDriverAssignment}
-        >
-          <Form.Item
-            name="driverId"
-            label="Select Driver"
-            rules={[{ required: false }]}
-          >
-            <Select 
-              placeholder="Select a driver (or leave empty to unassign)"
-              allowClear
-            >
-              {availableDrivers.map(driver => (
-                <Option key={driver.id} value={driver.id}>
-                  <div>
-                    <div style={{ fontWeight: 500 }}>{driver.name}</div>
-                    <div style={{ fontSize: '12px', color: '#666' }}>
-                      License: {driver.license} | Phone: {driver.phone}
-                    </div>
+      {loading ? (
+        <div className="text-center my-3">
+          <Spinner animation="border" />
+        </div>
+      ) : (
+        <Table striped bordered hover responsive>
+          <thead>
+            <tr>
+              <th>Jeepney Number</th>
+              <th>Plate Number</th>
+              <th>Model</th>
+              <th>Capacity</th>
+              <th>Route</th>
+              <th>Driver</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {jeepneys.map((j) => (
+              <tr key={j.id}>
+                <td>
+                  <strong className="text-primary">{j.jeepney_number}</strong>
+                </td>
+                <td>{j.plate_number}</td>
+                <td>{j.model}</td>
+                <td>{j.capacity} passengers</td>
+                <td>
+                  <Badge bg="info">{j.route}</Badge>
+                </td>
+                <td>
+                  {j.driver === "No Driver Assigned" ? (
+                    <Badge bg="warning">{j.driver}</Badge>
+                  ) : (
+                    j.driver
+                  )}
+                </td>
+                <td>
+                  <Badge
+                    bg={
+                      j.status === "active"
+                        ? "success"
+                        : j.status === "maintenance"
+                        ? "secondary"
+                        : "danger"
+                    }
+                  >
+                    {j.status.toUpperCase()}
+                  </Badge>
+                </td>
+                <td>
+                  <div className="d-flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="info"
+                      onClick={() => generateRouteQR(j)}
+                    >
+                      <FaQrcode />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="warning"
+                      onClick={() => handleEditJeepney(j)}
+                    >
+                      <FaEdit />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="danger"
+                      onClick={() => handleDeleteJeepney(j.id)}
+                    >
+                      <FaTrash />
+                    </Button>
                   </div>
-                </Option>
-              ))}
-            </Select>
-          </Form.Item>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </Table>
+      )}
 
-          <Form.Item>
-            <Space>
-              <Button type="primary" htmlType="submit">
-                Assign Driver
+      {/* Add/Edit Jeepney Modal */}
+      <Modal show={modalVisible} onHide={() => setModalVisible(false)} size="lg">
+        <Modal.Header closeButton>
+          <Modal.Title>
+            {editingJeepney ? "Edit Jeepney" : "Add New Jeepney"}
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Form onSubmit={handleSubmit}>
+            <Row>
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Jeepney Number</Form.Label>
+                  <Form.Control
+                    type="text"
+                    name="jeepney_number"
+                    value={formData.jeepney_number}
+                    onChange={(e) =>
+                      setFormData({ ...formData, jeepney_number: e.target.value })
+                    }
+                    required
+                  />
+                </Form.Group>
+              </Col>
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Plate Number</Form.Label>
+                  <Form.Control
+                    type="text"
+                    name="plate_number"
+                    value={formData.plate_number}
+                    onChange={(e) =>
+                      setFormData({ ...formData, plate_number: e.target.value })
+                    }
+                    required
+                  />
+                </Form.Group>
+              </Col>
+            </Row>
+
+            <Row>
+              <Col md={6}>
+                            <Form.Group className="mb-3">
+                              <Form.Label>Model</Form.Label>
+                              <Form.Control
+                                type="text"
+                                name="model"
+                                value={formData.model}
+                                onChange={handleChange}
+                                placeholder="e.g., Toyota Coaster"
+                                required
+                              />
+                            </Form.Group>
+                          </Col>
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Capacity</Form.Label>
+                  <Form.Control
+                    type="number"
+                    name="capacity"
+                    min="10"
+                    max="50"
+                    value={formData.capacity}
+                    onChange={(e) =>
+                      setFormData({ ...formData, capacity: e.target.value })
+                    }
+                    required
+                  />
+                </Form.Group>
+              </Col>
+            </Row>
+
+            <Form.Group className="mb-3">
+              <Form.Label>Route</Form.Label>
+              <Form.Select
+                name="route_id"
+                value={formData.route_id}
+                onChange={(e) =>
+                  setFormData({ ...formData, route_id: e.target.value })
+                }
+                required
+              >
+                <option value="">Select Route</option>
+                {routes.map((route) => (
+                  <option key={route.id} value={route.id}>
+                    {route.route_name}
+                  </option>
+                ))}
+              </Form.Select>
+            </Form.Group>
+
+            <Form.Group className="mb-3">
+              <Form.Label>Driver (Optional)</Form.Label>
+              <Form.Select
+                name="driver_id"
+                value={formData.driver_id}
+                onChange={(e) =>
+                  setFormData({ ...formData, driver_id: e.target.value })
+                }
+              >
+                <option value="">Select Driver</option>
+                {drivers.map((driver) => (
+                  <option key={driver.id} value={driver.id}>
+                    {driver.first_name} {driver.last_name}
+                  </option>
+                ))}
+              </Form.Select>
+            </Form.Group>
+
+            <Form.Group className="mb-3">
+              <Form.Label>Status</Form.Label>
+              <Form.Select
+                name="status"
+                value={formData.status}
+                onChange={(e) =>
+                  setFormData({ ...formData, status: e.target.value })
+                }
+                required
+              >
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+                <option value="maintenance">Maintenance</option>
+              </Form.Select>
+            </Form.Group>
+
+            <div className="d-flex justify-content-end gap-2">
+              <Button variant="primary" type="submit">
+                {editingJeepney ? "Update Jeepney" : "Add Jeepney"}
               </Button>
-              <Button onClick={() => setAssignDriverModalVisible(false)}>
+              <Button variant="secondary" onClick={() => setModalVisible(false)}>
                 Cancel
               </Button>
-            </Space>
-          </Form.Item>
-        </Form>
+            </div>
+          </Form>
+        </Modal.Body>
       </Modal>
 
-      {/* Route QR Generation Modal */}
+      {/* QR Modal */}
       <RouteQRGeneration
         visible={routeQRModalVisible}
         onClose={() => setRouteQRModalVisible(false)}
