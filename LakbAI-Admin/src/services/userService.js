@@ -155,7 +155,7 @@ class UserService {
   /**
    * Approve or reject discount application
    */
-  static async approveDiscount(userId, approved) {
+  static async approveDiscount(userId, approved, rejectionReason = null) {
     try {
       const response = await fetch(`${this.API_BASE_URL}/admin/approve-discount`, {
         method: 'POST',
@@ -164,7 +164,8 @@ class UserService {
         },
         body: JSON.stringify({
           user_id: userId,
-          approved: approved
+          approved: approved,
+          rejection_reason: rejectionReason
         })
       });
 

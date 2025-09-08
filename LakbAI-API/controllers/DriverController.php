@@ -19,16 +19,12 @@ class DriverController {
                     first_name,
                     last_name,
                     phone_number,
-                    drivers_license_name,
                     email,
-                    user_type,
-                    license_status,
-                    shift_status
+                    user_type
                 FROM users 
                 WHERE user_type = 'driver' 
                 AND (
                     CONCAT(first_name, ' ', last_name) LIKE ? 
-                    OR drivers_license_name LIKE ?
                     OR phone_number LIKE ?
                     OR email LIKE ?
                 )
@@ -37,7 +33,7 @@ class DriverController {
                 LIMIT ?
             ");
             
-            $stmt->execute([$searchTerm, $searchTerm, $searchTerm, $searchTerm, $limit]);
+            $stmt->execute([$searchTerm, $searchTerm, $searchTerm, $limit]);
             $drivers = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
             // Format the response
@@ -45,7 +41,7 @@ class DriverController {
                 return [
                     'id' => $driver['id'],
                     'name' => $driver['first_name'] . ' ' . $driver['last_name'],
-                    'license_number' => $driver['drivers_license_name'] ?? 'N/A',
+                    'license_number' => 'N/A',
                     'phone' => $driver['phone_number'],
                     'email' => $driver['email'],
                     'license_status' => $driver['license_status'] ?? 'pending',
@@ -77,10 +73,7 @@ class DriverController {
                     u.first_name,
                     u.last_name,
                     u.phone_number,
-                    u.drivers_license_name,
-                    u.email,
-                    u.license_status,
-                    u.shift_status
+                    u.email
                 FROM users u
                 LEFT JOIN jeepneys j ON u.id = j.driver_id
                 WHERE u.user_type = 'driver' 
@@ -97,7 +90,7 @@ class DriverController {
                 return [
                     'id' => $driver['id'],
                     'name' => $driver['first_name'] . ' ' . $driver['last_name'],
-                    'license_number' => $driver['drivers_license_name'] ?? 'N/A',
+                    'license_number' => 'N/A',
                     'phone' => $driver['phone_number'],
                     'email' => $driver['email'],
                     'license_status' => $driver['license_status'] ?? 'pending',
@@ -129,11 +122,8 @@ class DriverController {
                     first_name,
                     last_name,
                     phone_number,
-                    drivers_license_name,
                     email,
-                    user_type,
-                    license_status,
-                    shift_status
+                    user_type
                 FROM users 
                 WHERE id = ? AND user_type = 'driver'
             ");
@@ -147,7 +137,7 @@ class DriverController {
                     "driver" => [
                         'id' => $driver['id'],
                         'name' => $driver['first_name'] . ' ' . $driver['last_name'],
-                        'license_number' => $driver['drivers_license_name'] ?? 'N/A',
+                        'license_number' => 'N/A',
                         'phone' => $driver['phone_number'],
                         'email' => $driver['email'],
                         'license_status' => $driver['license_status'] ?? 'pending',
@@ -187,10 +177,7 @@ class DriverController {
                     first_name,
                     last_name,
                     phone_number,
-                    drivers_license_name,
                     email,
-                    license_status,
-                    shift_status,
                     created_at
                 FROM users 
                 WHERE user_type = 'driver'
@@ -206,11 +193,11 @@ class DriverController {
                 return [
                     'id' => $driver['id'],
                     'name' => $driver['first_name'] . ' ' . $driver['last_name'],
-                    'license_number' => $driver['drivers_license_name'] ?? 'N/A',
+                    'license_number' => 'N/A',
                     'phone' => $driver['phone_number'],
                     'email' => $driver['email'],
-                    'license_status' => $driver['license_status'] ?? 'pending',
-                    'shift_status' => $driver['shift_status'] ?? 'offline',
+                    'license_status' => 'pending',
+                    'shift_status' => 'offline',
                     'created_at' => $driver['created_at']
                 ];
             }, $drivers);

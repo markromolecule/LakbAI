@@ -210,13 +210,13 @@ class AuthController {
     /**
      * Approve or reject discount application
      */
-    public function approveDiscount($userId, $approved) {
+    public function approveDiscount($userId, $approved, $rejectionReason = null) {
         try {
             if (empty($userId)) {
                 return $this->errorResponse('User ID is required');
             }
 
-            return $this->authService->approveDiscount($userId, $approved);
+            return $this->authService->approveDiscount($userId, $approved, $rejectionReason);
 
         } catch (Exception $e) {
             return $this->errorResponse('Failed to process discount approval: ' . $e->getMessage());
