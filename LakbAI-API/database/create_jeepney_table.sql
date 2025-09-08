@@ -13,7 +13,7 @@ CREATE TABLE `jeepneys` (
     `plate_number` VARCHAR(20) NOT NULL UNIQUE,
     `route` VARCHAR(100) NOT NULL,
     `capacity` INT(3) NOT NULL DEFAULT 20,
-    `driver_id` INT(11) NOT NULL,
+    `driver_id` INT(11) NULL,
     `status` ENUM('active', 'inactive', 'maintenance') DEFAULT 'active',
 
     -- Timestamps

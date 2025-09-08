@@ -26,12 +26,16 @@ $app = require_once __DIR__ . '/../bootstrap/app.php';
 require_once __DIR__ . '/../controllers/AuthController.php';
 require_once __DIR__ . '/../controllers/Auth0Controller.php';
 require_once __DIR__ . '/../controllers/JeepneyController.php';
+require_once __DIR__ . '/../controllers/DriverController.php';
+require_once __DIR__ . '/../controllers/RouteController.php';
 
 
 // Initialize controller with database connection
 $authController = new AuthController($app->get('Database'));
 $auth0Controller = new Auth0Controller($app->get('Database'));
 $jeepneyController = new JeepneyController($app->get('Database'));
+$driverController = new DriverController($app->get('Database'));
+$routeController = new RouteController($app->get('Database'));
 
 // Get the request method and path
 $method = $_SERVER['REQUEST_METHOD'];
@@ -154,6 +158,87 @@ try {
         if ($method === 'DELETE' && count($pathParts) === 3) {
             $jeepneyId = $pathParts[2];
             $result = $jeepneyController->deleteJeepney($jeepneyId);
+            echo json_encode($result);
+            exit;
+        }
+    }
+
+    // ---------------------------
+    // Driver Routes
+    // ---------------------------
+    if ($pathParts[0] === 'admin' && isset($pathParts[1]) && $pathParts[1] === 'drivers') {
+        // GET /admin/drivers/search?q=query
+        if ($method === 'GET' && count($pathParts) === 3 && $pathParts[2] === 'search') {
+            $query = $_GET['q'] ?? '';
+            $limit = $_GET['limit'] ?? 10;
+            $result = $driverController->searchDrivers($query, $limit);
+            echo json_encode($result);
+            exit;
+        }
+
+        // GET /admin/drivers/available
+        if ($method === 'GET' && count($pathParts) === 3 && $pathParts[2] === 'available') {
+            $result = $driverController->getAvailableDrivers();
+            echo json_encode($result);
+            exit;
+        }
+
+        // GET /admin/drivers/{id}
+        if ($method === 'GET' && count($pathParts) === 3 && is_numeric($pathParts[2])) {
+            $driverId = $pathParts[2];
+            $result = $driverController->getDriverById($driverId);
+            echo json_encode($result);
+            exit;
+        }
+
+        // GET /admin/drivers
+        if ($method === 'GET' && count($pathParts) === 2) {
+            $page = $_GET['page'] ?? 1;
+            $limit = $_GET['limit'] ?? 10;
+            $result = $driverController->getAllDrivers($page, $limit);
+            echo json_encode($result);
+            exit;
+        }
+    }
+
+    // ---------------------------
+    // Route Routes
+    // ---------------------------
+    if ($pathParts[0] === 'admin' && isset($pathParts[1]) && $pathParts[1] === 'routes') {
+        // GET /admin/routes
+        if ($method === 'GET' && count($pathParts) === 2) {
+            $result = $routeController->getAllRoutes();
+            echo json_encode($result);
+            exit;
+        }
+
+        // GET /admin/routes/{id}
+        if ($method === 'GET' && count($pathParts) === 3 && is_numeric($pathParts[2])) {
+            $routeId = $pathParts[2];
+            $result = $routeController->getRouteById($routeId);
+            echo json_encode($result);
+            exit;
+        }
+
+        // POST /admin/routes
+        if ($method === 'POST' && count($pathParts) === 2) {
+            $result = $routeController->createRoute($input);
+            echo json_encode($result);
+            exit;
+        }
+
+        // PUT /admin/routes/{id}
+        if ($method === 'PUT' && count($pathParts) === 3) {
+            $routeId = $pathParts[2];
+            $result = $routeController->updateRoute($routeId, $input);
+            echo json_encode($result);
+            exit;
+        }
+
+        // DELETE /admin/routes/{id}
+        if ($method === 'DELETE' && count($pathParts) === 3) {
+            $routeId = $pathParts[2];
+            $result = $routeController->deleteRoute($routeId);
             echo json_encode($result);
             exit;
         }
