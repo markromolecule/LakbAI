@@ -14,6 +14,7 @@ import { showAlert } from '../../../shared/utils/alertUtils';
 
 import { earningsService, EarningsUpdate } from '../../../shared/services/earningsService';
 import { buildAuth0Url } from '../../../config/developerConfig';
+import { getBaseUrl } from '../../../config/apiConfig';
 
 import styles from '../styles/ScannerScreen.styles';
 
@@ -77,16 +78,13 @@ export const ScannerScreen: React.FC = () => {
       
       console.log('🔍 Using actual driver ID:', actualDriverId);
       
-      // Call the backend API to get driver information
-      const response = await fetch(`${buildAuth0Url().replace('/routes/auth0.php', '/routes/auth_routes.php')}`, {
-        method: 'POST',
+      // Call the backend API to get driver information with jeepney details
+      const baseUrl = getBaseUrl().replace('/routes/api.php', '');
+      const response = await fetch(`${baseUrl}/api/mobile/driver/info/${actualDriverId}`, {
+        method: 'GET',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          action: 'get_driver_info',
-          driver_id: actualDriverId,
-        }),
       });
 
       if (!response.ok) {
@@ -95,7 +93,7 @@ export const ScannerScreen: React.FC = () => {
 
       const result = await response.json();
       
-      if (result.success && result.driverInfo) {
+      if (result.status === 'success' && result.driverInfo) {
         console.log('✅ Driver info fetched successfully:', result.driverInfo);
         return result.driverInfo;
       } else {

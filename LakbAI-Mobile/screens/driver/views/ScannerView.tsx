@@ -436,6 +436,19 @@ export const ScannerView: React.FC<ScannerViewProps> = ({
         </View>
       )}
 
+      {/* Jeepney Information */}
+      <View style={scannerStyles.locationCard}>
+        <View style={homeStyles.sectionHeader}>
+          <Ionicons name="bus" size={20} color="#22C55E" />
+          <Text style={[homeStyles.sectionTitle, { color: '#15803D' }]}>Your Jeepney</Text>
+        </View>
+        <View>
+          <Text style={scannerStyles.currentLocation}>{driverInfo.jeepneyNumber}</Text>
+          <Text style={scannerStyles.lastUpdated}>Route: {driverInfo.route}</Text>
+          <Text style={scannerStyles.locationNote}>Passengers can scan your QR to book rides</Text>
+        </View>
+      </View>
+
       <View style={scannerStyles.locationCard}>
         <View style={homeStyles.sectionHeader}>
           <MapPin size={20} color="#22C55E" />

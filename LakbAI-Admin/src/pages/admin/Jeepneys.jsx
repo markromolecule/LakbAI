@@ -33,11 +33,20 @@ const Jeepneys = () => {
       if (result.success) {
         const data = result.jeepneys || [];
 
-        setJeepneys(data);
+        // Transform data to include driver and route information
+        const transformedData = data.map(jeepney => ({
+          ...jeepney,
+          driver: jeepney.first_name && jeepney.last_name 
+            ? `${jeepney.first_name} ${jeepney.last_name}`
+            : null,
+          route: jeepney.route_name || "No Route Assigned"
+        }));
+
+        setJeepneys(transformedData);
         setStats({
-          total: data.length,
-          active: data.filter((j) => j.status === "active").length,
-          inactive: data.filter((j) => j.status === "inactive").length,
+          total: transformedData.length,
+          active: transformedData.filter((j) => j.status === "active").length,
+          inactive: transformedData.filter((j) => j.status === "inactive").length,
         });
       } else {
         setError(result.error || result.message || "Failed to load jeepneys");
