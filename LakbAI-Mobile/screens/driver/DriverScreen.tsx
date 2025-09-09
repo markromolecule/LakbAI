@@ -5,7 +5,7 @@ import {
   View,
 } from 'react-native';
 import { useDriverState } from './hooks';
-import { HomeView, ScannerView, FareView, ProfileView, LogsView } from './views';
+import { HomeView, ScannerView, FareView, ProfileView, LogsView, EarningsView } from './views';
 import { QRGenerator } from './components/QRGenerator';
 import { Header } from '../../components/common/Header';
 import { Footer } from '../../components/common/Footer';
@@ -25,7 +25,8 @@ export const DriverScreen: React.FC = () => {
     recentLogs,
     simulateQRScan,
     toggleDuty,
-    updateLocation
+    updateLocation,
+    refreshDriverProfile
   } = useDriverState();
 
   const renderCurrentView = () => {
@@ -39,6 +40,7 @@ export const DriverScreen: React.FC = () => {
             lastScanTime={lastScanTime}
             onNavigate={setCurrentView}
             onToggleDuty={toggleDuty}
+            onRefresh={refreshDriverProfile}
           />
         );
       case 'scanner':
@@ -69,12 +71,20 @@ export const DriverScreen: React.FC = () => {
           <ProfileView
             driverProfile={driverProfile}
             isOnDuty={isOnDuty}
+            onRefresh={refreshDriverProfile}
           />
         );
       case 'logs':
         return (
           <LogsView
             recentLogs={recentLogs}
+          />
+        );
+      case 'earnings':
+        return (
+          <EarningsView
+            driverProfile={driverProfile}
+            onRefresh={refreshDriverProfile}
           />
         );
       case 'qrcode':

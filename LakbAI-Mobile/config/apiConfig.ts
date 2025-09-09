@@ -38,6 +38,12 @@ const getApiBaseUrl = (): string => {
     const developer = getCurrentDeveloper();
     const ip = DEVELOPER_CONFIGS[developer] || DEVELOPER_CONFIGS.jiro;
     
+    console.log('🔧 API Config Debug:', {
+      developer,
+      ip,
+      tunnelEnabled: TUNNEL_CONFIG.enabled
+    });
+    
     // Check if tunnel mode is enabled
     if (TUNNEL_CONFIG.enabled) {
       return `http://localhost:${TUNNEL_CONFIG.port}/LakbAI/LakbAI-API/routes/api.php`;
@@ -48,8 +54,8 @@ const getApiBaseUrl = (): string => {
       return `http://${ip}/LakbAI/LakbAI-API/routes/api.php`;
     }
     
-    // Regular LAN mode (no port specified)
-    return `http://${ip}/LakbAI/LakbAI-API/routes/api.php`;
+    // Regular LAN mode (no port specified) - add port 8000
+    return `http://${ip}:8000/LakbAI/LakbAI-API/routes/api.php`;
   } else {
     // Production mode - use production server
     return 'https://your-production-domain.com/LakbAI/LakbAI-API/routes/api.php';
@@ -65,7 +71,9 @@ export const API_CONFIG = {
 
 // Also export a function to get the base URL dynamically
 export const getBaseUrl = (): string => {
-  return getApiBaseUrl();
+  const url = getApiBaseUrl();
+  console.log('🌐 getBaseUrl() returning:', url);
+  return url;
 };
 
 // Helper function for co-developers to easily set their IP
