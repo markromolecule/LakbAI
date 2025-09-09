@@ -8,7 +8,18 @@ class JeepneyController {
 
     public function getAll() {
         try {
-            $stmt = $this->db->prepare("SELECT * FROM jeepneys ORDER BY id DESC");
+            $stmt = $this->db->prepare("
+                SELECT 
+                    j.*,
+                    u.first_name,
+                    u.last_name,
+                    u.phone_number,
+                    r.route_name
+                FROM jeepneys j
+                LEFT JOIN users u ON j.driver_id = u.id
+                LEFT JOIN routes r ON j.route_id = r.id
+                ORDER BY j.id DESC
+            ");
             $stmt->execute();
             $jeepneys = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -137,7 +148,18 @@ class JeepneyController {
     // Add missing methods that routes expect
     public function getJeepneyById($id) {
         try {
-            $stmt = $this->db->prepare("SELECT * FROM jeepneys WHERE id = ?");
+            $stmt = $this->db->prepare("
+                SELECT 
+                    j.*,
+                    u.first_name,
+                    u.last_name,
+                    u.phone_number,
+                    r.route_name
+                FROM jeepneys j
+                LEFT JOIN users u ON j.driver_id = u.id
+                LEFT JOIN routes r ON j.route_id = r.id
+                WHERE j.id = ?
+            ");
             $stmt->execute([$id]);
             $jeepney = $stmt->fetch(PDO::FETCH_ASSOC);
             
@@ -279,15 +301,17 @@ class JeepneyController {
             $countStmt->execute();
             $total = $countStmt->fetch(PDO::FETCH_ASSOC)['total'];
             
-            // Get paginated results with driver information
+            // Get paginated results with driver and route information
             $stmt = $this->db->prepare("
                 SELECT 
                     j.*,
                     u.first_name,
                     u.last_name,
-                    u.phone_number
+                    u.phone_number,
+                    r.route_name
                 FROM jeepneys j
                 LEFT JOIN users u ON j.driver_id = u.id
+                LEFT JOIN routes r ON j.route_id = r.id
                 ORDER BY j.id DESC
                 LIMIT ? OFFSET ?
             ");

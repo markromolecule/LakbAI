@@ -244,6 +244,9 @@ export const TripBookingView: React.FC<TripBookingViewProps> = ({
           {driverInfo.plateNumber && (
             <Text style={styles.jeepneyDetail}>Plate: {driverInfo.plateNumber}</Text>
           )}
+          {driverInfo.jeepneyModel && (
+            <Text style={styles.jeepneyDetail}>Model: {driverInfo.jeepneyModel}</Text>
+          )}
           <Text style={styles.jeepneyDetail}>Route: {driverInfo.route}</Text>
           <Text style={styles.jeepneyDetail}>Current Location: {driverInfo.currentLocation}</Text>
         </View>

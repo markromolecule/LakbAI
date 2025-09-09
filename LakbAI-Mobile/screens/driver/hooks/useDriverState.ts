@@ -3,6 +3,7 @@ import { Alert } from 'react-native';
 import { ViewType, DriverProfile, LogItem } from '../../../shared/types/driver';
 import { CHECKPOINTS } from '../../../constants/checkpoints';
 import sessionManager, { UserSession } from '../../../shared/services/sessionManager';
+import { getBaseUrl } from '../../../config/apiConfig';
 
 export const useDriverState = () => {
   const [currentView, setCurrentView] = useState<ViewType>('home');
@@ -22,6 +23,25 @@ export const useDriverState = () => {
       const session = await sessionManager.getUserSession();
       if (session && session.userType === 'driver' && session.dbUserData) {
         setUserSession(session);
+        
+        // Try to fetch complete driver profile with jeepney info from API
+        try {
+          const baseUrl = getBaseUrl().replace('/routes/api.php', '');
+          const response = await fetch(`${baseUrl}/api/mobile/driver/profile/${session.dbUserData.id}`);
+          if (response.ok) {
+            const result = await response.json();
+            if (result.status === 'success' && result.driverProfile) {
+              const apiProfile = transformApiProfileToDriverProfile(result.driverProfile);
+              setDriverProfile(apiProfile);
+              console.log('✅ Driver profile loaded from API:', apiProfile.name);
+              return;
+            }
+          }
+        } catch (apiError) {
+          console.warn('⚠️ Failed to load from API, falling back to session data:', apiError);
+        }
+        
+        // Fallback to session data transformation
         const profile = transformDatabaseUserToDriverProfile(session.dbUserData);
         setDriverProfile(profile);
         console.log('✅ Driver profile loaded from session:', profile.name);
@@ -33,6 +53,21 @@ export const useDriverState = () => {
       console.error('❌ Failed to load driver profile:', error);
       setDriverProfile(getMockDriverProfile());
     }
+  };
+
+  const transformApiProfileToDriverProfile = (apiProfile: any): DriverProfile => {
+    return {
+      id: apiProfile.id,
+      name: apiProfile.name,
+      license: apiProfile.license_number || 'N/A',
+      jeepneyNumber: apiProfile.assignedJeepney?.jeepneyNumber || 'No Jeepney Assigned',
+      rating: 4.5 + (Math.random() * 0.8), // Mock data - would come from ratings
+      totalTrips: Math.floor(Math.random() * 1000) + 500, // Mock data
+      yearsExperience: Math.floor(Math.random() * 10) + 2, // Mock data
+      todayTrips: Math.floor(Math.random() * 20),
+      todayEarnings: Math.floor(Math.random() * 2000) + 500,
+      route: apiProfile.assignedJeepney?.route?.name || 'No Route Assigned'
+    };
   };
 
   const transformDatabaseUserToDriverProfile = (dbUser: any): DriverProfile => {

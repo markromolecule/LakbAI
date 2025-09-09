@@ -197,6 +197,27 @@ try {
             echo json_encode($result);
             exit;
         }
+    }
+
+    // ---------------------------
+    // Mobile Driver Routes
+    // ---------------------------
+    if ($pathParts[0] === 'mobile' && isset($pathParts[1]) && $pathParts[1] === 'driver') {
+        // GET /mobile/driver/profile/{id}
+        if ($method === 'GET' && count($pathParts) === 4 && $pathParts[2] === 'profile' && is_numeric($pathParts[3])) {
+            $driverId = $pathParts[3];
+            $result = $driverController->getDriverProfile($driverId);
+            echo json_encode($result);
+            exit;
+        }
+
+        // GET /mobile/driver/info/{id} - For QR scanning
+        if ($method === 'GET' && count($pathParts) === 4 && $pathParts[2] === 'info' && is_numeric($pathParts[3])) {
+            $driverId = $pathParts[3];
+            $result = $driverController->getDriverWithJeepney($driverId);
+            echo json_encode($result);
+            exit;
+        }
 
         // GET /admin/drivers
         if ($method === 'GET' && count($pathParts) === 2) {
