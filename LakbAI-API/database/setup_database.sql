@@ -198,7 +198,63 @@ CREATE TABLE `jeepneys` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- =============================================
--- 7. PUSH NOTIFICATION TOKENS TABLE
+-- 7. DRIVER EARNINGS TABLE
+-- =============================================
+DROP TABLE IF EXISTS `driver_earnings`;
+
+CREATE TABLE `driver_earnings` (
+    `id` INT(11) NOT NULL AUTO_INCREMENT,
+    `driver_id` INT(11) NOT NULL,
+    `trip_id` VARCHAR(100) NOT NULL UNIQUE,
+    `passenger_id` VARCHAR(100) NULL,
+    `amount` DECIMAL(10,2) NOT NULL,
+    `original_fare` DECIMAL(10,2) NOT NULL,
+    `discount_amount` DECIMAL(10,2) DEFAULT 0.00,
+    `final_fare` DECIMAL(10,2) NOT NULL,
+    `payment_method` VARCHAR(50) DEFAULT 'xendit',
+    `pickup_location` VARCHAR(255) NULL,
+    `destination` VARCHAR(255) NULL,
+    `transaction_date` DATE NOT NULL,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    
+    -- Keys
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_trip_id` (`trip_id`),
+    INDEX `idx_driver_id` (`driver_id`),
+    INDEX `idx_transaction_date` (`transaction_date`),
+    CONSTRAINT `fk_earnings_driver` FOREIGN KEY (`driver_id`) REFERENCES `users`(`id`) 
+        ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =============================================
+-- 8. DRIVER SHIFT LOGS TABLE
+-- =============================================
+DROP TABLE IF EXISTS `driver_shift_logs`;
+
+CREATE TABLE `driver_shift_logs` (
+    `id` INT(11) NOT NULL AUTO_INCREMENT,
+    `driver_id` INT(11) NOT NULL,
+    `shift_date` DATE NOT NULL,
+    `start_time` TIMESTAMP NULL,
+    `end_time` TIMESTAMP NULL,
+    `total_earnings` DECIMAL(10,2) DEFAULT 0.00,
+    `total_trips` INT(11) DEFAULT 0,
+    `status` ENUM('active', 'ended') DEFAULT 'active',
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    
+    -- Keys
+    PRIMARY KEY (`id`),
+    INDEX `idx_driver_id` (`driver_id`),
+    INDEX `idx_shift_date` (`shift_date`),
+    INDEX `idx_status` (`status`),
+    CONSTRAINT `fk_shift_logs_driver` FOREIGN KEY (`driver_id`) REFERENCES `users`(`id`) 
+        ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =============================================
+-- 9. PUSH NOTIFICATION TOKENS TABLE
 -- =============================================
 DROP TABLE IF EXISTS `push_notification_tokens`;
 
@@ -297,6 +353,12 @@ SELECT
 UNION ALL
 SELECT 
     'jeepneys' as table_name, COUNT(*) as record_count FROM jeepneys
+UNION ALL
+SELECT 
+    'driver_earnings' as table_name, COUNT(*) as record_count FROM driver_earnings
+UNION ALL
+SELECT 
+    'driver_shift_logs' as table_name, COUNT(*) as record_count FROM driver_shift_logs
 UNION ALL
 SELECT 
     'push_notification_tokens' as table_name, COUNT(*) as record_count FROM push_notification_tokens;

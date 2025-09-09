@@ -6,8 +6,8 @@
 - **Name**: `lakbai_db`
 - **Engine**: InnoDB
 - **Charset**: utf8mb4_unicode_ci
-- **Tables**: 7
-- **Foreign Keys**: 5 relationships
+- **Tables**: 9
+- **Foreign Keys**: 7 relationships
 
 ### Core Tables
 
@@ -20,6 +20,8 @@
 | `drivers` | Driver-specific data | user_id, license_status, shift_status |
 | `passengers` | Passenger-specific data | user_id, discount_type, discount_verified |
 | `push_notification_tokens` | Mobile notifications | id, user_id, token, platform |
+| `driver_earnings` | Driver earnings tracking | id, driver_id, trip_id, final_fare, transaction_date |
+| `driver_shift_logs` | Driver shift management | id, driver_id, shift_date, start_time, end_time, status |
 
 ### Key Features
 
@@ -38,6 +40,12 @@
 - **Jeepney Tracking**: Vehicle assignment and status
 - **Driver Assignment**: Link drivers to specific jeepneys
 - **Maintenance Status**: active, inactive, maintenance
+
+#### Earnings System
+- **Dynamic Earnings Tracking**: Real-time earnings calculation across multiple timeframes
+- **Shift Management**: Track driver shifts with start/end times
+- **Transaction History**: Complete record of all driver earnings
+- **Period-based Calculations**: Daily, weekly, monthly, yearly, and all-time earnings
 
 ### Sample Data Included
 
@@ -64,6 +72,11 @@
 | `/api/admin/jeepneys` | GET/POST | Manage jeepneys |
 | `/api/admin/routes` | GET | Get routes with checkpoints |
 | `/api/admin/checkpoints` | GET | Get checkpoints by route |
+| `/api/earnings/driver/{id}` | GET | Get driver earnings summary |
+| `/api/earnings/add` | POST | Add new earnings transaction |
+| `/api/earnings/transactions/{driverId}` | GET | Get driver transaction history |
+| `/api/earnings/shift/start` | POST | Start driver shift |
+| `/api/earnings/shift/end` | POST | End driver shift |
 
 ### Setup Instructions
 
@@ -87,6 +100,8 @@ mysql -u root -p lakbai_db < create_jeepney_table.sql
 mysql -u root -p lakbai_db < create_drivers_table.sql
 mysql -u root -p lakbai_db < create_passengers_table.sql
 mysql -u root -p lakbai_db < create_push_notifications_table.sql
+mysql -u root -p lakbai_db < create_earnings_table.sql
+mysql -u root -p lakbai_db < create_shift_logs_table.sql
 ```
 
 ### Environment Configuration
@@ -114,6 +129,8 @@ database/
 ├── create_drivers_table.sql           # Drivers table only
 ├── create_passengers_table.sql        # Passengers table only
 ├── create_push_notifications_table.sql # Push tokens table only
+├── create_earnings_table.sql          # Driver earnings table only
+├── create_shift_logs_table.sql        # Driver shift logs table only
 └── jiro(current_db).sql               # Original teammate's schema
 ```
 
@@ -141,6 +158,30 @@ SELECT j.jeepney_number, j.plate_number, j.status, u.first_name, u.last_name
 FROM jeepneys j
 LEFT JOIN drivers d ON j.driver_id = d.user_id
 LEFT JOIN users u ON d.user_id = u.id;
+```
+
+#### Get driver earnings summary
+```sql
+SELECT 
+    u.first_name, u.last_name,
+    COUNT(de.id) as total_trips,
+    SUM(de.final_fare) as total_earnings,
+    AVG(de.final_fare) as average_fare
+FROM users u
+LEFT JOIN driver_earnings de ON u.id = de.driver_id
+WHERE u.user_type = 'driver' AND u.id = ?
+GROUP BY u.id;
+```
+
+#### Get active driver shifts
+```sql
+SELECT 
+    u.first_name, u.last_name,
+    dsl.shift_date, dsl.start_time, dsl.status
+FROM driver_shift_logs dsl
+JOIN users u ON dsl.driver_id = u.id
+WHERE dsl.status = 'active'
+ORDER BY dsl.start_time DESC;
 ```
 
 ### Troubleshooting
