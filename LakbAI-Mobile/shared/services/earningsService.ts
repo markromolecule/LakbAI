@@ -19,6 +19,8 @@ export interface DriverEarnings {
   todayEarnings: number;
   weeklyEarnings: number;
   monthlyEarnings: number;
+  yearlyEarnings: number;
+  totalEarnings: number; // Lifetime earnings across all shifts
   totalTrips: number;
   todayTrips: number;
   averageFarePerTrip: number;
@@ -27,20 +29,110 @@ export interface DriverEarnings {
 
 class EarningsService {
   private earnings: Map<string, DriverEarnings> = new Map();
+  private listeners = new Set<(driverId: string) => void>();
 
   /**
-   * Initialize or get driver earnings
+   * Get driver earnings from database API
+   */
+  async getDriverEarningsFromAPI(driverId: string): Promise<DriverEarnings | null> {
+    try {
+      const { getBaseUrl } = await import('../../config/apiConfig');
+      const baseUrl = getBaseUrl().replace('/routes/api.php', '');
+      const apiUrl = `${baseUrl}/api/earnings/driver/${driverId}`;
+      
+      console.log('💰 Fetching earnings from API:', apiUrl);
+      
+      const response = await fetch(apiUrl);
+      
+      if (response.ok) {
+        const result = await response.json();
+        console.log('💰 API earnings response:', result);
+        
+        if (result.status === 'success' && result.earnings) {
+          return {
+            todayEarnings: result.earnings.todayEarnings,
+            todayTrips: result.earnings.todayTrips,
+            weeklyEarnings: result.earnings.weeklyEarnings,
+            monthlyEarnings: result.earnings.monthlyEarnings,
+            yearlyEarnings: result.earnings.yearlyEarnings || 0,
+            totalEarnings: result.earnings.totalEarnings || 0,
+            totalTrips: result.earnings.totalTrips,
+            averageFarePerTrip: result.earnings.averageFarePerTrip,
+            lastUpdate: result.earnings.lastUpdate,
+          };
+        }
+      } else {
+        console.warn('⚠️ Earnings API error:', response.status, response.statusText);
+      }
+    } catch (error) {
+      console.error('❌ Failed to fetch earnings from API:', error);
+    }
+    
+    return null;
+  }
+
+  /**
+   * Save earnings to database API
+   */
+  async saveEarningsToAPI(update: EarningsUpdate): Promise<boolean> {
+    try {
+      const { getBaseUrl } = await import('../../config/apiConfig');
+      const baseUrl = getBaseUrl().replace('/routes/api.php', '');
+      const apiUrl = `${baseUrl}/api/earnings/add`;
+      
+      const payload = {
+        driverId: update.driverId,
+        tripId: update.tripId,
+        passengerId: update.passengerId,
+        finalFare: update.finalFare,
+        originalFare: update.originalFare,
+        discountAmount: update.discountAmount,
+        paymentMethod: update.paymentMethod,
+        pickupLocation: update.pickupLocation,
+        destination: update.destination
+      };
+      
+      console.log('💾 Saving earnings to API:', apiUrl, payload);
+      
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        console.log('✅ Earnings saved to database:', result);
+        return result.status === 'success';
+      } else {
+        console.error('❌ Failed to save earnings:', response.status, response.statusText);
+        const errorText = await response.text();
+        console.error('❌ Error response:', errorText);
+      }
+    } catch (error) {
+      console.error('❌ Error saving earnings to API:', error);
+    }
+    
+    return false;
+  }
+
+  /**
+   * Initialize or get driver earnings (fallback to memory)
    */
   private getDriverEarnings(driverId: string): DriverEarnings {
     if (!this.earnings.has(driverId)) {
-      // Initialize with mock data (in real app, this would come from backend)
+      // Initialize with zeros as requested (real earnings will be updated when payments are made)
       this.earnings.set(driverId, {
-        todayEarnings: 1840,
-        weeklyEarnings: 12500,
-        monthlyEarnings: 45600,
-        totalTrips: 1247,
-        todayTrips: 12,
-        averageFarePerTrip: 35,
+        todayEarnings: 0,
+        weeklyEarnings: 0,
+        monthlyEarnings: 0,
+        yearlyEarnings: 0,
+        totalEarnings: 0,
+        totalTrips: 0,
+        todayTrips: 0,
+        averageFarePerTrip: 0,
         lastUpdate: new Date().toISOString(),
       });
     }
@@ -65,6 +157,8 @@ class EarningsService {
         todayEarnings: currentEarnings.todayEarnings + update.finalFare,
         weeklyEarnings: currentEarnings.weeklyEarnings + update.finalFare,
         monthlyEarnings: currentEarnings.monthlyEarnings + update.finalFare,
+        yearlyEarnings: currentEarnings.yearlyEarnings + update.finalFare,
+        totalEarnings: currentEarnings.totalEarnings + update.finalFare,
         totalTrips: currentEarnings.totalTrips + 1,
         todayTrips: currentEarnings.todayTrips + 1,
         averageFarePerTrip: Math.round(
@@ -87,6 +181,15 @@ class EarningsService {
       };
 
       await notificationService.notifyDriverPaymentReceived(paymentNotification);
+      
+      // Save to database API
+      await this.saveEarningsToAPI(update);
+      
+      // Trigger driver profile refresh event
+      console.log('📱 Driver profile should refresh now to show updated earnings');
+      console.log('🔔 Notifying', this.listeners.size, 'listeners about earnings update for driver:', update.driverId);
+      this.notifyListeners(update.driverId);
+      console.log('✅ Listener notifications sent successfully');
 
       // Log the transaction (in real app, this would be saved to backend)
       this.logTransaction(update);
@@ -111,6 +214,25 @@ class EarningsService {
    * Get current driver earnings
    */
   getEarnings(driverId: string): DriverEarnings {
+    return this.getDriverEarnings(driverId);
+  }
+
+  /**
+   * Get current earnings for a driver (async version - tries API first)
+   */
+  async getEarningsAsync(driverId: string): Promise<DriverEarnings> {
+    // Try to get from API first
+    const apiEarnings = await this.getDriverEarningsFromAPI(driverId);
+    
+    if (apiEarnings) {
+      // Update local cache with API data
+      this.earnings.set(driverId, apiEarnings);
+      console.log('💰 Updated local earnings cache from API for driver:', driverId);
+      return apiEarnings;
+    }
+    
+    // Fallback to local cache
+    console.log('💰 Using fallback local earnings for driver:', driverId);
     return this.getDriverEarnings(driverId);
   }
 
@@ -278,6 +400,204 @@ class EarningsService {
       discountAmount: 5,
       finalFare: 25,
     };
+  }
+
+  /**
+   * Add a listener for earnings changes
+   */
+  addListener(callback: (driverId: string) => void): () => void {
+    this.listeners.add(callback);
+    console.log('👂 Registered new earnings listener. Total listeners:', this.listeners.size);
+    
+    // Return unsubscribe function
+    return () => {
+      this.listeners.delete(callback);
+      console.log('🔇 Removed earnings listener. Remaining listeners:', this.listeners.size);
+    };
+  }
+
+  /**
+   * Notify all listeners of earnings change
+   */
+  private notifyListeners(driverId: string): void {
+    console.log('📢 Notifying', this.listeners.size, 'listeners about driver', driverId, 'earnings change');
+    
+    let notificationCount = 0;
+    let listenerIndex = 1;
+    this.listeners.forEach((callback) => {
+      try {
+        console.log('📨 Calling listener', listenerIndex, 'for driver', driverId);
+        callback(driverId);
+        notificationCount++;
+        console.log('✅ Listener', listenerIndex, 'called successfully');
+      } catch (error) {
+        console.error('❌ Error in earnings listener', listenerIndex, ':', error);
+      }
+      listenerIndex++;
+    });
+    
+    console.log('📡 Completed notifications:', notificationCount, 'out of', this.listeners.size, 'listeners');
+  }
+
+  /**
+   * End shift - reset today's earnings and add to total earnings
+   */
+  async endShift(driverId: string): Promise<{ success: boolean; message: string; totalEarnings?: number }> {
+    try {
+      console.log('🔄 Ending shift for driver:', driverId);
+      
+      const currentEarnings = this.getDriverEarnings(driverId);
+      
+      // Add today's earnings to total earnings before resetting
+      const newTotalEarnings = currentEarnings.totalEarnings + currentEarnings.todayEarnings;
+      
+      // Reset today's earnings and trips
+      const updatedEarnings: DriverEarnings = {
+        ...currentEarnings,
+        todayEarnings: 0,
+        todayTrips: 0,
+        totalEarnings: newTotalEarnings,
+        lastUpdate: new Date().toISOString(),
+      };
+      
+      // Update stored earnings
+      this.earnings.set(driverId, updatedEarnings);
+      
+      // Save to database API
+      await this.saveShiftEndToAPI(driverId, currentEarnings.todayEarnings, newTotalEarnings);
+      
+      // Notify listeners
+      this.notifyListeners(driverId);
+      
+      console.log('✅ Shift ended successfully. Today earnings:', currentEarnings.todayEarnings, 'added to total:', newTotalEarnings);
+      
+      return {
+        success: true,
+        message: `Shift ended. Today's earnings ₱${currentEarnings.todayEarnings} added to total earnings.`,
+        totalEarnings: newTotalEarnings
+      };
+    } catch (error) {
+      console.error('❌ Failed to end shift:', error);
+      return {
+        success: false,
+        message: 'Failed to end shift. Please try again.'
+      };
+    }
+  }
+
+  /**
+   * Start shift - driver can start earning again
+   */
+  async startShift(driverId: string): Promise<{ success: boolean; message: string }> {
+    try {
+      console.log('🚀 Starting shift for driver:', driverId);
+      
+      const currentEarnings = this.getDriverEarnings(driverId);
+      
+      // Ensure today's earnings are reset (in case they weren't properly reset)
+      const updatedEarnings: DriverEarnings = {
+        ...currentEarnings,
+        todayEarnings: 0,
+        todayTrips: 0,
+        lastUpdate: new Date().toISOString(),
+      };
+      
+      // Update stored earnings
+      this.earnings.set(driverId, updatedEarnings);
+      
+      // Save to database API
+      await this.saveShiftStartToAPI(driverId);
+      
+      // Notify listeners
+      this.notifyListeners(driverId);
+      
+      console.log('✅ Shift started successfully');
+      
+      return {
+        success: true,
+        message: 'Shift started. You can now start earning!'
+      };
+    } catch (error) {
+      console.error('❌ Failed to start shift:', error);
+      return {
+        success: false,
+        message: 'Failed to start shift. Please try again.'
+      };
+    }
+  }
+
+  /**
+   * Save shift end to database API
+   */
+  private async saveShiftEndToAPI(driverId: string, todayEarnings: number, newTotalEarnings: number): Promise<boolean> {
+    try {
+      const { getBaseUrl } = await import('../../config/apiConfig');
+      const baseUrl = getBaseUrl().replace('/routes/api.php', '');
+      const apiUrl = `${baseUrl}/api/earnings/shift/end`;
+      
+      console.log('💾 Saving shift end to API:', apiUrl);
+      
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          driverId,
+          todayEarnings,
+          totalEarnings: newTotalEarnings,
+          timestamp: new Date().toISOString()
+        }),
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        console.log('✅ Shift end saved to database:', result);
+        return true;
+      } else {
+        console.warn('⚠️ Shift end API error:', response.status, response.statusText);
+        return false;
+      }
+    } catch (error) {
+      console.error('❌ Failed to save shift end to API:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Save shift start to database API
+   */
+  private async saveShiftStartToAPI(driverId: string): Promise<boolean> {
+    try {
+      const { getBaseUrl } = await import('../../config/apiConfig');
+      const baseUrl = getBaseUrl().replace('/routes/api.php', '');
+      const apiUrl = `${baseUrl}/api/earnings/shift/start`;
+      
+      console.log('💾 Saving shift start to API:', apiUrl);
+      
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          driverId,
+          timestamp: new Date().toISOString()
+        }),
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        console.log('✅ Shift start saved to database:', result);
+        return true;
+      } else {
+        console.warn('⚠️ Shift start API error:', response.status, response.statusText);
+        return false;
+      }
+    } catch (error) {
+      console.error('❌ Failed to save shift start to API:', error);
+      return false;
+    }
   }
 }
 

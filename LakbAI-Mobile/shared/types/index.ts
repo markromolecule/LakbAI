@@ -29,6 +29,7 @@ export interface DriverProfile {
   yearsExperience: number;
   todayTrips: number;
   todayEarnings: number;
+  totalEarnings: number; // Lifetime earnings across all shifts
   route: string;
 }
 
@@ -88,7 +89,7 @@ export interface EmergencyContact {
   type: "tel" | "emergency";
 }
 
-export type DriverView = 'home' | 'scanner' | 'fare' | 'profile' | 'logs' | 'qrcode';
+export type DriverView = 'home' | 'scanner' | 'fare' | 'profile' | 'logs' | 'earnings' | 'qrcode';
 
 // Export passenger types
 export * from './authentication';

@@ -243,8 +243,7 @@ class DriverController {
                     j.status as jeepney_status,
                     r.route_name,
                     r.origin,
-                    r.destination,
-                    r.description as route_description
+                    r.destination
                 FROM users u
                 LEFT JOIN jeepneys j ON u.id = j.driver_id
                 LEFT JOIN routes r ON j.route_id = r.id
@@ -279,8 +278,7 @@ class DriverController {
                         'route' => [
                             'name' => $result['route_name'],
                             'origin' => $result['origin'],
-                            'destination' => $result['destination'],
-                            'description' => $result['route_description']
+                            'destination' => $result['destination']
                         ]
                     ];
                 }

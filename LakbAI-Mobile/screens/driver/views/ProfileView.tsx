@@ -1,20 +1,71 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { ScrollView, View, Text, TouchableOpacity } from 'react-native';
-import { User, Star, Phone, LogOut } from 'lucide-react-native';
+import { User, Star, Phone, LogOut, RefreshCw } from 'lucide-react-native';
 import { DriverProfile } from '../../../shared/types/driver';
 import { driverStyles, profileStyles, homeStyles } from '../styles';
 import { useLogout } from '../../../shared/utils/authUtils';
+import { earningsService } from '../../../shared/services/earningsService';
 
 interface ProfileViewProps {
   driverProfile: DriverProfile;
   isOnDuty: boolean;
+  onRefresh: () => void; // Required for automatic refresh
 }
 
 export const ProfileView: React.FC<ProfileViewProps> = ({
   driverProfile,
-  isOnDuty
+  isOnDuty,
+  onRefresh
 }) => {
   const { logout } = useLogout();
+  const [refreshIndicator, setRefreshIndicator] = useState(false);
+  const [lastUpdate, setLastUpdate] = useState<string>('');
+
+  // Auto-refresh earnings every 5 seconds when profile view is active (database-driven)
+  useEffect(() => {
+    console.log('👁️ ProfileView mounted - starting database-driven auto-refresh');
+    
+    // Initial update timestamp
+    setLastUpdate(new Date().toLocaleTimeString());
+    
+    // Set up frequent auto-refresh interval for real-time database sync
+    const interval = setInterval(async () => {
+      if (driverProfile.id && onRefresh) {
+        console.log('🔄 Database auto-refresh - checking for earnings updates...');
+        setRefreshIndicator(true);
+        
+        // Call refresh function to fetch latest from database
+        onRefresh();
+        
+        // Update timestamp
+        setLastUpdate(new Date().toLocaleTimeString());
+        
+        // Hide refresh indicator after 1 second
+        setTimeout(() => setRefreshIndicator(false), 1000);
+      }
+    }, 5000); // Refresh every 5 seconds for real-time feel
+
+    // Set up earnings listener for immediate updates (backup system)
+    const unsubscribe = earningsService.addListener((driverId) => {
+      if (driverProfile.id?.toString() === driverId) {
+        console.log('💰 Earnings listener triggered - immediate profile refresh...');
+        setRefreshIndicator(true);
+        
+        if (onRefresh) {
+          onRefresh();
+        }
+        
+        setLastUpdate(new Date().toLocaleTimeString());
+        setTimeout(() => setRefreshIndicator(false), 1000);
+      }
+    });
+
+    return () => {
+      console.log('👁️ ProfileView unmounted - cleaning up database auto-refresh');
+      clearInterval(interval);
+      unsubscribe();
+    };
+  }, [driverProfile.id, onRefresh]);
 
   return (
     <ScrollView 
@@ -36,6 +87,15 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               <Text style={profileStyles.totalTrips}>({driverProfile.totalTrips} trips)</Text>
             </View>
           </View>
+          {refreshIndicator && (
+            <View style={[refreshButtonStyle, { backgroundColor: '#EBF8FF' }]}>
+              <RefreshCw 
+                size={20} 
+                color="#1D4ED8"
+                style={{ transform: [{ rotate: '180deg' }] }}
+              />
+            </View>
+          )}
         </View>
 
         <View style={profileStyles.profileDetails}>
@@ -73,6 +133,16 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               <Text style={profileStyles.profileLabel}>Today's Earnings:</Text>
               <Text style={[profileStyles.profileValue, { color: '#16A34A' }]}>₱{driverProfile.todayEarnings}</Text>
             </View>
+            <View style={profileStyles.profileRow}>
+              <Text style={profileStyles.profileLabel}>Total Earnings:</Text>
+              <Text style={[profileStyles.profileValue, { color: '#1D4ED8', fontWeight: 'bold' }]}>₱{driverProfile.totalEarnings}</Text>
+            </View>
+            {lastUpdate && (
+              <View style={profileStyles.profileRow}>
+                <Text style={profileStyles.profileLabel}>Last Updated:</Text>
+                <Text style={[profileStyles.profileValue, { color: '#6B7280', fontSize: 12 }]}>{lastUpdate}</Text>
+              </View>
+            )}
             <View style={profileStyles.profileRow}>
               <Text style={profileStyles.profileLabel}>Status:</Text>
               <Text style={[profileStyles.profileValue, { color: isOnDuty ? '#16A34A' : '#DC2626' }]}>
@@ -131,4 +201,19 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
       </View>
     </ScrollView>
   );
+};
+
+// Add refresh button style
+const refreshButtonStyle = {
+  position: 'absolute' as const,
+  top: 10,
+  right: 10,
+  padding: 8,
+  backgroundColor: '#F3F4F6',
+  borderRadius: 20,
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 1 },
+  shadowOpacity: 0.1,
+  shadowRadius: 2,
+  elevation: 2,
 };

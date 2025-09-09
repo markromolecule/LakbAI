@@ -29,6 +29,7 @@ require_once __DIR__ . '/../controllers/JeepneyController.php';
 require_once __DIR__ . '/../controllers/DriverController.php';
 require_once __DIR__ . '/../controllers/RouteController.php';
 require_once __DIR__ . '/../controllers/CheckpointController.php';
+require_once __DIR__ . '/../controllers/EarningsController.php';
 
 
 // Initialize controller with database connection
@@ -39,6 +40,7 @@ $jeepneyController = new JeepneyController($app->get('PDO'));
 $driverController = new DriverController($app->get('PDO'));
 $routeController = new RouteController($app->get('PDO'));
 $checkpointController = new CheckpointController($app->get('PDO'));
+$earningsController = new EarningsController();
 
 // Get the request method and path
 $method = $_SERVER['REQUEST_METHOD'];
@@ -224,6 +226,66 @@ try {
             $page = $_GET['page'] ?? 1;
             $limit = $_GET['limit'] ?? 10;
             $result = $driverController->getAllDrivers($page, $limit);
+            echo json_encode($result);
+            exit;
+        }
+    }
+
+    // ---------------------------
+    // EARNINGS ROUTES
+    // ---------------------------
+    if (isset($pathParts[0]) && $pathParts[0] === 'earnings') {
+        // GET /earnings/driver/{id}
+        if ($method === 'GET' && count($pathParts) === 3 && $pathParts[1] === 'driver' && is_numeric($pathParts[2])) {
+            $driverId = $pathParts[2];
+            $result = $earningsController->getDriverEarnings($driverId);
+            echo json_encode($result);
+            exit;
+        }
+
+        // POST /earnings/add
+        if ($method === 'POST' && count($pathParts) === 2 && $pathParts[1] === 'add') {
+            $input = json_decode(file_get_contents('php://input'), true);
+            
+            if (!$input || !isset($input['driverId']) || !isset($input['tripId']) || !isset($input['finalFare'])) {
+                echo json_encode([
+                    "status" => "error",
+                    "message" => "Missing required fields: driverId, tripId, finalFare"
+                ]);
+                exit;
+            }
+            
+            $result = $earningsController->addEarnings($input);
+            echo json_encode($result);
+            exit;
+        }
+
+        // GET /earnings/transactions/{driverId}
+        if ($method === 'GET' && count($pathParts) === 3 && $pathParts[1] === 'transactions' && is_numeric($pathParts[2])) {
+            $driverId = $pathParts[2];
+            $limit = $_GET['limit'] ?? 50;
+            $offset = $_GET['offset'] ?? 0;
+            
+            $result = $earningsController->getTransactionHistory($driverId, $limit, $offset);
+            echo json_encode($result);
+            exit;
+        }
+    }
+
+    // Shift management routes
+    if (isset($pathParts[0]) && $pathParts[0] === 'earnings' && isset($pathParts[1]) && $pathParts[1] === 'shift') {
+        // POST /earnings/shift/end
+        if ($method === 'POST' && count($pathParts) === 3 && $pathParts[2] === 'end') {
+            $input = json_decode(file_get_contents('php://input'), true);
+            $result = $earningsController->endShift($input);
+            echo json_encode($result);
+            exit;
+        }
+        
+        // POST /earnings/shift/start
+        if ($method === 'POST' && count($pathParts) === 3 && $pathParts[2] === 'start') {
+            $input = json_decode(file_get_contents('php://input'), true);
+            $result = $earningsController->startShift($input);
             echo json_encode($result);
             exit;
         }
