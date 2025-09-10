@@ -22,8 +22,6 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
     switch (type) {
       case 'PWD': 
         return 'Person with Disability';
-      case 'Pregnant': 
-        return 'Pregnant';
       case 'Senior Citizen': 
         return 'Senior Citizen';
       case 'Student': 
@@ -61,7 +59,6 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
       case 'Student': return 20;
       case 'PWD': return 20;
       case 'Senior Citizen': return 30;
-      case 'Pregnant': return 0; // Pregnant discount not implemented yet
       default: return 0;
     }
   };
