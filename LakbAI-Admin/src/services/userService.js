@@ -77,7 +77,7 @@ class UserService {
       if (data.status === 'success') {
         return {
           success: true,
-          users: data.users || [],
+          users: data.data || [],
           count: data.count || 0
         };
       } else {
@@ -88,6 +88,34 @@ class UserService {
       return {
         success: false,
         error: error.message || 'Failed to fetch discount applications'
+      };
+    }
+  }
+
+  /**
+   * Get pending discount applications only
+   */
+  static async getPendingDiscountApplications() {
+    try {
+      const response = await fetch(`${this.API_BASE_URL}/admin/discount-applications`);
+      const data = await response.json();
+
+      if (data.status === 'success') {
+        // Filter only pending applications
+        const pendingApplications = (data.data || []).filter(user => user.discount_status === 'pending');
+        return {
+          success: true,
+          users: pendingApplications,
+          count: pendingApplications.length
+        };
+      } else {
+        throw new Error(data.message || 'Failed to fetch pending discount applications');
+      }
+    } catch (error) {
+      console.error('Error fetching pending discount applications:', error);
+      return {
+        success: false,
+        error: error.message || 'Failed to fetch pending discount applications'
       };
     }
   }
@@ -253,12 +281,20 @@ class UserService {
    */
   static async createUser(userData) {
     try {
+      // Prepare user data with new discount fields
+      const submitData = {
+        ...userData,
+        discount_applied: userData.discount_applied || false,
+        discount_file_path: userData.discount_file_path || null,
+        discount_status: userData.discount_status || 'pending'
+      };
+
       const response = await fetch(`${this.API_BASE_URL}/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(userData)
+        body: JSON.stringify(submitData)
       });
 
       const data = await response.json();
@@ -277,6 +313,77 @@ class UserService {
       return {
         success: false,
         error: error.message || 'Failed to create user'
+      };
+    }
+  }
+
+  /**
+   * Upload discount document
+   */
+  static async uploadDiscountDocument(file) {
+    try {
+      const formData = new FormData();
+      formData.append('discount_document', file);
+
+      const response = await fetch(`${this.API_BASE_URL}/upload-discount-document`, {
+        method: 'POST',
+        body: formData
+      });
+
+      const data = await response.json();
+
+      if (data.status === 'success') {
+        return {
+          success: true,
+          data: data.data
+        };
+      } else {
+        throw new Error(data.message || 'Upload failed');
+      }
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      return {
+        success: false,
+        error: error.message || 'Upload failed'
+      };
+    }
+  }
+
+  /**
+   * Get discount document URL
+   */
+  static getDiscountDocumentUrl(filePath) {
+    return `${this.API_BASE_URL}/discount-document?path=${encodeURIComponent(filePath)}`;
+  }
+
+  /**
+   * Delete discount document
+   */
+  static async deleteDiscountDocument(filePath) {
+    try {
+      const response = await fetch(`${this.API_BASE_URL}/delete-discount-document`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ file_path: filePath })
+      });
+
+      const data = await response.json();
+
+      if (data.status === 'success') {
+        return {
+          success: true,
+          message: data.message
+        };
+      } else {
+        throw new Error(data.message || 'Delete failed');
+      }
+    } catch (error) {
+      console.error('Error deleting file:', error);
+      return {
+        success: false,
+        error: error.message || 'Delete failed'
       };
     }
   }

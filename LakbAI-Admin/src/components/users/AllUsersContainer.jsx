@@ -32,9 +32,14 @@ const AllUsersContainer = ({ userType = null, onDataUpdate }) => {
   const [toast, setToast] = useState({ show: false, message: '', variant: 'success' });
 
   const handleUserAction = (user, action) => {
-    setSelectedUser(user);
-    setModalMode(action);
-    setShowUserModal(true);
+    if (action === 'delete') {
+      setUserToDelete(user);
+      setShowDeleteModal(true);
+    } else {
+      setSelectedUser(user);
+      setModalMode(action);
+      setShowUserModal(true);
+    }
   };
 
   const handleCreateUser = () => {
@@ -42,6 +47,7 @@ const AllUsersContainer = ({ userType = null, onDataUpdate }) => {
     setModalMode('create');
     setShowUserModal(true);
   };
+
 
   const handleSaveUser = async (userData) => {
     try {
@@ -169,7 +175,6 @@ const AllUsersContainer = ({ userType = null, onDataUpdate }) => {
               <AllUsersTable
                 users={users}
                 onUserAction={handleUserAction}
-                onViewDocument={handleViewDocument}
               />
             </div>
           </Card>
@@ -201,6 +206,7 @@ const AllUsersContainer = ({ userType = null, onDataUpdate }) => {
         toast={toast}
         onClose={() => setToast({ ...toast, show: false })}
       />
+
     </div>
   );
 };

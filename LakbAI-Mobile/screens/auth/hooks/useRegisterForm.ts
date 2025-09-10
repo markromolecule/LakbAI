@@ -118,6 +118,8 @@ export const useRegisterForm = (onSignUp: (data: SignUpData) => void) => {
       try {
         console.log('=== REGISTRATION START ===');
         console.log('Attempting to register user:', signUpData);
+        console.log('AuthService object:', authService);
+        console.log('AuthService.register method:', authService?.register);
         const response = await authService.register(signUpData);
         console.log('API Response:', response);
         

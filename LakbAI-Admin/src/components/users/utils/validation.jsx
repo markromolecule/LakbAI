@@ -52,6 +52,19 @@ export const validateUserForm = (formData, mode) => {
     }
   }
 
+  // Discount validation
+  if (formData.discount_applied && formData.user_type === 'passenger') {
+    // If discount is applied, file upload is required
+    if (!formData.discount_file_path || !formData.discount_file_path.trim()) {
+      errors.discount_file_path = 'Supporting document is required when applying for discount';
+    }
+    
+    // If discount is applied, discount type must be selected
+    if (!formData.discount_type || !formData.discount_type.trim()) {
+      errors.discount_type = 'Discount type is required when applying for discount';
+    }
+  }
+
   return errors;
 };
 
@@ -66,6 +79,9 @@ export const cleanFormDataForSubmission = (formData, userType) => {
   // For drivers, remove discount-related fields
   if (userType === 'driver') {
     delete cleanedData.discount_type;
+    delete cleanedData.discount_applied;
+    delete cleanedData.discount_file_path;
+    delete cleanedData.discount_status;
     delete cleanedData.discount_verified;
     delete cleanedData.discount_document_path;
     delete cleanedData.discount_document_name;
@@ -81,6 +97,11 @@ export const cleanFormDataForSubmission = (formData, userType) => {
   // Remove password if empty
   if (!cleanedData.password) {
     delete cleanedData.password;
+  }
+  
+  // Set discount_status based on discount_applied
+  if (cleanedData.discount_applied && !cleanedData.discount_status) {
+    cleanedData.discount_status = 'pending';
   }
   
   return cleanedData;
