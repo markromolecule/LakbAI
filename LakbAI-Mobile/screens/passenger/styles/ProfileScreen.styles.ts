@@ -382,6 +382,78 @@ export const profileStyles = StyleSheet.create({
     fontSize: 14,
     color: '#6B7280',
   },
+  
+  // New styles for DiscountStatusCard
+  loadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 20,
+  },
+  
+  loadingText: {
+    marginLeft: 8,
+    color: '#6B7280',
+    fontSize: 14,
+  },
+  
+  refreshButton: {
+    padding: 4,
+    borderRadius: 4,
+    marginLeft: 'auto',
+  },
+  
+  discountMessage: {
+    color: '#6B7280',
+    fontSize: 13,
+    marginTop: 4,
+    fontStyle: 'italic',
+  },
+  
+  discountAmountContainer: {
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
+  },
+  
+  discountAmountLabel: {
+    color: '#6B7280',
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  
+  discountAmountValue: {
+    color: '#10B981',
+    fontSize: 16,
+    fontWeight: '600',
+    marginTop: 2,
+  },
+  
+  errorContainer: {
+    alignItems: 'center',
+    paddingVertical: 20,
+  },
+  
+  errorText: {
+    color: '#EF4444',
+    fontSize: 14,
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  
+  retryButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: '#3B82F6',
+    borderRadius: 6,
+  },
+  
+  retryButtonText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '500',
+  },
 });
 
 export const homeStyles = StyleSheet.create({

@@ -2,15 +2,18 @@ import React from 'react';
 import { Table, Badge, Button } from 'react-bootstrap';
 import styles from './TableStyles.module.css';
 
-const AllUsersTable = ({ users, onUserAction, onViewDocument }) => {
+const AllUsersTable = ({ users, onUserAction }) => {
   const getDiscountBadge = (user) => {
     if (!user.discount_type) {
       return <Badge className={`${styles.badge} ${styles.badgeSecondary}`}>No Discount</Badge>;
     }
     
-    if (user.discount_verified === 1) {
+    // Use new discount_status field if available, otherwise fall back to discount_verified
+    const status = user.discount_status || (user.discount_verified === 1 ? 'approved' : user.discount_verified === -1 ? 'rejected' : 'pending');
+    
+    if (status === 'approved') {
       return <Badge className={`${styles.badge} ${styles.badgeSuccess}`}>{user.discount_type} - Approved</Badge>;
-    } else if (user.discount_verified === -1) {
+    } else if (status === 'rejected') {
       return (
         <div>
           <Badge className={`${styles.badge} ${styles.badgeDanger}`}>{user.discount_type} - Rejected</Badge>
@@ -32,16 +35,11 @@ const AllUsersTable = ({ users, onUserAction, onViewDocument }) => {
   const renderDiscountAndDocuments = (user) => (
     <div className="d-flex align-items-center gap-2">
       {getDiscountBadge(user)}
-      {user.discount_document_name && (
-        <Button
-          variant="outline-primary"
-          size="sm"
-          className={styles.documentButton}
-          onClick={() => onViewDocument(user)}
-          title="View document"
-        >
-          <i className="bi bi-file-earmark-text"></i>
-        </Button>
+      {(user.discount_file_path || user.discount_document_name) && (
+        <Badge className={`${styles.badge} ${styles.badgeInfo}`}>
+          <i className="bi bi-file-earmark-text me-1"></i>
+          Document
+        </Badge>
       )}
     </div>
   );
@@ -66,7 +64,7 @@ const AllUsersTable = ({ users, onUserAction, onViewDocument }) => {
             <th className={styles.userColumn}>User</th>
             <th className={styles.typeColumn}>Type</th>
             <th className={styles.phoneColumn}>Phone</th>
-            <th className={styles.verificationColumn}>Discount & Documents</th>
+            <th className={styles.verificationColumn}>Discount Status</th>
             <th className={styles.statusColumn}>Status</th>
             <th className={styles.joinedColumn}>Joined</th>
             <th className={styles.actionsColumn}>Actions</th>

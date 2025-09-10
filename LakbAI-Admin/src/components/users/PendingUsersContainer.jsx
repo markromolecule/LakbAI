@@ -4,6 +4,8 @@ import UserService from '../../services/userService';
 import PendingUsersTable from './components/tables/PendingUsersTable';
 import ConfirmationModal from './components/modals/ConfirmationModal';
 import DocumentViewerModal from './components/modals/DocumentViewerModal';
+import DiscountDocumentViewer from './components/DiscountDocumentViewer';
+import DiscountReviewModal from './components/DiscountReviewModal';
 import { usePendingUsers } from './hooks/usePendingUsers';
 
 const PendingUsersContainer = ({ onDataUpdate }) => {
@@ -22,6 +24,10 @@ const PendingUsersContainer = ({ onDataUpdate }) => {
   const [actionData, setActionData] = useState(null);
   const [showDocumentModal, setShowDocumentModal] = useState(false);
   const [selectedDocument, setSelectedDocument] = useState(null);
+  const [showDiscountModal, setShowDiscountModal] = useState(false);
+  const [selectedDiscountUser, setSelectedDiscountUser] = useState(null);
+  const [showDiscountReview, setShowDiscountReview] = useState(false);
+  const [selectedReviewUser, setSelectedReviewUser] = useState(null);
 
   const handleApprovalAction = (user, approved) => {
     setActionData({ user, approved, type: 'discount' });
@@ -34,15 +40,20 @@ const PendingUsersContainer = ({ onDataUpdate }) => {
   };
 
   const handleViewDocument = (user) => {
-    if (user.discount_document_name || user.drivers_license_name) {
+    if (user.user_type === 'driver' && user.drivers_license_name) {
+      // For drivers, use the simple document viewer
       setSelectedDocument({
-        name: user.discount_document_name || user.drivers_license_name,
-        type: user.user_type === 'driver' ? 'Driver\'s License' : user.discount_type,
+        name: user.drivers_license_name,
+        type: 'Driver\'s License',
         user: `${user.first_name} ${user.last_name}`,
         userId: user.id,
-        path: user.discount_document_path || user.drivers_license_path || null
+        path: user.drivers_license_path || null
       });
       setShowDocumentModal(true);
+    } else if (user.user_type === 'passenger' && (user.discount_applied || user.discount_type)) {
+      // For passengers with discount applications, show enhanced discount review modal
+      setSelectedReviewUser(user);
+      setShowDiscountReview(true);
     }
   };
 
@@ -73,6 +84,18 @@ const PendingUsersContainer = ({ onDataUpdate }) => {
     }
   };
 
+  const handleDiscountStatusUpdate = async (status) => {
+    // Refresh the pending users list after discount status update
+    await loadPendingUsers();
+    if (onDataUpdate) onDataUpdate();
+  };
+
+  const handleDiscountReviewUpdate = async (status) => {
+    // Refresh the pending users list after discount review
+    await loadPendingUsers();
+    if (onDataUpdate) onDataUpdate();
+  };
+
   const currentUsers = viewMode === 'pending' ? pendingUsers : allDiscountUsers;
 
   if (loading && pendingUsers.length === 0) {
@@ -90,7 +113,7 @@ const PendingUsersContainer = ({ onDataUpdate }) => {
         <Card.Body>
           <i className="bi bi-check-circle display-1 text-success mb-3 opacity-50"></i>
           <h5 className="text-muted mb-2">No Pending Approvals</h5>
-          <p className="text-muted mb-0">All discount applications have been processed.</p>
+          <p className="text-muted mb-0">All account verification applications have been processed.</p>
         </Card.Body>
       </Card>
     );
@@ -102,7 +125,7 @@ const PendingUsersContainer = ({ onDataUpdate }) => {
         <div className="d-flex align-items-center gap-3">
           <h5 className="mb-0">
             <i className="bi bi-clock-history me-2"></i>
-            Verification Applications
+            Account Verification & Approval
           </h5>
           
           <ButtonGroup size="sm">
@@ -146,12 +169,14 @@ const PendingUsersContainer = ({ onDataUpdate }) => {
       <ConfirmationModal
         show={showConfirmModal}
         onHide={() => setShowConfirmModal(false)}
-        title={`${actionData?.approved ? 'Approve' : 'Reject'} Application`}
+        title={`${actionData?.approved ? 'Approve' : 'Reject'} Account`}
         message={
           actionData ? 
-          `Are you sure you want to ${actionData.approved ? 'approve' : 'reject'} the ${
-            actionData.type === 'license' ? 'driver\'s license' : `${actionData.user.discount_type} discount application`
-          } for ${actionData.user.first_name} ${actionData.user.last_name}?` : ''
+          `Are you sure you want to ${actionData.approved ? 'approve' : 'reject'} the account for ${actionData.user.first_name} ${actionData.user.last_name}? ${
+            actionData.type === 'license' 
+              ? 'This will verify their driver\'s license and activate their account.' 
+              : `This will ${actionData.approved ? 'approve their discount application and activate' : 'reject their discount application and deactivate'} their account.`
+          }` : ''
         }
         confirmText={actionData?.approved ? 'Approve' : 'Reject'}
         variant={actionData?.approved ? 'success' : 'danger'}
@@ -165,16 +190,30 @@ const PendingUsersContainer = ({ onDataUpdate }) => {
         onApprove={() => {
           setShowDocumentModal(false);
           const user = currentUsers.find(u => u.id === selectedDocument.userId);
-          if (user) handleApprovalAction(user, true);
+          if (user) handleDriverLicenseApproval(user, true);
         }}
         onReject={(rejectionReason) => {
           setShowDocumentModal(false);
           const user = currentUsers.find(u => u.id === selectedDocument.userId);
           if (user) {
-            setActionData({ user, approved: false, type: 'discount', rejectionReason });
+            setActionData({ user, approved: false, type: 'license', rejectionReason });
             setShowConfirmModal(true);
           }
         }}
+      />
+
+      <DiscountDocumentViewer
+        show={showDiscountModal}
+        onHide={() => setShowDiscountModal(false)}
+        user={selectedDiscountUser}
+        onStatusUpdate={handleDiscountStatusUpdate}
+      />
+
+      <DiscountReviewModal
+        show={showDiscountReview}
+        onHide={() => setShowDiscountReview(false)}
+        user={selectedReviewUser}
+        onStatusUpdate={handleDiscountReviewUpdate}
       />
     </div>
   );

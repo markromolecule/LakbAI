@@ -31,7 +31,7 @@ export const usePassengerState = () => {
     fareDiscount: {
       type: 'Student',
       status: 'approved',
-      percentage: 15,
+      percentage: 20,
       document: {
         uri: 'https://example.com/student-id.jpg',
         name: 'student_id_2024.jpg',
@@ -112,10 +112,10 @@ export const usePassengerState = () => {
               },
               fareDiscount: {
                 type: dbUser.discount_type || '' as const,
-                status: dbUser.discount_verified ? 'approved' as const : 'none' as const,
-                percentage: dbUser.discount_type === 'Student' ? 15 : 
+                status: dbUser.discount_applied ? (dbUser.discount_status || (dbUser.discount_verified ? 'approved' as const : 'pending' as const)) : 'none' as const,
+                percentage: dbUser.discount_amount || (dbUser.discount_type === 'Student' ? 20 : 
                            dbUser.discount_type === 'PWD' ? 20 :
-                           dbUser.discount_type === 'Senior Citizen' ? 30 : 0,
+                           dbUser.discount_type === 'Senior Citizen' ? 30 : 0),
                 document: dbUser.discount_document_path ? {
                   uri: dbUser.discount_document_path,
                   name: dbUser.discount_document_name || 'document',
@@ -167,10 +167,10 @@ export const usePassengerState = () => {
             },
             fareDiscount: {
               type: traditionalUser.discount_type || '' as const,
-              status: traditionalUser.discount_verified ? 'approved' as const : 'none' as const,
-              percentage: traditionalUser.discount_type === 'Student' ? 15 : 
+              status: traditionalUser.discount_applied ? (traditionalUser.discount_status || (traditionalUser.discount_verified ? 'approved' as const : 'pending' as const)) : 'none' as const,
+              percentage: traditionalUser.discount_amount || (traditionalUser.discount_type === 'Student' ? 20 : 
                          traditionalUser.discount_type === 'PWD' ? 20 :
-                         traditionalUser.discount_type === 'Senior Citizen' ? 30 : 0,
+                         traditionalUser.discount_type === 'Senior Citizen' ? 30 : 0),
               document: traditionalUser.discount_document_path ? {
                 uri: traditionalUser.discount_document_path,
                 name: traditionalUser.discount_document_name || 'document',

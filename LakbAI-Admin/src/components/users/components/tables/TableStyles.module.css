@@ -127,6 +127,16 @@
   color: white;
 }
 
+.actionButtonApprove {
+  border-color: #28a745;
+  color: #28a745;
+}
+
+.actionButtonApprove:hover {
+  background-color: #28a745;
+  color: white;
+}
+
 .actionButtonEdit {
   border-color: #f39c12;
   color: #f39c12;
@@ -144,6 +154,16 @@
 
 .actionButtonDelete:hover {
   background-color: #e74c3c;
+  color: white;
+}
+
+.actionButtonReject {
+  border-color: #dc3545;
+  color: #dc3545;
+}
+
+.actionButtonReject:hover {
+  background-color: #dc3545;
   color: white;
 }
 

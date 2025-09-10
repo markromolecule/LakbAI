@@ -491,6 +491,23 @@ class AuthService {
     }
 
     /**
+     * Get user by Auth0 ID
+     */
+    public function getUserByAuth0Id($auth0Id) {
+        try {
+            $user = $this->userRepository->findByAuth0Id($auth0Id);
+            
+            if ($user) {
+                return $this->successResponse('User found', ['user' => $user]);
+            } else {
+                return $this->errorResponse('User not found');
+            }
+        } catch (Exception $e) {
+            return $this->errorResponse('Failed to get user by Auth0 ID: ' . $e->getMessage());
+        }
+    }
+
+    /**
      * Success response format
      */
     private function successResponse($message, $data = null) {
