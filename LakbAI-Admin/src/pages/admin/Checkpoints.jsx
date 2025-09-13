@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Card, Button, Form, Row, Col } from "react-bootstrap";
 import AdminLayout from "../../components/admin/layout/AdminLayout";
 
-// Example checkpoint list (you can import from constants instead)
+// Example checkpoint list (replace with constants if you already have one)
 const CHECKPOINTS = [
   "Imus",
   "Robinson Tejero",
@@ -41,8 +41,9 @@ const Checkpoints = () => {
       id: Date.now(),
       name: selected,
       qrUrl: generateQR(selected),
+      createdAt: new Date().toISOString(),
     };
-    setGenerated([...generated, newQR]);
+    setGenerated((prev) => [newQR, ...prev]); // LIFO (newest first)
     setSelected("");
   };
 
@@ -89,7 +90,7 @@ const Checkpoints = () => {
           </Button>
         </Form>
 
-        {/* Generated QR cards */}
+        {/* Generated QR cards (LIFO order: newest first) */}
         <Row>
           {generated.map((qr) => (
             <Col md={4} lg={3} key={qr.id} className="mb-4">
@@ -98,7 +99,11 @@ const Checkpoints = () => {
                   src={qr.qrUrl}
                   alt="QR Code"
                   className="mb-3"
-                  style={{ width: "100%", maxHeight: "200px", objectFit: "contain" }}
+                  style={{
+                    width: "100%",
+                    maxHeight: "200px",
+                    objectFit: "contain",
+                  }}
                 />
                 <h6 className="fw-bold">{qr.name}</h6>
                 <div className="d-flex justify-content-center mt-2">
