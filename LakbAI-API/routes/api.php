@@ -1,10 +1,10 @@
 <?php
 // Enhanced CORS headers
 header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
+header('Access-Control-Allow-Methods: GET, POST, PUT, PATCH, DELETE, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, Authorization, Accept, X-Requested-With');
 header('Access-Control-Allow-Credentials: false');
-header('Access-Control-Max-Age: 86400');
+header('Access-Control-Max-Age: 0');
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-cache, no-store, must-revalidate');
 header('Pragma: no-cache');
@@ -29,6 +29,9 @@ require_once __DIR__ . '/../controllers/JeepneyController.php';
 require_once __DIR__ . '/../controllers/DriverController.php';
 require_once __DIR__ . '/../controllers/RouteController.php';
 require_once __DIR__ . '/../controllers/CheckpointController.php';
+require_once __DIR__ . '/../controllers/EarningsController.php';
+require_once __DIR__ . '/../controllers/FileUploadController.php';
+require_once __DIR__ . '/../controllers/DiscountController.php';
 
 
 // Initialize controller with database connection
@@ -39,6 +42,9 @@ $jeepneyController = new JeepneyController($app->get('PDO'));
 $driverController = new DriverController($app->get('PDO'));
 $routeController = new RouteController($app->get('PDO'));
 $checkpointController = new CheckpointController($app->get('PDO'));
+$earningsController = new EarningsController();
+$fileUploadController = new FileUploadController($app->get('Database'));
+$discountController = new DiscountController($app->get('Database'));
 
 // Get the request method and path
 $method = $_SERVER['REQUEST_METHOD'];
@@ -63,7 +69,7 @@ $pathParts = $rawParts;
 
 // Get request data
 $input = [];
-if ($method === 'POST' || $method === 'PUT') {
+if ($method === 'POST' || $method === 'PUT' || $method === 'PATCH') {
     $contentType = $_SERVER['CONTENT_TYPE'] ?? '';
     
     if (strpos($contentType, 'application/json') !== false) {
@@ -174,6 +180,15 @@ try {
     // Driver Routes
     // ---------------------------
     if ($pathParts[0] === 'admin' && isset($pathParts[1]) && $pathParts[1] === 'drivers') {
+        // GET /admin/drivers - Get all drivers
+        if ($method === 'GET' && count($pathParts) === 2) {
+            $page = $_GET['page'] ?? 1;
+            $limit = $_GET['limit'] ?? 10;
+            $result = $driverController->getAllDrivers($page, $limit);
+            echo json_encode($result);
+            exit;
+        }
+
         // GET /admin/drivers/search?q=query
         if ($method === 'GET' && count($pathParts) === 3 && $pathParts[2] === 'search') {
             $query = $_GET['q'] ?? '';
@@ -197,12 +212,93 @@ try {
             echo json_encode($result);
             exit;
         }
+    }
+
+    // ---------------------------
+    // Mobile Driver Routes
+    // ---------------------------
+    if ($pathParts[0] === 'mobile' && isset($pathParts[1]) && $pathParts[1] === 'driver') {
+        // GET /mobile/driver/profile/{id}
+        if ($method === 'GET' && count($pathParts) === 4 && $pathParts[2] === 'profile' && is_numeric($pathParts[3])) {
+            $driverId = $pathParts[3];
+            $result = $driverController->getDriverProfile($driverId);
+            echo json_encode($result);
+            exit;
+        }
+
+        // GET /mobile/driver/info/{id} - For QR scanning
+        if ($method === 'GET' && count($pathParts) === 4 && $pathParts[2] === 'info' && is_numeric($pathParts[3])) {
+            $driverId = $pathParts[3];
+            $result = $driverController->getDriverWithJeepney($driverId);
+            echo json_encode($result);
+            exit;
+        }
 
         // GET /admin/drivers
         if ($method === 'GET' && count($pathParts) === 2) {
             $page = $_GET['page'] ?? 1;
             $limit = $_GET['limit'] ?? 10;
             $result = $driverController->getAllDrivers($page, $limit);
+            echo json_encode($result);
+            exit;
+        }
+    }
+
+    // ---------------------------
+    // EARNINGS ROUTES
+    // ---------------------------
+    if (isset($pathParts[0]) && $pathParts[0] === 'earnings') {
+        // GET /earnings/driver/{id}
+        if ($method === 'GET' && count($pathParts) === 3 && $pathParts[1] === 'driver' && is_numeric($pathParts[2])) {
+            $driverId = $pathParts[2];
+            $result = $earningsController->getDriverEarnings($driverId);
+            echo json_encode($result);
+            exit;
+        }
+
+        // POST /earnings/add
+        if ($method === 'POST' && count($pathParts) === 2 && $pathParts[1] === 'add') {
+            $input = json_decode(file_get_contents('php://input'), true);
+            
+            if (!$input || !isset($input['driverId']) || !isset($input['tripId']) || !isset($input['finalFare'])) {
+                echo json_encode([
+                    "status" => "error",
+                    "message" => "Missing required fields: driverId, tripId, finalFare"
+                ]);
+                exit;
+            }
+            
+            $result = $earningsController->addEarnings($input);
+            echo json_encode($result);
+            exit;
+        }
+
+        // GET /earnings/transactions/{driverId}
+        if ($method === 'GET' && count($pathParts) === 3 && $pathParts[1] === 'transactions' && is_numeric($pathParts[2])) {
+            $driverId = $pathParts[2];
+            $limit = $_GET['limit'] ?? 50;
+            $offset = $_GET['offset'] ?? 0;
+            
+            $result = $earningsController->getTransactionHistory($driverId, $limit, $offset);
+            echo json_encode($result);
+            exit;
+        }
+    }
+
+    // Shift management routes
+    if (isset($pathParts[0]) && $pathParts[0] === 'earnings' && isset($pathParts[1]) && $pathParts[1] === 'shift') {
+        // POST /earnings/shift/end
+        if ($method === 'POST' && count($pathParts) === 3 && $pathParts[2] === 'end') {
+            $input = json_decode(file_get_contents('php://input'), true);
+            $result = $earningsController->endShift($input);
+            echo json_encode($result);
+            exit;
+        }
+        
+        // POST /earnings/shift/start
+        if ($method === 'POST' && count($pathParts) === 3 && $pathParts[2] === 'start') {
+            $input = json_decode(file_get_contents('php://input'), true);
+            $result = $earningsController->startShift($input);
             echo json_encode($result);
             exit;
         }
@@ -522,8 +618,8 @@ try {
     
     // Admin user management routes
     if ($pathParts[0] === 'admin' && count($pathParts) >= 2) {
-        // Get all users with filtering
-        if ($pathParts[1] === 'users' && $method === 'GET') {
+        // Get all users with filtering (only if no additional path parts)
+        if ($pathParts[1] === 'users' && $method === 'GET' && count($pathParts) === 2) {
             $userType = $_GET['user_type'] ?? null;
             $discountStatus = $_GET['discount_status'] ?? null;
             $page = $_GET['page'] ?? 1;
@@ -615,6 +711,109 @@ try {
                 exit;
             }
         }
+    }
+
+    // File upload routes
+    if (end($pathParts) === 'upload-discount-document' && $method === 'POST') {
+        $result = $fileUploadController->uploadDiscountDocument();
+        echo json_encode($result);
+        exit;
+    }
+
+    // Serve discount document file
+    if (isset($pathParts[0]) && $pathParts[0] === 'discount-document' && $method === 'GET') {
+        $filePath = isset($_GET['path']) ? $_GET['path'] : '';
+        if ($filePath) {
+            $fileUploadController->serveDiscountDocument($filePath);
+        } else {
+            http_response_code(400);
+            echo json_encode(['error' => 'File path parameter is required']);
+        }
+        exit;
+    }
+
+    // Delete discount document file
+    if (isset($pathParts[0]) && $pathParts[0] === 'delete-discount-document' && $method === 'DELETE') {
+        $input = json_decode(file_get_contents('php://input'), true);
+        $filePath = isset($input['file_path']) ? $input['file_path'] : '';
+        
+        if ($filePath) {
+            $result = $fileUploadController->deleteDiscountDocument($filePath);
+            echo json_encode($result);
+        } else {
+            http_response_code(400);
+            echo json_encode(['error' => 'File path is required']);
+        }
+        exit;
+    }
+
+    // ---------------------------
+    // Discount Management Routes
+    // ---------------------------
+    
+    // GET /users/{id}/discount - Get user discount status
+    if ($pathParts[0] === 'users' && isset($pathParts[1]) && is_numeric($pathParts[1]) && 
+        isset($pathParts[2]) && $pathParts[2] === 'discount' && $method === 'GET') {
+        $userId = $pathParts[1];
+        $result = $discountController->getUserDiscountStatus($userId);
+        echo json_encode($result);
+        exit;
+    }
+
+    // PATCH /users/{id}/discount - Update discount status (admin only)
+    if ($pathParts[0] === 'users' && isset($pathParts[1]) && is_numeric($pathParts[1]) && 
+        isset($pathParts[2]) && $pathParts[2] === 'discount' && $method === 'PATCH') {
+        $userId = $pathParts[1];
+        $status = $input['status'] ?? '';
+        $discountAmount = $input['discount_amount'] ?? null;
+        $rejectionReason = $input['rejection_reason'] ?? null;
+        
+        $result = $discountController->updateDiscountStatus($userId, $status, $discountAmount, $rejectionReason);
+        echo json_encode($result);
+        exit;
+    }
+
+    // GET /admin/discount-applications - Get all pending discount applications
+    if ($pathParts[0] === 'admin' && isset($pathParts[1]) && $pathParts[1] === 'discount-applications' && $method === 'GET') {
+        $result = $discountController->getPendingDiscountApplications();
+        echo json_encode($result);
+        exit;
+    }
+
+    // GET /admin/users/{id}/review - Get detailed user info for discount review
+    if ($pathParts[0] === 'admin' && isset($pathParts[1]) && $pathParts[1] === 'users' && 
+        isset($pathParts[2]) && is_numeric($pathParts[2]) && isset($pathParts[3]) && $pathParts[3] === 'review' && $method === 'GET') {
+        $userId = $pathParts[2];
+        $result = $discountController->getUserDetailsForReview($userId);
+        echo json_encode($result);
+        exit;
+    }
+
+    // POST /discount-applications - Submit new discount application
+    if ($pathParts[0] === 'discount-applications' && $method === 'POST') {
+        $userId = $input['user_id'] ?? null;
+        $discountType = $input['discount_type'] ?? null;
+        $documentPath = $input['document_path'] ?? null;
+        $documentName = $input['document_name'] ?? null;
+        
+        $result = $discountController->submitDiscountApplication($userId, $discountType, $documentPath, $documentName);
+        echo json_encode($result);
+        exit;
+    }
+
+    // POST /user-by-auth0-id - Get user ID by Auth0 ID
+    if ($pathParts[0] === 'user-by-auth0-id' && $method === 'POST') {
+        $auth0Id = $input['auth0_id'] ?? null;
+        
+        if (!$auth0Id) {
+            http_response_code(400);
+            echo json_encode(['status' => 'error', 'message' => 'Auth0 ID is required']);
+            exit;
+        }
+        
+        $result = $authController->getUserByAuth0Id($auth0Id);
+        echo json_encode($result);
+        exit;
     }
 
     // Route not found

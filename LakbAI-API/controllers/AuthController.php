@@ -280,6 +280,22 @@ class AuthController {
     }
 
     /**
+     * Get user by Auth0 ID
+     */
+    public function getUserByAuth0Id($auth0Id) {
+        try {
+            if (empty($auth0Id)) {
+                return $this->errorResponse('Auth0 ID is required');
+            }
+
+            return $this->authService->getUserByAuth0Id($auth0Id);
+
+        } catch (Exception $e) {
+            return $this->errorResponse('Failed to get user by Auth0 ID: ' . $e->getMessage());
+        }
+    }
+
+    /**
      * Format validation errors for response
      */
     private function validationErrorResponse($errors) {

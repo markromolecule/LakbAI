@@ -1,7 +1,8 @@
 import * as AuthSession from 'expo-auth-session';
 import * as WebBrowser from 'expo-web-browser';
 import { AUTH_CONFIG } from '../../config/auth';
-import { buildAuth0Url } from '../../config/developerConfig';
+import { buildAuth0Url, buildApiUrl } from '../../config/developerConfig';
+import { SignUpData } from '../types/authentication';
 
 // Configure WebBrowser for Auth0
 WebBrowser.maybeCompleteAuthSession();
@@ -42,6 +43,194 @@ class AuthService {
   private discovery: AuthSession.DiscoveryDocument | null = null;
   private useDirectAuth0: boolean = false;
   private currentRequest: AuthSession.AuthRequest | null = null;
+
+  /**
+   * Register new user with document upload support
+   */
+  async register(signUpData: SignUpData): Promise<{ status: 'success' | 'error'; message: string; user?: any }> {
+    try {
+      console.log('📝 Starting user registration process...');
+      console.log('📝 AuthService register method called with data:', signUpData);
+      
+      // Validate that terms are accepted
+      if (!signUpData.acceptedTerms) {
+        return {
+          status: 'error',
+          message: 'You must accept the Terms and Conditions to register.'
+        };
+      }
+      
+      // First, upload document if provided
+      let documentPath = null;
+      if (signUpData.fareDiscount.document && signUpData.fareDiscount.type) {
+        console.log('📄 Uploading discount document...');
+        const uploadResult = await this.uploadDiscountDocument(signUpData.fareDiscount.document);
+        if (uploadResult.success) {
+          documentPath = uploadResult.filePath;
+          console.log('✅ Document uploaded successfully:', documentPath);
+        } else {
+          console.error('❌ Document upload failed:', uploadResult.error);
+          return {
+            status: 'error',
+            message: 'Failed to upload document. Please try again.'
+          };
+        }
+      }
+
+      // Prepare registration data
+      const registrationData = {
+        action: 'register',
+        username: signUpData.username,
+        email: signUpData.email,
+        password: signUpData.password,
+        first_name: signUpData.firstName,
+        last_name: signUpData.lastName,
+        phone_number: signUpData.phoneNumber,
+        house_number: signUpData.houseNumber,
+        street_name: signUpData.streetName,
+        barangay: signUpData.barangay,
+        city_municipality: signUpData.cityMunicipality,
+        province: signUpData.province,
+        postal_code: signUpData.postalCode,
+        birthday: `${signUpData.birthYear}-${this.getMonthNumber(signUpData.birthMonth).padStart(2, '0')}-${signUpData.birthDate.padStart(2, '0')}`,
+        gender: this.capitalizeGender(signUpData.gender),
+        user_type: 'passenger',
+        discount_type: signUpData.fareDiscount.type || null,
+        discount_applied: !!signUpData.fareDiscount.type,
+        discount_file_path: documentPath,
+        discount_status: signUpData.fareDiscount.type ? 'pending' : null,
+        discount_verified: false,
+        is_verified: false
+      };
+
+      console.log('📤 Sending registration data to backend...');
+      console.log('📤 Registration data:', JSON.stringify(registrationData, null, 2));
+      
+      // Call the backend registration endpoint
+      const response = await fetch(`${buildAuth0Url().replace('/routes/auth0.php', '/routes/auth_routes.php')}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(registrationData),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Registration response error:', errorText);
+        return {
+          status: 'error',
+          message: 'Registration failed. Please try again.'
+        };
+      }
+
+      const data = await response.json();
+      console.log('Registration response:', data);
+
+      if (data.status === 'success') {
+        console.log('✅ Registration successful!');
+        return {
+          status: 'success',
+          message: 'Registration successful! You can now log in.',
+          user: data.user || data.data?.user
+        };
+      } else {
+        return {
+          status: 'error',
+          message: data.message || 'Registration failed. Please try again.'
+        };
+      }
+    } catch (error) {
+      console.error('❌ Registration error:', error);
+      return {
+        status: 'error',
+        message: 'Registration failed. Please check your connection and try again.'
+      };
+    }
+  }
+
+  /**
+   * Convert month name to number
+   */
+  private getMonthNumber(monthName: string): string {
+    const monthMap: { [key: string]: string } = {
+      'January': '01', 'February': '02', 'March': '03', 'April': '04',
+      'May': '05', 'June': '06', 'July': '07', 'August': '08',
+      'September': '09', 'October': '10', 'November': '11', 'December': '12'
+    };
+    return monthMap[monthName] || '01';
+  }
+
+  /**
+   * Capitalize gender to match backend expectations
+   */
+  private capitalizeGender(gender: string): string {
+    const genderMap: { [key: string]: string } = {
+      'male': 'Male',
+      'female': 'Female',
+      'other': 'Other'
+    };
+    return genderMap[gender.toLowerCase()] || 'Other';
+  }
+
+  /**
+   * Upload discount document to backend
+   */
+  private async uploadDiscountDocument(document: { uri: string; name: string; type: string }): Promise<{ success: boolean; filePath?: string; error?: string }> {
+    try {
+      console.log('📤 Uploading document:', document.name);
+      
+      // Create FormData for file upload (React Native format)
+      const formData = new FormData();
+      const fileData = {
+        uri: document.uri,
+        name: document.name,
+        type: document.type === 'image' ? 'image/jpeg' : document.type,
+      };
+      formData.append('discount_document', fileData as any);
+      
+      console.log('📤 FormData file object:', fileData);
+
+      // Upload to the same endpoint used by the web admin
+      const uploadUrl = `${buildApiUrl().replace('/routes/api.php', '/api/upload-discount-document')}`;
+      console.log('📤 Upload URL:', uploadUrl);
+      const response = await fetch(uploadUrl, {
+        method: 'POST',
+        // Don't set Content-Type header - let React Native set it with proper boundary
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Document upload response error:', errorText);
+        return {
+          success: false,
+          error: 'Failed to upload document'
+        };
+      }
+
+      const data = await response.json();
+      console.log('Document upload response:', data);
+
+      if (data.status === 'success') {
+        return {
+          success: true,
+          filePath: data.data.file_path
+        };
+      } else {
+        return {
+          success: false,
+          error: data.message || 'Failed to upload document'
+        };
+      }
+    } catch (error) {
+      console.error('❌ Document upload error:', error);
+      return {
+        success: false,
+        error: 'Network error during document upload'
+      };
+    }
+  }
 
   /**
    * Traditional login method for username/password authentication
@@ -406,4 +595,6 @@ class AuthService {
   }
 }
 
-export default new AuthService();
+const authService = new AuthService();
+export { authService };
+export default authService;

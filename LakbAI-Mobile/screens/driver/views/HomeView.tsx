@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { ScrollView, View, TouchableOpacity, Text } from 'react-native';
 import { 
   TrendingUp,
@@ -6,11 +6,13 @@ import {
   QrCode,
   User,
   Navigation,
-  MapPin
+  MapPin,
+  DollarSign
 } from 'lucide-react-native';
 import { ViewType, DriverProfile, LogItem } from '../../../shared/types/driver';
 import { StatCard, ActionCard, StatusCard } from '../components';
 import { driverStyles, homeStyles } from '../styles';
+import { earningsService } from '../../../shared/services/earningsService';
 
 interface HomeViewProps {
   driverProfile: DriverProfile;
@@ -19,6 +21,7 @@ interface HomeViewProps {
   lastScanTime: string;
   onNavigate: (view: ViewType) => void;
   onToggleDuty: () => void;
+  onRefresh: () => void; // Required for automatic refresh
 }
 
 export const HomeView: React.FC<HomeViewProps> = ({
@@ -27,8 +30,47 @@ export const HomeView: React.FC<HomeViewProps> = ({
   driverLocation,
   lastScanTime,
   onNavigate,
-  onToggleDuty
+  onToggleDuty,
+  onRefresh
 }) => {
+  // Auto-refresh earnings on HomeView with database polling
+  useEffect(() => {
+    console.log('🏠 HomeView mounted - setting up database-driven auto-refresh');
+    
+    // Set up frequent auto-refresh interval for real-time database sync
+    const interval = setInterval(async () => {
+      if (driverProfile.id && onRefresh) {
+        console.log('🔄 HomeView database auto-refresh - checking for earnings updates...');
+        onRefresh();
+      }
+    }, 10000); // Refresh every 10 seconds
+    
+    // Set up earnings listener for immediate updates (backup system)
+    const unsubscribe = earningsService.addListener((driverId) => {
+      if (driverProfile.id?.toString() === driverId && onRefresh) {
+        console.log('💰 HomeView earnings listener triggered - immediate refresh...');
+        onRefresh();
+      }
+    });
+
+    return () => {
+      console.log('🏠 HomeView unmounted - cleaning up database auto-refresh');
+      clearInterval(interval);
+      unsubscribe();
+    };
+  }, [driverProfile.id, onRefresh]);
+
+  // Dynamic greeting based on current time
+  const getTimeBasedGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) {
+      return 'Good morning,';
+    } else if (hour < 18) {
+      return 'Good afternoon,';
+    } else {
+      return 'Good evening,';
+    }
+  };
   const statusRows = [
     { label: 'Current Location', value: driverLocation },
     { label: 'Last Update', value: lastScanTime },
@@ -49,7 +91,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
       <View style={homeStyles.headerCard}>
         <View style={homeStyles.headerTop}>
           <View>
-            <Text style={homeStyles.headerTitle}>Good afternoon,</Text>
+            <Text style={homeStyles.headerTitle}>{getTimeBasedGreeting()}</Text>
             <Text style={homeStyles.headerSubtitle}>{driverProfile.name}</Text>
           </View>
           <View style={homeStyles.headerRight}>
@@ -130,6 +172,16 @@ export const HomeView: React.FC<HomeViewProps> = ({
             iconColor="#F97316"
             borderColor="#FED7AA"
             onPress={() => onNavigate('logs')}
+          />
+        </View>
+        <View style={homeStyles.actionCardWrapper}>
+          <ActionCard
+            title="Earnings"
+            subtitle="View all earnings"
+            icon={DollarSign}
+            iconColor="#16A34A"
+            borderColor="#BBF7D0"
+            onPress={() => onNavigate('earnings')}
           />
         </View>
       </View>

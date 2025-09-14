@@ -4,7 +4,7 @@
  */
 
 // CHANGE THIS TO YOUR LOCAL IP ADDRESS
-export const DEVELOPER_IP = '192.168.254.108:8000'; // Joseph's IP
+export const DEVELOPER_IP = '192.168.254.111:8000'; // Joseph's IP
 
 // Instructions for co-developers:
 // 1. Find your computer's IP address:

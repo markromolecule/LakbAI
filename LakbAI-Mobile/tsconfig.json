@@ -3,6 +3,8 @@
   "compilerOptions": {
     "strict": true,
     "jsx": "react-native",
+    "lib": ["es6", "es2017", "es2018", "es2019", "es2020", "es2021", "dom"],
+    "target": "es2017",
     "types": [
       "react-native",
       "expo"

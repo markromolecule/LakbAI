@@ -392,6 +392,30 @@ class Auth0Controller {
     }
 
     /**
+     * Get user by Auth0 ID
+     */
+    public function getUserByAuth0Id($data) {
+        try {
+            if (!isset($data['auth0_id'])) {
+                return $this->errorResponse('Auth0 ID is required');
+            }
+
+            $auth0Id = $data['auth0_id'];
+            $user = $this->userRepository->findByAuth0Id($auth0Id);
+            
+            if ($user) {
+                return $this->successResponse('User found', [
+                    'user' => $user
+                ]);
+            } else {
+                return $this->errorResponse('User not found');
+            }
+        } catch (Exception $e) {
+            return $this->errorResponse('Failed to get user: ' . $e->getMessage());
+        }
+    }
+
+    /**
      * Success response helper
      */
     private function successResponse($message, $data = []) {

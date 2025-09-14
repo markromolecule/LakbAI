@@ -53,18 +53,15 @@ const JeepneyManagement = () => {
       const data = await JeepneyService.getAllJeepneys();
       if (data.status === "success") {
         const transformedJeepneys = data.jeepneys.map((jeepney) => {
-          const routeObj = routes.find((r) => r.id === jeepney.route_id);
-          const driverObj = drivers.find((d) => d.id === jeepney.driver_id);
-
           return {
             id: jeepney.id,
             jeepney_number: jeepney.jeepney_number,
             plate_number: jeepney.plate_number,
             model: jeepney.model,
             capacity: jeepney.capacity,
-            route: routeObj ? routeObj.route_name : "Unknown Route",
-            driver: driverObj
-              ? `${driverObj.first_name} ${driverObj.last_name}`
+            route: jeepney.route_name || "No Route Assigned",
+            driver: jeepney.first_name && jeepney.last_name
+              ? `${jeepney.first_name} ${jeepney.last_name}`
               : "No Driver Assigned",
             status: jeepney.status,
             created_at: jeepney.created_at,
@@ -127,11 +124,8 @@ const JeepneyManagement = () => {
       plate_number: jeepney.plate_number,
       model: jeepney.model,
       capacity: jeepney.capacity,
-      route_id: routes.find((r) => r.route_name === jeepney.route)?.id || "",
-      driver_id:
-        drivers.find(
-          (d) => `${d.first_name} ${d.last_name}` === jeepney.driver
-        )?.id || "",
+      route_id: jeepney.route_id || "",
+      driver_id: jeepney.driver_id || "",
       status: jeepney.status
     });
     setModalVisible(true);

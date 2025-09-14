@@ -69,29 +69,29 @@ const PendingUsersTable = ({
           size="sm"
           className={styles.documentButton}
           onClick={() => onViewDocument(user)}
-          title="View driver's license"
+          title="Review driver's license and approve account"
         >
           <i className="bi bi-card-text me-1"></i>
-          View License
+          Review License
         </Button>
       ) : (
-        <span className="text-muted">No license</span>
+        <span className="text-muted">No license uploaded</span>
       );
     }
 
-    return user.discount_document_name ? (
+    return (user.discount_file_path || user.discount_document_name || user.discount_document_path) ? (
       <Button
         variant="outline-primary"
         size="sm"
         className={styles.documentButton}
         onClick={() => onViewDocument(user)}
-        title="View document"
+        title="Review discount application and approve account"
       >
         <i className="bi bi-file-earmark-text me-1"></i>
-        View
+        Review Application
       </Button>
     ) : (
-      <span className="text-muted">No document</span>
+      <span className="text-muted">No document uploaded</span>
     );
   };
 
@@ -104,10 +104,10 @@ const PendingUsersTable = ({
               <Button
                 variant="outline-success"
                 size="sm"
-                className={`${styles.actionButton} ${styles.actionButtonView}`}
+                className={`${styles.actionButton} ${styles.actionButtonApprove}`}
                 onClick={() => onDriverLicenseApproval(user, true)}
                 disabled={processing === user.id}
-                title="Verify driver's license"
+                title="Approve driver account"
               >
                 {processing === user.id ? (
                   <Spinner animation="border" size="sm" className={styles.loadingSpinner} />
@@ -119,10 +119,10 @@ const PendingUsersTable = ({
               <Button
                 variant="outline-danger"
                 size="sm"
-                className={`${styles.actionButton} ${styles.actionButtonDelete}`}
+                className={`${styles.actionButton} ${styles.actionButtonReject}`}
                 onClick={() => onDriverLicenseApproval(user, false)}
                 disabled={processing === user.id}
-                title="Reject driver's license"
+                title="Reject driver account"
               >
                 <i className="bi bi-x-circle"></i>
               </Button>
@@ -151,10 +151,10 @@ const PendingUsersTable = ({
             <Button
               variant="outline-success"
               size="sm"
-              className={`${styles.actionButton} ${styles.actionButtonView}`}
+              className={`${styles.actionButton} ${styles.actionButtonApprove}`}
               onClick={() => onApprovalAction(user, true)}
               disabled={processing === user.id}
-              title="Approve application"
+              title="Approve passenger account"
             >
               {processing === user.id ? (
                 <Spinner animation="border" size="sm" className={styles.loadingSpinner} />
@@ -166,10 +166,10 @@ const PendingUsersTable = ({
             <Button
               variant="outline-danger"
               size="sm"
-              className={`${styles.actionButton} ${styles.actionButtonDelete}`}
+              className={`${styles.actionButton} ${styles.actionButtonReject}`}
               onClick={() => onApprovalAction(user, false)}
               disabled={processing === user.id}
-              title="Reject application"
+              title="Reject passenger account"
             >
               <i className="bi bi-x-circle"></i>
             </Button>
@@ -200,9 +200,9 @@ const PendingUsersTable = ({
             <th className={styles.typeColumn}>Type</th>
             <th className={styles.phoneColumn}>Phone</th>
             <th className={styles.verificationColumn}>Verification Type</th>
-            <th className={styles.documentColumn}>Document</th>
+            <th className={styles.documentColumn}>Review Documents</th>
             <th className={styles.joinedColumn}>Applied</th>
-            <th className={styles.actionsColumn}>Actions</th>
+            <th className={styles.actionsColumn}>Approve Account</th>
           </tr>
         </thead>
         <tbody className={styles.tableBody}>

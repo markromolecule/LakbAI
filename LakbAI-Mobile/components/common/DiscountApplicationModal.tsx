@@ -29,7 +29,7 @@ interface DiscountApplicationModalProps {
 }
 
 const discountTypes = [
-  { value: 'Student', label: 'Student', percentage: 15, icon: '🎓' },
+  { value: 'Student', label: 'Student', percentage: 20, icon: '🎓' },
   { value: 'PWD', label: 'Person with Disability', percentage: 20, icon: '♿' },
   { value: 'Senior Citizen', label: 'Senior Citizen', percentage: 30, icon: '👴' },
 ];

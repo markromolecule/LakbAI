@@ -13,31 +13,57 @@ class UserRepository extends BaseRepository {
                 SET username=?, email=?, password=?, first_name=?, last_name=?, 
                     phone_number=?, birthday=?, gender=?, house_number=?, street_name=?,
                     barangay=?, city_municipality=?, province=?, postal_code=?,
-                    user_type=?, discount_type=?, discount_document_path=?, 
-                    discount_document_name=?, discount_verified=0, is_verified=0, 
-                    created_at=NOW(), updated_at=NOW()";
+                    user_type=?, discount_type=?, discount_applied=?, discount_file_path=?, 
+                    discount_status=?, discount_document_path=?, discount_document_name=?, 
+                    discount_verified=0, is_verified=0, created_at=NOW(), updated_at=NOW()";
 
         $stmt = $this->conn->prepare($query);
 
-        $stmt->bind_param("ssssssssssssssssss", 
-            $userData['username'],
-            $userData['email'],
-            $userData['password'],
-            $userData['first_name'],
-            $userData['last_name'],
-            $userData['phone_number'],
-            $userData['birthday'],
-            $userData['gender'],
-            $userData['house_number'],
-            $userData['street_name'],
-            $userData['barangay'],
-            $userData['city_municipality'],
-            $userData['province'],
-            $userData['postal_code'],
-            $userData['user_type'],
-            $userData['discount_type'],
-            $userData['discount_document_path'],
-            $userData['discount_document_name']
+        // Prepare variables for bind_param (must be references)
+        $username = $userData['username'];
+        $email = $userData['email'];
+        $password = $userData['password'];
+        $first_name = $userData['first_name'];
+        $last_name = $userData['last_name'];
+        $phone_number = $userData['phone_number'];
+        $birthday = $userData['birthday'];
+        $gender = $userData['gender'];
+        $house_number = $userData['house_number'];
+        $street_name = $userData['street_name'];
+        $barangay = $userData['barangay'];
+        $city_municipality = $userData['city_municipality'];
+        $province = $userData['province'];
+        $postal_code = $userData['postal_code'];
+        $user_type = $userData['user_type'];
+        $discount_type = $userData['discount_type'];
+        $discount_applied = $userData['discount_applied'] ?? false;
+        $discount_file_path = $userData['discount_file_path'] ?? null;
+        $discount_status = $userData['discount_status'] ?? 'pending';
+        $discount_document_path = $userData['discount_document_path'] ?? null;
+        $discount_document_name = $userData['discount_document_name'] ?? null;
+
+        $stmt->bind_param("ssssssssssssssssissss", 
+            $username,
+            $email,
+            $password,
+            $first_name,
+            $last_name,
+            $phone_number,
+            $birthday,
+            $gender,
+            $house_number,
+            $street_name,
+            $barangay,
+            $city_municipality,
+            $province,
+            $postal_code,
+            $user_type,
+            $discount_type,
+            $discount_applied,
+            $discount_file_path,
+            $discount_status,
+            $discount_document_path,
+            $discount_document_name
         );
 
         if ($stmt->execute()) {

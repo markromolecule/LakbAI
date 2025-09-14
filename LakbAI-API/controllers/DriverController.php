@@ -159,6 +159,149 @@ class DriverController {
     }
 
     /**
+     * Get driver with jeepney information for QR scanning
+     */
+    public function getDriverWithJeepney($id) {
+        try {
+            $stmt = $this->db->prepare("
+                SELECT 
+                    u.id,
+                    u.first_name,
+                    u.last_name,
+                    u.phone_number,
+                    u.email,
+                    j.id as jeepney_id,
+                    j.jeepney_number,
+                    j.plate_number,
+                    j.model,
+                    j.capacity,
+                    j.status as jeepney_status,
+                    r.route_name,
+                    r.origin,
+                    r.destination
+                FROM users u
+                LEFT JOIN jeepneys j ON u.id = j.driver_id
+                LEFT JOIN routes r ON j.route_id = r.id
+                WHERE u.id = ? AND u.user_type = 'driver'
+            ");
+            
+            $stmt->execute([$id]);
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if ($result) {
+                $driverInfo = [
+                    'id' => $result['id'],
+                    'name' => $result['first_name'] . ' ' . $result['last_name'],
+                    'license' => 'N/A', // TODO: Add license table
+                    'jeepneyNumber' => $result['jeepney_number'] ?: 'N/A',
+                    'jeepneyModel' => $result['model'] ?: 'N/A',
+                    'plateNumber' => $result['plate_number'] ?: 'N/A',
+                    'route' => $result['route_name'] ?: 'No Route Assigned',
+                    'contactNumber' => $result['phone_number'],
+                    'currentLocation' => 'Unknown', // This would be updated from real-time tracking
+                    'rating' => 4.8, // Mock data - would come from ratings table
+                    'totalTrips' => 1247 // Mock data - would come from trips table
+                ];
+
+                return [
+                    "status" => "success",
+                    "driverInfo" => $driverInfo
+                ];
+            }
+
+            return [
+                "status" => "error",
+                "message" => "Driver not found"
+            ];
+        } catch (Exception $e) {
+            return [
+                "status" => "error",
+                "message" => "Failed to get driver info: " . $e->getMessage()
+            ];
+        }
+    }
+
+    /**
+     * Get driver profile with assigned jeepney information
+     */
+    public function getDriverProfile($id) {
+        try {
+            $stmt = $this->db->prepare("
+                SELECT 
+                    u.id,
+                    u.first_name,
+                    u.last_name,
+                    u.phone_number,
+                    u.email,
+                    u.user_type,
+                    u.created_at,
+                    j.id as jeepney_id,
+                    j.jeepney_number,
+                    j.plate_number,
+                    j.model,
+                    j.capacity,
+                    j.status as jeepney_status,
+                    r.route_name,
+                    r.origin,
+                    r.destination
+                FROM users u
+                LEFT JOIN jeepneys j ON u.id = j.driver_id
+                LEFT JOIN routes r ON j.route_id = r.id
+                WHERE u.id = ? AND u.user_type = 'driver'
+            ");
+            
+            $stmt->execute([$id]);
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if ($result) {
+                $profile = [
+                    'id' => $result['id'],
+                    'name' => $result['first_name'] . ' ' . $result['last_name'],
+                    'first_name' => $result['first_name'],
+                    'last_name' => $result['last_name'],
+                    'phone_number' => $result['phone_number'],
+                    'email' => $result['email'],
+                    'license_number' => 'N/A', // TODO: Add license table
+                    'created_at' => $result['created_at'],
+                    'assignedJeepney' => null
+                ];
+
+                // Add jeepney information if assigned
+                if ($result['jeepney_id']) {
+                    $profile['assignedJeepney'] = [
+                        'id' => $result['jeepney_id'],
+                        'jeepneyNumber' => $result['jeepney_number'],
+                        'plateNumber' => $result['plate_number'],
+                        'model' => $result['model'],
+                        'capacity' => (int)$result['capacity'],
+                        'status' => $result['jeepney_status'],
+                        'route' => [
+                            'name' => $result['route_name'],
+                            'origin' => $result['origin'],
+                            'destination' => $result['destination']
+                        ]
+                    ];
+                }
+
+                return [
+                    "status" => "success",
+                    "driverProfile" => $profile
+                ];
+            }
+
+            return [
+                "status" => "error",
+                "message" => "Driver not found"
+            ];
+        } catch (Exception $e) {
+            return [
+                "status" => "error",
+                "message" => "Failed to get driver profile: " . $e->getMessage()
+            ];
+        }
+    }
+
+    /**
      * Get all drivers with pagination
      */
     public function getAllDrivers($page = 1, $limit = 10) {

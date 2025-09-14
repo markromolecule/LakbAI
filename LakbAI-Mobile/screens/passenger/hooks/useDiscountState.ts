@@ -51,7 +51,7 @@ export const useDiscountState = () => {
 
   const getDiscountPercentage = (type: string): number => {
     switch (type) {
-      case 'Student': return 15;
+      case 'Student': return 20;
       case 'PWD': return 20;
       case 'Senior Citizen': return 30;
       case 'Pregnant': return 0; // Not implemented yet

@@ -23,8 +23,10 @@ const JeepneyList = ({ jeepneys, onDataUpdate }) => {
       <thead>
         <tr>
           <th>#</th>
+          <th>Jeepney Number</th>
           <th>Route</th>
           <th>Plate Number</th>
+          <th>Driver</th>
           <th>Status</th>
           <th>Capacity</th>
           <th>Actions</th>
@@ -35,8 +37,18 @@ const JeepneyList = ({ jeepneys, onDataUpdate }) => {
           jeepneys.map((jeepney, index) => (
             <tr key={jeepney.id}>
               <td>{index + 1}</td>
+              <td>
+                <strong className="text-primary">{jeepney.jeepney_number}</strong>
+              </td>
               <td>{jeepney.route}</td>
               <td>{jeepney.plate_number}</td>
+              <td>
+                {jeepney.driver ? (
+                  <span className="text-primary">{jeepney.driver}</span>
+                ) : (
+                  <span className="badge bg-warning">No Driver Assigned</span>
+                )}
+              </td>
               <td>
                 <span
                   className={`badge ${
@@ -68,7 +80,7 @@ const JeepneyList = ({ jeepneys, onDataUpdate }) => {
           ))
         ) : (
           <tr>
-            <td colSpan="6" className="text-center text-muted">
+            <td colSpan="8" className="text-center text-muted">
               No jeepneys available
             </td>
           </tr>

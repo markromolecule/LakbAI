@@ -6,7 +6,7 @@
 
 // Enhanced CORS headers
 header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
+header('Access-Control-Allow-Methods: GET, POST, PUT, PATCH, DELETE, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, Authorization, Accept, X-Requested-With');
 header('Access-Control-Allow-Credentials: false');
 header('Access-Control-Max-Age: 86400');
@@ -77,6 +77,10 @@ try {
             
         case 'get_discount_status':
             $result = $auth0Controller->getDiscountStatus($input);
+            break;
+            
+        case 'get_user_by_auth0_id':
+            $result = $auth0Controller->getUserByAuth0Id($input);
             break;
             
         default:

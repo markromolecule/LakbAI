@@ -22,8 +22,6 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
     switch (type) {
       case 'PWD': 
         return 'Person with Disability';
-      case 'Pregnant': 
-        return 'Pregnant';
       case 'Senior Citizen': 
         return 'Senior Citizen';
       case 'Student': 
@@ -58,10 +56,9 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
 
   const getDiscountPercentage = (type: string) => {
     switch (type) {
-      case 'Student': return 15;
+      case 'Student': return 20;
       case 'PWD': return 20;
       case 'Senior Citizen': return 30;
-      case 'Pregnant': return 0; // Pregnant discount not implemented yet
       default: return 0;
     }
   };
@@ -229,9 +226,9 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                   {getDiscountStatusDisplay(passengerProfile.fareDiscount.status).text}
                 </Text>
               )}
-              {passengerProfile.fareDiscount.type && passengerProfile.fareDiscount.percentage > 0 && (
+              {passengerProfile.fareDiscount.status === 'approved' && passengerProfile.fareDiscount.type && (
                 <Text style={profileStyles.discountPercentage}>
-                  {passengerProfile.fareDiscount.percentage}% discount
+                  {passengerProfile.fareDiscount.percentage || getDiscountPercentage(passengerProfile.fareDiscount.type)}% discount
                 </Text>
               )}
             </View>
