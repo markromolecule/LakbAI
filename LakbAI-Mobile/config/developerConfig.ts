@@ -26,7 +26,7 @@ export const DEVELOPER_IP = '192.168.254.111:8000'; // Joseph's IP
 
 // Alternative configuration for different developers
 export const DEVELOPER_IPS = {
-  joseph: '192.168.254.111:8000',
+  joseph: '192.168.254.107:8000',
   jiro: 'localhost:8000', // For tunnel mode users
 };
 
