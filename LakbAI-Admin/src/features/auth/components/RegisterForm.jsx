@@ -8,6 +8,8 @@ import {
   PersonalInfoSection,
   AddressSection,
   BirthdaySection,
+  UserTypeSection,
+  DiscountSection,
   DocumentSection,
 } from './sections';
 
@@ -57,6 +59,19 @@ const RegisterForm = () => {
             formData={formData} 
             errors={errors} 
             onChange={handleChange} 
+          />
+          
+          <UserTypeSection 
+            formData={formData} 
+            errors={errors} 
+            onChange={handleChange} 
+          />
+          
+          <DiscountSection 
+            formData={formData} 
+            errors={errors} 
+            onChange={handleChange} 
+            onFileChange={handleFileChange} 
           />
           
           <DocumentSection 

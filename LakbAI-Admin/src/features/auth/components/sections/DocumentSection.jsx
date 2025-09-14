@@ -7,6 +7,12 @@ import styles from '../../styles/RegisterForm.module.css';
 import { FILE_UPLOAD } from '../../helpers/constants';
 
 const DocumentSection = ({ formData, errors, onFileChange }) => {
+  const showDriverLicense = formData.userType === 'driver';
+
+  if (!showDriverLicense) {
+    return null;
+  }
+
   return (
     <>
       <div className={styles.sectionTitle}>Driver's License</div>
@@ -26,7 +32,7 @@ const DocumentSection = ({ formData, errors, onFileChange }) => {
           >
             <i className="bi bi-upload"></i>
             <span className={styles.uploadText}>
-              {formData.driversLicense ? formData.driversLicense.name : 'Upload ID'}
+              {formData.driversLicense ? formData.driversLicense.name : 'Upload Driver\'s License'}
             </span>
             <span className={styles.uploadSubtext}>
               Max 5MB, JPG, PNG or PDF only

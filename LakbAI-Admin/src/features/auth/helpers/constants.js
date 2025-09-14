@@ -17,6 +17,20 @@ export const GENDER_OPTIONS = [
   { value: 'female', label: 'Female' },
 ];
 
+// User type options
+export const USER_TYPE_OPTIONS = [
+  { value: 'passenger', label: 'Passenger' },
+  { value: 'driver', label: 'Driver' },
+];
+
+// Discount type options
+export const DISCOUNT_TYPE_OPTIONS = [
+  { value: '', label: 'No Discount' },
+  { value: 'PWD', label: 'PWD (Person with Disability)' },
+  { value: 'Senior Citizen', label: 'Senior Citizen' },
+  { value: 'Student', label: 'Student' },
+];
+
 // Age constraints
 export const AGE_CONSTRAINTS = {
   MIN_AGE: 18,
@@ -100,5 +114,8 @@ export const INITIAL_FORM_STATE = {
   birthMonth: '',
   birthDay: '',
   birthYear: '',
+  userType: 'passenger', // Default to passenger
+  discountType: '',
   driversLicense: null,
+  discountDocument: null,
 };

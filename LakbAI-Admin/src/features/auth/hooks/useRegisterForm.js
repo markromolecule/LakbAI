@@ -42,6 +42,7 @@ export const useRegisterForm = () => {
    */
   const handleFileChange = (e) => {
     const file = e.target.files[0];
+    const fieldName = e.target.name;
     
     if (file) {
       const validation = validateFile(file);
@@ -49,21 +50,21 @@ export const useRegisterForm = () => {
       if (!validation.isValid) {
         setErrors(prev => ({
           ...prev,
-          driversLicense: validation.error
+          [fieldName]: validation.error
         }));
         return;
       }
 
       setFormData(prev => ({
         ...prev,
-        driversLicense: file
+        [fieldName]: file
       }));
 
       // Clear error if file is valid
-      if (errors.driversLicense) {
+      if (errors[fieldName]) {
         setErrors(prev => ({
           ...prev,
-          driversLicense: ''
+          [fieldName]: ''
         }));
       }
     }
@@ -132,7 +133,7 @@ export const useRegisterForm = () => {
   };
 
   /**
-   * Handle form submission
+   * Handle form submission with file uploads
    * @param {Event} e - Form submit event
    * @param {Function} onSubmit - Custom submit handler
    */
@@ -148,47 +149,77 @@ export const useRegisterForm = () => {
       // Clear ALL errors including general error
       setErrors({});
       
-      // Set user type to driver for web registration and format data for API
-      const driverData = {
-        username: formData.firstName.toLowerCase() + formData.lastName.toLowerCase(),
-        email: formData.email,
-        password: formData.password,
-        first_name: formData.firstName,
-        last_name: formData.lastName,
-        phone_number: formData.phoneNumber.replace(/\s/g, ''), // Remove whitespace
-        birthday: `${formData.birthYear}-${formData.birthMonth.toString().padStart(2, '0')}-${formData.birthDay.toString().padStart(2, '0')}`,
-        gender: formData.gender.charAt(0).toUpperCase() + formData.gender.slice(1), // Capitalize first letter
-        house_number: formData.houseNumber,
-        street_name: formData.streetName,
-        barangay: formData.barangay,
-        city_municipality: formData.city,
-        province: formData.province,
-        postal_code: formData.postalCode,
-        user_type: 'driver',
-        is_verified: false,
-        discount_type: null,
-        discount_verified: false,
-        drivers_license: formData.driversLicense ? formData.driversLicense.name : null,
-        drivers_license_path: formData.driversLicense ? formData.driversLicense.name : null,
-        drivers_license_verified: false
-      };
+      // Prepare form data for file upload
+      const formDataToSend = new FormData();
+      
+      // Add basic registration data
+      formDataToSend.append('username', formData.firstName.toLowerCase() + formData.lastName.toLowerCase());
+      formDataToSend.append('email', formData.email);
+      formDataToSend.append('password', formData.password);
+      formDataToSend.append('first_name', formData.firstName);
+      formDataToSend.append('last_name', formData.lastName);
+      formDataToSend.append('phone_number', formData.phoneNumber.replace(/\s/g, ''));
+      formDataToSend.append('birthday', `${formData.birthYear}-${formData.birthMonth.toString().padStart(2, '0')}-${formData.birthDay.toString().padStart(2, '0')}`);
+      formDataToSend.append('gender', formData.gender.charAt(0).toUpperCase() + formData.gender.slice(1));
+      formDataToSend.append('house_number', formData.houseNumber);
+      formDataToSend.append('street_name', formData.streetName);
+      formDataToSend.append('barangay', formData.barangay);
+      formDataToSend.append('city_municipality', formData.city);
+      formDataToSend.append('province', formData.province);
+      formDataToSend.append('postal_code', formData.postalCode);
+      formDataToSend.append('user_type', formData.userType);
+      formDataToSend.append('is_verified', 'false');
+      formDataToSend.append('discount_type', formData.discountType || '');
+      formDataToSend.append('discount_verified', 'false');
+      
+      // Add driver's license file if present (for drivers)
+      if (formData.driversLicense && formData.userType === 'driver') {
+        formDataToSend.append('license_document', formData.driversLicense);
+        formDataToSend.append('drivers_license', formData.driversLicense.name);
+      }
+      
+      // Add discount document file if present (for passengers with discount)
+      if (formData.discountDocument && formData.userType === 'passenger' && formData.discountType) {
+        formDataToSend.append('discount_document', formData.discountDocument);
+      }
       
       if (onSubmit) {
-        await onSubmit(driverData);
+        // For custom submit handlers, also provide the FormData
+        const driverData = {
+          username: formData.firstName.toLowerCase() + formData.lastName.toLowerCase(),
+          email: formData.email,
+          password: formData.password,
+          first_name: formData.firstName,
+          last_name: formData.lastName,
+          phone_number: formData.phoneNumber.replace(/\s/g, ''),
+          birthday: `${formData.birthYear}-${formData.birthMonth.toString().padStart(2, '0')}-${formData.birthDay.toString().padStart(2, '0')}`,
+          gender: formData.gender.charAt(0).toUpperCase() + formData.gender.slice(1),
+          house_number: formData.houseNumber,
+          street_name: formData.streetName,
+          barangay: formData.barangay,
+          city_municipality: formData.city,
+          province: formData.province,
+          postal_code: formData.postalCode,
+          user_type: 'driver',
+          is_verified: false,
+          discount_type: null,
+          discount_verified: false,
+          drivers_license: formData.driversLicense ? formData.driversLicense.name : null,
+          drivers_license_verified: false
+        };
+        await onSubmit(driverData, formDataToSend);
       } else {
-        // Default submission logic - send to API
-        const response = await fetch('/api/register', {
+        // Use the new file upload endpoint
+        const response = await fetch('/api/register-with-files', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(driverData),
+          body: formDataToSend, // Send as FormData for file upload
         });
         
         const result = await response.json();
         
         if (result.status === 'success') {
-          alert('Driver account created successfully! Please wait for admin verification before logging in.');
+          const userTypeText = formData.userType === 'driver' ? 'Driver' : 'Passenger';
+          alert(`${userTypeText} account created successfully! Please wait for admin verification before logging in.`);
           // Reset form
           setFormData(INITIAL_FORM_STATE);
           setErrors({}); // Ensure errors are cleared
