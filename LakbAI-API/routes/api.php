@@ -417,6 +417,61 @@ try {
                 echo json_encode($result);
                 exit;
                 
+            case 'register-with-files':
+                try {
+                    // Handle file uploads first
+                    $uploadedFiles = [];
+                    
+                    // Check for discount document upload
+                    if (isset($_FILES['discount_document']) && $_FILES['discount_document']['error'] === UPLOAD_ERR_OK) {
+                        $uploadResult = $fileUploadController->uploadDocument('discount_document');
+                        if ($uploadResult['status'] === 'success') {
+                            $uploadedFiles['discount_document_path'] = $uploadResult['data']['file_path'];
+                            $uploadedFiles['discount_document_name'] = $uploadResult['data']['original_name'];
+                        } else {
+                            echo json_encode($uploadResult);
+                            exit;
+                        }
+                    }
+                    
+                    // Check for license document upload
+                    if (isset($_FILES['license_document']) && $_FILES['license_document']['error'] === UPLOAD_ERR_OK) {
+                        $uploadResult = $fileUploadController->uploadLicenseDocument('license_document');
+                        if ($uploadResult['status'] === 'success') {
+                            $uploadedFiles['drivers_license_path'] = $uploadResult['data']['file_path'];
+                            $uploadedFiles['drivers_license_name'] = $uploadResult['data']['original_name'];
+                        } else {
+                            echo json_encode($uploadResult);
+                            exit;
+                        }
+                    }
+                    
+                    // Merge uploaded file data with registration data
+                    $registrationData = array_merge($input, $uploadedFiles);
+                    
+                    // Check if this is web registration or mobile
+                    $isWebRegistration = isset($registrationData['first_name']) && isset($registrationData['last_name']) && isset($registrationData['phone_number']);
+                    
+                    if ($isWebRegistration) {
+                        // Web registration - data is already in correct format
+                        $transformedData = $registrationData;
+                    } else {
+                        // Mobile registration - transform data format
+                        $transformedData = transformMobileRegistrationData($registrationData);
+                    }
+                    
+                    $result = $authController->register($transformedData);
+                    echo json_encode($result);
+                    exit;
+                    
+                } catch (Exception $e) {
+                    echo json_encode([
+                        'status' => 'error',
+                        'message' => 'Registration with files failed: ' . $e->getMessage()
+                    ]);
+                    exit;
+                }
+                
             case 'login':
                 $result = $authController->login($input);
                 echo json_encode($result);
@@ -444,6 +499,63 @@ try {
         $result = $authController->register($transformedData);
         echo json_encode($result);
         exit;
+    }
+
+    // Enhanced registration with file upload support
+    if (end($pathParts) === 'register-with-files' && $method === 'POST') {
+        try {
+            // Handle file uploads first
+            $uploadedFiles = [];
+            
+            // Check for discount document upload
+            if (isset($_FILES['discount_document']) && $_FILES['discount_document']['error'] === UPLOAD_ERR_OK) {
+                $uploadResult = $fileUploadController->uploadDocument('discount_document');
+                if ($uploadResult['status'] === 'success') {
+                    $uploadedFiles['discount_document_path'] = $uploadResult['data']['file_path'];
+                    $uploadedFiles['discount_document_name'] = $uploadResult['data']['original_name'];
+                } else {
+                    echo json_encode($uploadResult);
+                    exit;
+                }
+            }
+            
+            // Check for license document upload
+            if (isset($_FILES['license_document']) && $_FILES['license_document']['error'] === UPLOAD_ERR_OK) {
+                $uploadResult = $fileUploadController->uploadLicenseDocument('license_document');
+                if ($uploadResult['status'] === 'success') {
+                    $uploadedFiles['drivers_license_path'] = $uploadResult['data']['file_path'];
+                    $uploadedFiles['drivers_license_name'] = $uploadResult['data']['original_name'];
+                } else {
+                    echo json_encode($uploadResult);
+                    exit;
+                }
+            }
+            
+            // Merge uploaded file data with registration data
+            $registrationData = array_merge($input, $uploadedFiles);
+            
+            // Check if this is web registration or mobile
+            $isWebRegistration = isset($registrationData['first_name']) && isset($registrationData['last_name']) && isset($registrationData['phone_number']);
+            
+            if ($isWebRegistration) {
+                // Web registration - data is already in correct format
+                $transformedData = $registrationData;
+            } else {
+                // Mobile registration - transform data format
+                $transformedData = transformMobileRegistrationData($registrationData);
+            }
+            
+            $result = $authController->register($transformedData);
+            echo json_encode($result);
+            exit;
+            
+        } catch (Exception $e) {
+            echo json_encode([
+                'status' => 'error',
+                'message' => 'Registration with files failed: ' . $e->getMessage()
+            ]);
+            exit;
+        }
     }
     
     if (end($pathParts) === 'login' && $method === 'POST') {
@@ -713,14 +825,54 @@ try {
         }
     }
 
-    // File upload routes
+    // File upload routes - New structure
+    if (end($pathParts) === 'upload-document' && $method === 'POST') {
+        $result = $fileUploadController->uploadDocument();
+        echo json_encode($result);
+        exit;
+    }
+
+    if (end($pathParts) === 'upload-license' && $method === 'POST') {
+        $result = $fileUploadController->uploadLicenseDocument();
+        echo json_encode($result);
+        exit;
+    }
+
+    // Serve document file
+    if (isset($pathParts[0]) && $pathParts[0] === 'document' && $method === 'GET') {
+        $filePath = isset($_GET['path']) ? $_GET['path'] : '';
+        if ($filePath) {
+            $fileUploadController->serveDocument($filePath);
+        } else {
+            http_response_code(400);
+            echo json_encode(['error' => 'File path parameter is required']);
+        }
+        exit;
+    }
+
+    // Delete document file
+    if (isset($pathParts[0]) && $pathParts[0] === 'delete-document' && $method === 'DELETE') {
+        $input = json_decode(file_get_contents('php://input'), true);
+        $filePath = isset($input['file_path']) ? $input['file_path'] : '';
+        
+        if ($filePath) {
+            $result = $fileUploadController->deleteDocument($filePath);
+            echo json_encode($result);
+        } else {
+            http_response_code(400);
+            echo json_encode(['error' => 'File path is required']);
+        }
+        exit;
+    }
+
+    // DEPRECATED: Legacy discount document routes (maintained for backward compatibility)
     if (end($pathParts) === 'upload-discount-document' && $method === 'POST') {
         $result = $fileUploadController->uploadDiscountDocument();
         echo json_encode($result);
         exit;
     }
 
-    // Serve discount document file
+    // DEPRECATED: Serve discount document file
     if (isset($pathParts[0]) && $pathParts[0] === 'discount-document' && $method === 'GET') {
         $filePath = isset($_GET['path']) ? $_GET['path'] : '';
         if ($filePath) {
@@ -732,7 +884,7 @@ try {
         exit;
     }
 
-    // Delete discount document file
+    // DEPRECATED: Delete discount document file
     if (isset($pathParts[0]) && $pathParts[0] === 'delete-discount-document' && $method === 'DELETE') {
         $input = json_decode(file_get_contents('php://input'), true);
         $filePath = isset($input['file_path']) ? $input['file_path'] : '';
