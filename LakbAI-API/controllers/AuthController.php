@@ -73,7 +73,6 @@ class AuthController {
             return $this->errorResponse('Failed to get profile: ' . $e->getMessage());
         }
     }
-
     /**
      * Update user profile
      */

@@ -20,11 +20,11 @@ const CleanAuthScreen: React.FC = () => {
   const handleTraditionalSignIn = async () => {
     try {
       // Clear any existing Auth0 session data to ensure clean state
-      console.log('🧹 Clearing Auth0 session data for traditional login...');
+      console.log('Clearing Auth0 session data for traditional login...');
       
       // Clear the current session if it exists
       await sessionManager.clearAllAuthData();
-      console.log('✅ Auth0 session data cleared');
+      console.log('Auth0 session data cleared');
       
       // Navigate to the traditional login screen
       router.push('/auth/login');

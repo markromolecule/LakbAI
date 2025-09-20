@@ -3,7 +3,7 @@ import Constants from 'expo-constants';
 
 // Network configuration for different developers
 const DEVELOPER_CONFIGS: { [key: string]: string } = {
-  joseph: '192.168.254.107',
+  joseph: '192.168.254.103',
   jiro: '192.168.254.111',  
 };
 
@@ -38,7 +38,7 @@ const getApiBaseUrl = (): string => {
     const developer = getCurrentDeveloper();
     const ip = DEVELOPER_CONFIGS[developer] || DEVELOPER_CONFIGS.jiro;
     
-    console.log('🔧 API Config Debug:', {
+    console.log('API Config Debug:', {
       developer,
       ip,
       tunnelEnabled: TUNNEL_CONFIG.enabled

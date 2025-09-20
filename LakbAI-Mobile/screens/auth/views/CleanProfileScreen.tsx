@@ -132,7 +132,7 @@ const CleanProfileScreen: React.FC = () => {
         Alert.alert('Error', result.message || 'Failed to complete profile');
       }
     } catch (error) {
-      console.error('❌ Profile completion error:', error);
+      console.error('Profile completion error:', error);
       Alert.alert('Error', 'Failed to complete profile. Please try again.');
     } finally {
       setIsLoading(false);
