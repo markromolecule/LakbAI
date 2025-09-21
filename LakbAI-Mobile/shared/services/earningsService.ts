@@ -151,6 +151,7 @@ class EarningsService {
     try {
       console.log('💰 Processing earnings update:', update);
       console.log('🔍 Call stack trace:', new Error().stack);
+      console.log('🔍 incrementTripCount value:', update.incrementTripCount, 'type:', typeof update.incrementTripCount);
 
       const currentEarnings = this.getDriverEarnings(update.driverId);
 
@@ -166,9 +167,9 @@ class EarningsService {
         totalEarnings: currentEarnings.totalEarnings + update.finalFare,
         totalTrips: currentEarnings.totalTrips + tripIncrement,
         todayTrips: currentEarnings.todayTrips + tripIncrement,
-        averageFarePerTrip: Math.round(
-          (currentEarnings.todayEarnings + update.finalFare) / (currentEarnings.todayTrips + tripIncrement)
-        ),
+        averageFarePerTrip: (currentEarnings.todayTrips + tripIncrement) > 0 
+          ? Math.round((currentEarnings.todayEarnings + update.finalFare) / (currentEarnings.todayTrips + tripIncrement))
+          : 0,
         lastUpdate: update.timestamp,
       };
 
@@ -548,8 +549,8 @@ class EarningsService {
   private async saveShiftEndToAPI(driverId: string, todayEarnings: number, newTotalEarnings: number): Promise<boolean> {
     try {
       const { getBaseUrl } = await import('../../config/apiConfig');
-      const baseUrl = getBaseUrl().replace('/routes/api.php', '');
-      const apiUrl = `${baseUrl}/api/earnings/shift/end`;
+      const baseUrl = getBaseUrl();
+      const apiUrl = `${baseUrl}/earnings/shift/end`;
       
       console.log('💾 Saving shift end to API:', apiUrl);
       
@@ -586,8 +587,8 @@ class EarningsService {
   private async saveShiftStartToAPI(driverId: string): Promise<boolean> {
     try {
       const { getBaseUrl } = await import('../../config/apiConfig');
-      const baseUrl = getBaseUrl().replace('/routes/api.php', '');
-      const apiUrl = `${baseUrl}/api/earnings/shift/start`;
+      const baseUrl = getBaseUrl();
+      const apiUrl = `${baseUrl}/earnings/shift/start`;
       
       console.log('💾 Saving shift start to API:', apiUrl);
       

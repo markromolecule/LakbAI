@@ -58,10 +58,10 @@ export const DriverScreen: React.FC = () => {
               route: driverProfile.route,
             }}
             onTripCompleted={(tripSummary) => {
-              console.log('Trip completed:', tripSummary);
+              console.log('🔄 DriverScreen received onTripCompleted:', tripSummary);
             }}
             onShiftEnd={() => {
-              console.log('Ending shift after trip completion');
+              console.log('🔄 DriverScreen received onShiftEnd, calling toggleDuty()');
               toggleDuty();
             }}
             onRefresh={refreshDriverProfile}

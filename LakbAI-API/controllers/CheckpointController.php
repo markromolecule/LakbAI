@@ -550,9 +550,54 @@ class CheckpointController {
                 $checkpoint['checkpoint_name'],
                 $scanTime
             ]);
+
+            // Also update driver_location_updates table for real-time monitoring
+            $this->updateDriverLocationForMonitoring($driverId, $checkpoint, $scanTime);
         } catch (Exception $e) {
             // Log error but don't fail the main operation
             error_log("Failed to log checkpoint scan: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Update driver location for real-time monitoring
+     */
+    private function updateDriverLocationForMonitoring($driverId, $checkpoint, $scanTime) {
+        try {
+            // Create driver_location_updates table if it doesn't exist
+            $this->db->exec("
+                CREATE TABLE IF NOT EXISTS `driver_location_updates` (
+                    `id` INT(11) NOT NULL AUTO_INCREMENT,
+                    `driver_id` INT(11) NOT NULL,
+                    `checkpoint_name` VARCHAR(100) NOT NULL,
+                    `estimated_arrival` VARCHAR(50) DEFAULT '5-7 mins',
+                    `update_timestamp` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    PRIMARY KEY (`id`),
+                    INDEX `idx_driver_id` (`driver_id`),
+                    INDEX `idx_update_timestamp` (`update_timestamp`)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+            ");
+
+            // Insert or update driver location
+            $stmt = $this->db->prepare("
+                INSERT INTO driver_location_updates 
+                (driver_id, checkpoint_name, estimated_arrival, update_timestamp) 
+                VALUES (?, ?, ?, ?)
+                ON DUPLICATE KEY UPDATE
+                checkpoint_name = VALUES(checkpoint_name),
+                estimated_arrival = VALUES(estimated_arrival),
+                update_timestamp = VALUES(update_timestamp)
+            ");
+            $stmt->execute([
+                $driverId,
+                $checkpoint['checkpoint_name'],
+                '5-7 mins',
+                $scanTime
+            ]);
+        } catch (Exception $e) {
+            // Log error but don't fail the main operation
+            error_log("Failed to update driver location for monitoring: " . $e->getMessage());
         }
     }
 
@@ -662,16 +707,22 @@ class CheckpointController {
                     CONCAT(u.first_name, ' ', u.last_name) as driver_name,
                     j.jeepney_number,
                     j.plate_number,
-                    d.current_location,
-                    d.shift_status,
+                    u.shift_status,
                     dlu.checkpoint_name as last_scanned_checkpoint,
                     dlu.estimated_arrival,
                     dlu.update_timestamp as last_update,
                     TIMESTAMPDIFF(MINUTE, dlu.update_timestamp, NOW()) as minutes_since_update
                 FROM users u
                 JOIN jeepneys j ON u.id = j.driver_id
-                JOIN drivers d ON u.id = d.user_id
-                LEFT JOIN driver_location_updates dlu ON u.id = dlu.driver_id
+                LEFT JOIN (
+                    SELECT 
+                        driver_id,
+                        checkpoint_name,
+                        estimated_arrival,
+                        update_timestamp,
+                        ROW_NUMBER() OVER (PARTITION BY driver_id ORDER BY update_timestamp DESC) as rn
+                    FROM driver_location_updates
+                ) dlu ON u.id = dlu.driver_id AND dlu.rn = 1
                 WHERE j.route_id = ? AND u.user_type = 'driver' AND j.status = 'active'
                 ORDER BY dlu.update_timestamp DESC
             ");
@@ -681,18 +732,31 @@ class CheckpointController {
             // Add status information
             foreach ($locations as &$location) {
                 $minutesSinceUpdate = $location['minutes_since_update'];
-                if ($minutesSinceUpdate === null) {
-                    $location['status'] = 'no_data';
-                    $location['status_message'] = 'No location data available';
-                } elseif ($minutesSinceUpdate <= 10) {
-                    $location['status'] = 'active';
-                    $location['status_message'] = 'Recently updated';
-                } elseif ($minutesSinceUpdate <= 30) {
-                    $location['status'] = 'stale';
-                    $location['status_message'] = 'Location may be outdated';
-                } else {
+                $shiftStatus = $location['shift_status'];
+                
+                // If driver is off shift, they are inactive regardless of location update time
+                if ($shiftStatus === 'off_shift') {
                     $location['status'] = 'inactive';
-                    $location['status_message'] = 'Driver may be offline';
+                    $location['status_message'] = 'Driver is off shift';
+                } elseif ($shiftStatus === 'on_shift') {
+                    // Driver is on shift - check location update recency
+                    if ($minutesSinceUpdate === null) {
+                        $location['status'] = 'no_data';
+                        $location['status_message'] = 'No location data available';
+                    } elseif ($minutesSinceUpdate <= 5) {
+                        $location['status'] = 'active';
+                        $location['status_message'] = 'Recently updated';
+                    } elseif ($minutesSinceUpdate <= 15) {
+                        $location['status'] = 'stale';
+                        $location['status_message'] = 'Location may be outdated';
+                    } else {
+                        $location['status'] = 'inactive';
+                        $location['status_message'] = 'Driver may be offline';
+                    }
+                } else {
+                    // Default case - driver not on shift
+                    $location['status'] = 'inactive';
+                    $location['status_message'] = 'Driver is not on shift';
                 }
             }
 
