@@ -1,125 +1,134 @@
 import React, { useState } from "react";
-import { Card, Button, Form, Row, Col } from "react-bootstrap";
+import { Card, Button, Row, Col, Alert } from "react-bootstrap";
 import AdminLayout from "../../components/admin/layout/AdminLayout";
-
-// Example checkpoint list (replace with constants if you already have one)
-const CHECKPOINTS = [
-  "Imus",
-  "Robinson Tejero",
-  "Malabon",
-  "Riverside",
-  "Lancaster New City",
-  "Pasong Camachile I",
-  "Pasong Camachile II",
-  "Open Canal",
-  "Santiago",
-  "Bella Vista",
-  "San Francisco",
-  "Country Meadow",
-  "Paliparan",
-  "Langkaan",
-  "Tierra Vista",
-  "Robinson Dasmariñas",
-  "SM Dasmariñas",
-];
+import CheckpointManagement from "../../components/admin/CheckpointManagement";
 
 const Checkpoints = () => {
-  const [selected, setSelected] = useState("");
-  const [generated, setGenerated] = useState([]);
-
-  // Generate QR image using free API
-  const generateQR = (name) => {
-    const qrData = { checkpoint: name, createdAt: new Date().toISOString() };
-    return `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(
-      JSON.stringify(qrData)
-    )}`;
-  };
-
-  const handleAdd = () => {
-    if (!selected) return;
-    const newQR = {
-      id: Date.now(),
-      name: selected,
-      qrUrl: generateQR(selected),
-      createdAt: new Date().toISOString(),
-    };
-    setGenerated((prev) => [newQR, ...prev]); // LIFO (newest first)
-    setSelected("");
-  };
-
-  const handleDelete = (id) => {
-    setGenerated(generated.filter((qr) => qr.id !== id));
-  };
-
-  const handleClear = () => {
-    setGenerated([]);
-  };
+  const [checkpointModalVisible, setCheckpointModalVisible] = useState(false);
 
   return (
     <AdminLayout
-      title="Checkpoints Management"
-      subtitle="Manage route checkpoints and stops"
+      title="Checkpoint Management System"
+      subtitle="Advanced QR code generation and real-time driver tracking"
     >
-      <Card className="border-0 shadow-sm p-4">
-        <h5 className="mb-3">Generate Checkpoint QR Codes</h5>
+      <Row className="mb-4">
+        <Col>
+          <Alert variant="info">
+            <div className="d-flex align-items-center">
+              <i className="bi bi-qr-code me-2"></i>
+              <strong>New Checkpoint Management System</strong>
+            </div>
+            <p className="mb-0 mt-2">
+              Generate QR codes for checkpoints, monitor real-time driver locations, and manage passenger notifications.
+            </p>
+          </Alert>
+        </Col>
+      </Row>
 
-        {/* Dropdown form */}
-        <Form className="d-flex mb-4">
-          <Form.Select
-            value={selected}
-            onChange={(e) => setSelected(e.target.value)}
-            className="me-2"
-          >
-            <option value="">-- Select a checkpoint --</option>
-            {CHECKPOINTS.map((cp) => (
-              <option key={cp} value={cp}>
-                {cp}
-              </option>
-            ))}
-          </Form.Select>
-          <Button onClick={handleAdd} disabled={!selected}>
-            Generate QR
-          </Button>
-          <Button
-            variant="outline-danger"
-            className="ms-2"
-            onClick={handleClear}
-            disabled={generated.length === 0}
-          >
-            Clear All
-          </Button>
-        </Form>
+      <Row>
+        <Col lg={4} md={6} className="mb-4">
+          <Card className="h-100 border-0 shadow-sm">
+            <Card.Body className="text-center p-4">
+              <div className="mb-3">
+                <i className="bi bi-qr-code text-primary" style={{ fontSize: '3rem' }}></i>
+              </div>
+              <Card.Title>QR Code Generation</Card.Title>
+              <Card.Text>
+                Generate QR codes for all checkpoints on a route. Drivers can scan these to update their location in real-time.
+              </Card.Text>
+              <Button 
+                variant="primary" 
+                onClick={() => setCheckpointModalVisible(true)}
+                className="w-100"
+              >
+                Open QR Generator
+              </Button>
+            </Card.Body>
+          </Card>
+        </Col>
 
-        {/* Generated QR cards (LIFO order: newest first) */}
-        <Row>
-          {generated.map((qr) => (
-            <Col md={4} lg={3} key={qr.id} className="mb-4">
-              <Card className="text-center shadow-sm p-3">
-                <img
-                  src={qr.qrUrl}
-                  alt="QR Code"
-                  className="mb-3"
-                  style={{
-                    width: "100%",
-                    maxHeight: "200px",
-                    objectFit: "contain",
-                  }}
-                />
-                <h6 className="fw-bold">{qr.name}</h6>
-                <div className="d-flex justify-content-center mt-2">
-                  <Button
-                    variant="outline-danger"
-                    size="sm"
-                    onClick={() => handleDelete(qr.id)}
-                  >
-                    Delete
-                  </Button>
-                </div>
-              </Card>
-            </Col>
-          ))}
-        </Row>
-      </Card>
+        <Col lg={4} md={6} className="mb-4">
+          <Card className="h-100 border-0 shadow-sm">
+            <Card.Body className="text-center p-4">
+              <div className="mb-3">
+                <i className="bi bi-display text-success" style={{ fontSize: '3rem' }}></i>
+              </div>
+              <Card.Title>Real-time Monitoring</Card.Title>
+              <Card.Text>
+                Track driver locations in real-time as they scan checkpoint QR codes. Monitor arrival estimates and driver status.
+              </Card.Text>
+              <Button 
+                variant="success" 
+                onClick={() => setCheckpointModalVisible(true)}
+                className="w-100"
+              >
+                View Live Tracking
+              </Button>
+            </Card.Body>
+          </Card>
+        </Col>
+
+        <Col lg={4} md={6} className="mb-4">
+          <Card className="h-100 border-0 shadow-sm">
+            <Card.Body className="text-center p-4">
+              <div className="mb-3">
+                <i className="bi bi-gear text-warning" style={{ fontSize: '3rem' }}></i>
+              </div>
+              <Card.Title>System Management</Card.Title>
+              <Card.Text>
+                Configure notification settings, manage passenger subscriptions, and handle multiple driver conflicts.
+              </Card.Text>
+              <Button 
+                variant="warning" 
+                onClick={() => setCheckpointModalVisible(true)}
+                className="w-100"
+              >
+                Manage System
+              </Button>
+            </Card.Body>
+          </Card>
+        </Col>
+      </Row>
+
+      <Row className="mt-4">
+        <Col>
+          <Card className="border-0 shadow-sm">
+            <Card.Header className="bg-light">
+              <h5 className="mb-0">System Features</h5>
+            </Card.Header>
+            <Card.Body>
+              <Row>
+                <Col md={6}>
+                  <h6 className="fw-bold">QR Code Features:</h6>
+                  <ul className="list-unstyled">
+                    <li>✅ Generate individual checkpoint QR codes</li>
+                    <li>✅ Bulk generate for entire routes</li>
+                    <li>✅ Download and print QR codes</li>
+                    <li>✅ QR code preview and validation</li>
+                    <li>✅ Expiration date management</li>
+                  </ul>
+                </Col>
+                <Col md={6}>
+                  <h6 className="fw-bold">Real-time Features:</h6>
+                  <ul className="list-unstyled">
+                    <li>✅ Live driver location tracking</li>
+                    <li>✅ Passenger arrival notifications</li>
+                    <li>✅ "Next Jeep Arrival: 5-7 mins" display</li>
+                    <li>✅ Multiple driver conflict resolution</li>
+                    <li>✅ Driver status monitoring</li>
+                  </ul>
+                </Col>
+              </Row>
+            </Card.Body>
+          </Card>
+        </Col>
+      </Row>
+
+      {/* Checkpoint Management Modal */}
+      <CheckpointManagement 
+        visible={checkpointModalVisible}
+        onClose={() => setCheckpointModalVisible(false)}
+      />
     </AdminLayout>
   );
 };

@@ -11,8 +11,8 @@ import {
   Badge,
   Spinner
 } from "react-bootstrap";
-import { FaPlus, FaEdit, FaTrash, FaQrcode } from "react-icons/fa";
-import RouteQRGeneration from "../admin/RouteQRGeneration";
+// Using Bootstrap Icons instead of React Icons
+import CheckpointManagement from "../admin/CheckpointManagement";
 import JeepneyService from "../../services/jeepneyService";
 import RouteService from "../../services/routeService";
 import DriverService from "../../services/driverService";
@@ -189,7 +189,7 @@ const JeepneyManagement = () => {
         <div className="d-flex justify-content-between align-items-center">
           <h5>Jeepney Management</h5>
           <Button variant="primary" onClick={handleAddJeepney}>
-            <FaPlus /> Add Jeepney
+            <i className="bi bi-plus-lg me-2"></i>Add Jeepney
           </Button>
         </div>
       </Card>
@@ -253,22 +253,25 @@ const JeepneyManagement = () => {
                       size="sm"
                       variant="info"
                       onClick={() => generateRouteQR(j)}
+                      title="Generate QR Codes"
                     >
-                      <FaQrcode />
+                      <i className="bi bi-qr-code"></i>
                     </Button>
                     <Button
                       size="sm"
                       variant="warning"
                       onClick={() => handleEditJeepney(j)}
+                      title="Edit Jeepney"
                     >
-                      <FaEdit />
+                      <i className="bi bi-pencil"></i>
                     </Button>
                     <Button
                       size="sm"
                       variant="danger"
                       onClick={() => handleDeleteJeepney(j.id)}
+                      title="Delete Jeepney"
                     >
-                      <FaTrash />
+                      <i className="bi bi-trash"></i>
                     </Button>
                   </div>
                 </td>
@@ -415,11 +418,10 @@ const JeepneyManagement = () => {
         </Modal.Body>
       </Modal>
 
-      {/* QR Modal */}
-      <RouteQRGeneration
+      {/* Checkpoint Management Modal */}
+      <CheckpointManagement
         visible={routeQRModalVisible}
         onClose={() => setRouteQRModalVisible(false)}
-        jeepney={qrJeepney}
       />
     </div>
   );

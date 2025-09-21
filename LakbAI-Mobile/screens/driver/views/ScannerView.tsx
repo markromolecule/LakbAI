@@ -23,6 +23,9 @@ interface ScannerViewProps {
     jeepneyNumber: string;
     route: string;
   };
+  onTripCompleted?: (tripSummary: any) => void;
+  onShiftEnd?: () => void;
+  onRefresh?: () => void;
 }
 
 interface AdminQRData {
@@ -60,7 +63,10 @@ export const ScannerView: React.FC<ScannerViewProps> = ({
   onSimulateScan,
   onLocationUpdate,
   driverProfile,
-  driverInfo
+  driverInfo,
+  onTripCompleted,
+  onShiftEnd,
+  onRefresh
 }) => {
   const hasPermission = useCameraPermissions();
   const [showCamera, setShowCamera] = useState(false);
@@ -202,9 +208,50 @@ export const ScannerView: React.FC<ScannerViewProps> = ({
           setActiveTrip(null);
           onLocationUpdate(qrData.checkpointName);
           
+          // Update trip count in earnings
+          try {
+            const { earningsService } = await import('../../../shared/services/earningsService');
+            const earningsUpdate = await earningsService.updateDriverEarnings({
+              driverId: driverInfo.id,
+              amount: 0, // No fare collected for this trip
+              tripId: result.completedTrip?.id || `trip_${Date.now()}`,
+              passengerId: 'trip_completion',
+              timestamp: new Date().toISOString(),
+              paymentMethod: 'other',
+              pickupLocation: activeTrip?.startCheckpoint?.name || 'Unknown',
+              destination: qrData.checkpointName,
+              originalFare: 0,
+              finalFare: 0,
+              incrementTripCount: true // Only increment trip count when trip is completed
+            });
+            
+            if (earningsUpdate.success) {
+              console.log('✅ Trip count updated in earnings:', earningsUpdate.newEarnings);
+              console.log('🔄 Triggering driver profile refresh for driver:', driverInfo.id);
+              
+              // Force refresh the driver profile to show updated trip count
+              if (onRefresh) {
+                console.log('📱 Triggering driver profile refresh...');
+                onRefresh();
+              }
+            }
+          } catch (error) {
+            console.error('❌ Failed to update trip count:', error);
+          }
+          
+          // Notify parent components about trip completion
+          if (onTripCompleted) {
+            onTripCompleted(result.tripSummary);
+          }
+          
+          // End shift after trip completion
+          if (onShiftEnd) {
+            onShiftEnd();
+          }
+          
           Alert.alert(
             '✅ Trip Completed!',
-            `${result.message}\n\nTrip Summary:\n• Duration: ${result.tripSummary?.duration} minutes\n• Checkpoints: ${result.tripSummary?.checkpoints}\n• Distance: ${result.tripSummary?.distance}`,
+            `${result.message}\n\nTrip Summary:\n• Duration: ${result.tripSummary?.duration} minutes\n• Checkpoints: ${result.tripSummary?.checkpoints}\n• Distance: ${result.tripSummary?.distance}\n\n✅ Trip count updated!\n\nYour shift will now end.`,
             [{ text: 'Great!' }]
           );
         } else {

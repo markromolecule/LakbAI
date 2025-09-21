@@ -57,6 +57,14 @@ export const DriverScreen: React.FC = () => {
               jeepneyNumber: driverProfile.jeepneyNumber,
               route: driverProfile.route,
             }}
+            onTripCompleted={(tripSummary) => {
+              console.log('Trip completed:', tripSummary);
+            }}
+            onShiftEnd={() => {
+              console.log('Ending shift after trip completion');
+              toggleDuty();
+            }}
+            onRefresh={refreshDriverProfile}
           />
         );
       case 'fare':

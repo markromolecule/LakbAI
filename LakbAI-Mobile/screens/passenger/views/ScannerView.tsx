@@ -252,6 +252,7 @@ export const ScannerScreen: React.FC = () => {
         originalFare: bookingData.fare,
         discountAmount: bookingData.fare - (bookingData.discountedFare || bookingData.fare),
         finalFare: bookingData.discountedFare || bookingData.fare,
+        incrementTripCount: false // Explicitly don't increment trip count for passenger payments
       };
 
       const earningsResult = await earningsService.updateDriverEarnings(earningsUpdate);
