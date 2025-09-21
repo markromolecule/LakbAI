@@ -13,6 +13,7 @@ export interface EarningsUpdate {
   originalFare: number;
   discountAmount?: number;
   finalFare: number;
+  incrementTripCount?: boolean; // New parameter to control trip count increment
 }
 
 export interface DriverEarnings {
@@ -149,9 +150,13 @@ class EarningsService {
   }> {
     try {
       console.log('💰 Processing earnings update:', update);
+      console.log('🔍 Call stack trace:', new Error().stack);
 
       const currentEarnings = this.getDriverEarnings(update.driverId);
 
+      // Calculate trip count increment (only when explicitly requested)
+      const tripIncrement = update.incrementTripCount ? 1 : 0;
+      
       // Calculate new earnings
       const newEarnings: DriverEarnings = {
         todayEarnings: currentEarnings.todayEarnings + update.finalFare,
@@ -159,13 +164,24 @@ class EarningsService {
         monthlyEarnings: currentEarnings.monthlyEarnings + update.finalFare,
         yearlyEarnings: currentEarnings.yearlyEarnings + update.finalFare,
         totalEarnings: currentEarnings.totalEarnings + update.finalFare,
-        totalTrips: currentEarnings.totalTrips + 1,
-        todayTrips: currentEarnings.todayTrips + 1,
+        totalTrips: currentEarnings.totalTrips + tripIncrement,
+        todayTrips: currentEarnings.todayTrips + tripIncrement,
         averageFarePerTrip: Math.round(
-          (currentEarnings.todayEarnings + update.finalFare) / (currentEarnings.todayTrips + 1)
+          (currentEarnings.todayEarnings + update.finalFare) / (currentEarnings.todayTrips + tripIncrement)
         ),
         lastUpdate: update.timestamp,
       };
+
+      console.log('🔄 Trip count update:', {
+        driverId: update.driverId,
+        incrementTripCount: update.incrementTripCount,
+        tripIncrement: tripIncrement,
+        previousTodayTrips: currentEarnings.todayTrips,
+        newTodayTrips: newEarnings.todayTrips,
+        previousTotalTrips: currentEarnings.totalTrips,
+        newTotalTrips: newEarnings.totalTrips,
+        context: update.passengerId === 'trip_completion' ? 'TRIP_COMPLETION' : 'PASSENGER_PAYMENT'
+      });
 
       // Update stored earnings
       this.earnings.set(update.driverId, newEarnings);

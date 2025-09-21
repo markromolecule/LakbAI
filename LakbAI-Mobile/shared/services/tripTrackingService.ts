@@ -268,7 +268,8 @@ class TripTrackingService {
           pickupLocation: activeTrip.startCheckpoint.name,
           destination: endCheckpoint.name,
           originalFare: tripData.fareCollected,
-          finalFare: tripData.fareCollected
+          finalFare: tripData.fareCollected,
+          incrementTripCount: false // Don't increment trip count for fare collection
         });
 
         // Send real-time earnings notification
@@ -339,6 +340,37 @@ class TripTrackingService {
    */
   getCompletedTrips(driverId: string): ActiveTrip[] {
     return this.completedTrips.get(driverId) || [];
+  }
+
+  /**
+   * Clear active trip for a driver (used when ending shift)
+   */
+  clearActiveTrip(driverId: string): {
+    success: boolean;
+    message: string;
+  } {
+    try {
+      const activeTrip = this.activeTrips.get(driverId);
+      if (activeTrip) {
+        this.activeTrips.delete(driverId);
+        console.log(`🧹 Active trip cleared for driver ${driverId}:`, activeTrip.id);
+        return {
+          success: true,
+          message: 'Active trip cleared successfully'
+        };
+      } else {
+        return {
+          success: true,
+          message: 'No active trip to clear'
+        };
+      }
+    } catch (error) {
+      console.error('Failed to clear active trip:', error);
+      return {
+        success: false,
+        message: 'Failed to clear active trip'
+      };
+    }
   }
 
   /**

@@ -32,12 +32,12 @@ require_once __DIR__ . '/../controllers/CheckpointController.php';
 require_once __DIR__ . '/../controllers/EarningsController.php';
 require_once __DIR__ . '/../controllers/FileUploadController.php';
 require_once __DIR__ . '/../controllers/DiscountController.php';
+require_once __DIR__ . '/../controllers/NotificationController.php';
 
 
 // Initialize controller with database connection
 $authController = new AuthController($app->get('Database'));
 $auth0Controller = new Auth0Controller($app->get('Database'));
-// Controllers below expect PDO; provide the PDO service registered in bootstrap/app.php
 $jeepneyController = new JeepneyController($app->get('PDO'));
 $driverController = new DriverController($app->get('PDO'));
 $routeController = new RouteController($app->get('PDO'));
@@ -45,6 +45,7 @@ $checkpointController = new CheckpointController($app->get('PDO'));
 $earningsController = new EarningsController();
 $fileUploadController = new FileUploadController($app->get('Database'));
 $discountController = new DiscountController($app->get('Database'));
+$notificationController = new NotificationController($app->get('PDO'));
 
 // Get the request method and path
 $method = $_SERVER['REQUEST_METHOD'];
@@ -350,49 +351,229 @@ try {
     // ---------------------------
     // Checkpoint Routes
     // ---------------------------
-    if ($pathParts[0] === 'admin' && isset($pathParts[1]) && $pathParts[1] === 'checkpoints') {
+    if (isset($pathParts[2]) && $pathParts[2] === 'admin' && isset($pathParts[3]) && $pathParts[3] === 'checkpoints') {
         // GET /admin/checkpoints
-        if ($method === 'GET' && count($pathParts) === 2) {
+        if ($method === 'GET' && count($pathParts) === 4) {
             $result = $checkpointController->getAllCheckpoints();
             echo json_encode($result);
             exit;
         }
 
         // GET /admin/checkpoints/route/{routeId}
-        if ($method === 'GET' && count($pathParts) === 4 && $pathParts[2] === 'route') {
-            $routeId = $pathParts[3];
+        if ($method === 'GET' && count($pathParts) === 6 && $pathParts[4] === 'route') {
+            $routeId = $pathParts[5];
             $result = $checkpointController->getCheckpointsByRoute($routeId);
             echo json_encode($result);
             exit;
         }
 
         // GET /admin/checkpoints/{id}
-        if ($method === 'GET' && count($pathParts) === 3 && is_numeric($pathParts[2])) {
-            $checkpointId = $pathParts[2];
+        if ($method === 'GET' && count($pathParts) === 5 && is_numeric($pathParts[4])) {
+            $checkpointId = $pathParts[4];
             $result = $checkpointController->getCheckpointById($checkpointId);
             echo json_encode($result);
             exit;
         }
 
         // POST /admin/checkpoints
-        if ($method === 'POST' && count($pathParts) === 2) {
+        if ($method === 'POST' && count($pathParts) === 4) {
             $result = $checkpointController->createCheckpoint($input);
             echo json_encode($result);
             exit;
         }
 
         // PUT /admin/checkpoints/{id}
-        if ($method === 'PUT' && count($pathParts) === 3) {
-            $checkpointId = $pathParts[2];
+        if ($method === 'PUT' && count($pathParts) === 5) {
+            $checkpointId = $pathParts[4];
             $result = $checkpointController->updateCheckpoint($checkpointId, $input);
             echo json_encode($result);
             exit;
         }
 
         // DELETE /admin/checkpoints/{id}
-        if ($method === 'DELETE' && count($pathParts) === 3) {
-            $checkpointId = $pathParts[2];
+        if ($method === 'DELETE' && count($pathParts) === 5) {
+            $checkpointId = $pathParts[4];
             $result = $checkpointController->deleteCheckpoint($checkpointId);
+            echo json_encode($result);
+            exit;
+        }
+
+        // POST /admin/checkpoints/qr/generate/{checkpointId}/{routeId}
+        if ($method === 'POST' && count($pathParts) === 8 && $pathParts[4] === 'qr' && $pathParts[5] === 'generate') {
+            $checkpointId = $pathParts[6];
+            $routeId = $pathParts[7];
+            $result = $checkpointController->generateCheckpointQR($checkpointId, $routeId);
+            echo json_encode($result);
+            exit;
+        }
+
+        // POST /admin/checkpoints/qr/route/{routeId}
+        if ($method === 'POST' && count($pathParts) === 7 && $pathParts[4] === 'qr' && $pathParts[5] === 'route') {
+            $routeId = $pathParts[6];
+            $result = $checkpointController->generateRouteQRCodes($routeId);
+            echo json_encode($result);
+            exit;
+        }
+    }
+
+    // ---------------------------
+    // Driver Checkpoint Scanning Routes
+    // ---------------------------
+    if (isset($pathParts[2]) && $pathParts[2] === 'mobile' && isset($pathParts[3]) && $pathParts[3] === 'driver' && isset($pathParts[4]) && $pathParts[4] === 'scan') {
+        // POST /mobile/driver/scan/checkpoint
+        if ($method === 'POST' && count($pathParts) === 6 && $pathParts[5] === 'checkpoint') {
+            $driverId = $input['driver_id'] ?? null;
+            $qrData = $input['qr_data'] ?? null;
+            $scanTimestamp = $input['scan_timestamp'] ?? null;
+
+            if (!$driverId || !$qrData) {
+                echo json_encode([
+                    "status" => "error",
+                    "message" => "Driver ID and QR data are required"
+                ]);
+                exit;
+            }
+
+            $result = $checkpointController->processDriverScan($driverId, $qrData, $scanTimestamp);
+            echo json_encode($result);
+            exit;
+        }
+    }
+
+    // ---------------------------
+    // Real-time Location Routes
+    // ---------------------------
+    if (isset($pathParts[2]) && $pathParts[2] === 'mobile' && isset($pathParts[3]) && $pathParts[3] === 'locations') {
+        // GET /mobile/locations/route/{routeId}
+        if ($method === 'GET' && count($pathParts) === 6 && $pathParts[4] === 'route') {
+            $routeId = $pathParts[5];
+            $result = $checkpointController->getDriverLocationsForRoute($routeId);
+            echo json_encode($result);
+            exit;
+        }
+    }
+
+    // ---------------------------
+    // Passenger Notification Routes
+    // ---------------------------
+    if (isset($pathParts[2]) && $pathParts[2] === 'mobile' && isset($pathParts[3]) && $pathParts[3] === 'passenger') {
+        // GET /mobile/passenger/arrivals/{routeId}
+        if ($method === 'GET' && count($pathParts) === 6 && $pathParts[4] === 'arrivals') {
+            $routeId = $pathParts[5];
+            $result = $checkpointController->getDriverLocationsForRoute($routeId);
+            echo json_encode($result);
+            exit;
+        }
+
+        // GET /mobile/passenger/nearest-jeepney/{checkpointId}
+        if ($method === 'GET' && count($pathParts) === 6 && $pathParts[4] === 'nearest-jeepney') {
+            $checkpointId = $pathParts[5];
+            // This would implement logic to find the nearest jeepney based on checkpoint
+            // For now, return a placeholder response
+            echo json_encode([
+                "status" => "success",
+                "message" => "Nearest jeepney tracking",
+                "data" => [
+                    "checkpoint_id" => $checkpointId,
+                    "nearest_jeepney" => [
+                        "jeepney_number" => "LKB-001",
+                        "driver_name" => "Juan Dela Cruz",
+                        "estimated_arrival" => "5-7 mins",
+                        "current_location" => "Robinson Tejero",
+                        "distance_away" => 2
+                    ]
+                ]
+            ]);
+            exit;
+        }
+    }
+
+    // ---------------------------
+    // Notification Routes
+    // ---------------------------
+    if (isset($pathParts[2]) && $pathParts[2] === 'mobile' && isset($pathParts[3]) && $pathParts[3] === 'notifications') {
+        // POST /mobile/notifications/subscribe
+        if ($method === 'POST' && count($pathParts) === 5 && $pathParts[4] === 'subscribe') {
+            $passengerId = $input['passenger_id'] ?? null;
+            $routeId = $input['route_id'] ?? null;
+            $checkpointId = $input['checkpoint_id'] ?? null;
+            $preference = $input['preference'] ?? 'all';
+
+            if (!$passengerId || !$routeId) {
+                echo json_encode([
+                    "status" => "error",
+                    "message" => "Passenger ID and Route ID are required"
+                ]);
+                exit;
+            }
+
+            $result = $notificationController->subscribeToRoute($passengerId, $routeId, $checkpointId, $preference);
+            echo json_encode($result);
+            exit;
+        }
+
+        // POST /mobile/notifications/unsubscribe
+        if ($method === 'POST' && count($pathParts) === 5 && $pathParts[4] === 'unsubscribe') {
+            $passengerId = $input['passenger_id'] ?? null;
+            $routeId = $input['route_id'] ?? null;
+
+            if (!$passengerId || !$routeId) {
+                echo json_encode([
+                    "status" => "error",
+                    "message" => "Passenger ID and Route ID are required"
+                ]);
+                exit;
+            }
+
+            $result = $notificationController->unsubscribeFromRoute($passengerId, $routeId);
+            echo json_encode($result);
+            exit;
+        }
+
+        // GET /mobile/notifications/history/{passengerId}
+        if ($method === 'GET' && count($pathParts) === 6 && $pathParts[4] === 'history') {
+            $passengerId = $pathParts[5];
+            $limit = $_GET['limit'] ?? 20;
+            $result = $notificationController->getPassengerNotifications($passengerId, $limit);
+            echo json_encode($result);
+            exit;
+        }
+
+        // PUT /mobile/notifications/read/{notificationId}
+        if ($method === 'PUT' && count($pathParts) === 6 && $pathParts[4] === 'read') {
+            $notificationId = $pathParts[5];
+            $userId = $input['user_id'] ?? null;
+
+            if (!$userId) {
+                echo json_encode([
+                    "status" => "error",
+                    "message" => "User ID is required"
+                ]);
+                exit;
+            }
+
+            $result = $notificationController->markNotificationAsRead($notificationId, $userId);
+            echo json_encode($result);
+            exit;
+        }
+    }
+
+    // ---------------------------
+    // Enhanced Passenger Location Routes
+    // ---------------------------
+    if (isset($pathParts[2]) && $pathParts[2] === 'mobile' && isset($pathParts[3]) && $pathParts[3] === 'passenger') {
+        // GET /mobile/passenger/real-time-drivers/{routeId}
+        if ($method === 'GET' && count($pathParts) === 6 && $pathParts[4] === 'real-time-drivers') {
+            $routeId = $pathParts[5];
+            $result = $notificationController->getDriverLocationsForPassengers($routeId);
+            echo json_encode($result);
+            exit;
+        }
+
+        // GET /mobile/passenger/checkpoint-conflicts/{checkpointId}
+        if ($method === 'GET' && count($pathParts) === 6 && $pathParts[4] === 'checkpoint-conflicts') {
+            $checkpointId = $pathParts[5];
+            $result = $notificationController->handleMultipleDriversAtCheckpoint($checkpointId);
             echo json_encode($result);
             exit;
         }
@@ -520,6 +701,31 @@ try {
             'pathParts' => $pathParts,
             'method' => $method
         ]);
+        exit;
+    }
+
+    // PUBLIC ROUTES (for frontend access)
+    // ===================================
+    
+    // GET /routes - Public access to routes
+    if (isset($pathParts[2]) && $pathParts[2] === 'routes' && $method === 'GET' && count($pathParts) === 3) {
+        $result = $routeController->getAllRoutes();
+        echo json_encode($result);
+        exit;
+    }
+    
+    // GET /routes/{id}/checkpoints - Get checkpoints for a specific route
+    if (isset($pathParts[2]) && $pathParts[2] === 'routes' && $method === 'GET' && count($pathParts) === 5 && $pathParts[4] === 'checkpoints') {
+        $routeId = $pathParts[3];
+        $result = $checkpointController->getCheckpointsByRoute($routeId);
+        echo json_encode($result);
+        exit;
+    }
+    
+    // GET /jeepneys - Public access to jeepneys
+    if (isset($pathParts[2]) && $pathParts[2] === 'jeepneys' && $method === 'GET' && count($pathParts) === 3) {
+        $result = $jeepneyController->getJeepneys();
+        echo json_encode($result);
         exit;
     }
 

@@ -98,6 +98,10 @@ export const useDriverState = () => {
     // Get current earnings from earnings service (try API first)
     const currentEarnings = await earningsService.getEarningsAsync(apiProfile.id.toString());
     console.log('💰 Current earnings for driver', apiProfile.id, ':', currentEarnings);
+    console.log('📊 Trip counts:', {
+      todayTrips: currentEarnings.todayTrips,
+      totalTrips: currentEarnings.totalTrips
+    });
     
     return {
       id: apiProfile.id,
@@ -124,6 +128,11 @@ export const useDriverState = () => {
     
     // Get current earnings from earnings service
     const currentEarnings = earningsService.getEarnings(dbUser.id.toString());
+    console.log('💰 Session earnings for driver', dbUser.id, ':', currentEarnings);
+    console.log('📊 Session trip counts:', {
+      todayTrips: currentEarnings.todayTrips,
+      totalTrips: currentEarnings.totalTrips
+    });
     
     // Generate fallback jeepney details (this should only be used if API fails)
     const jeepneyNumber = `LKB-${String(dbUser.id).padStart(3, '0')}`;
