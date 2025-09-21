@@ -3,7 +3,7 @@ import Constants from 'expo-constants';
 
 // Network configuration for different developers
 const DEVELOPER_CONFIGS: { [key: string]: string } = {
-  joseph: '192.168.254.103',
+  joseph: '192.168.254.110',
   jiro: '192.168.254.111',  
 };
 
