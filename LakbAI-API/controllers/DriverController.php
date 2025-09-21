@@ -313,18 +313,20 @@ class DriverController {
             $countStmt->execute();
             $total = $countStmt->fetch(PDO::FETCH_ASSOC)['total'];
             
-            // Get paginated results
+            // Get paginated results with real shift status from users table
             $stmt = $this->db->prepare("
                 SELECT 
-                    id,
-                    first_name,
-                    last_name,
-                    phone_number,
-                    email,
-                    created_at
-                FROM users 
-                WHERE user_type = 'driver'
-                ORDER BY first_name, last_name
+                    u.id,
+                    u.first_name,
+                    u.last_name,
+                    u.phone_number,
+                    u.email,
+                    u.created_at,
+                    u.shift_status,
+                    u.updated_at as last_active
+                FROM users u
+                WHERE u.user_type = 'driver'
+                ORDER BY u.first_name, u.last_name
                 LIMIT ? OFFSET ?
             ");
             
@@ -340,7 +342,9 @@ class DriverController {
                     'phone' => $driver['phone_number'],
                     'email' => $driver['email'],
                     'license_status' => 'pending',
-                    'shift_status' => 'offline',
+                    'shift_status' => $driver['shift_status'] ?: 'off_shift',
+                    'current_location' => null, // Not available in users table
+                    'last_active' => $driver['last_active'] ?: $driver['created_at'],
                     'created_at' => $driver['created_at']
                 ];
             }, $drivers);

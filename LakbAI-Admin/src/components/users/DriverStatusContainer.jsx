@@ -27,26 +27,58 @@ const DriverStatusContainer = ({ onDataUpdate }) => {
       setLoading(true);
       setError(null);
 
-      const result = await UserService.getUsers({
-        userType: 'driver',
-        limit: 100 // Get all drivers for status overview
-      });
-
-      if (result.success) {
-        // Since we don't have shift status in the current database schema,
-        // we'll simulate it based on user verification status for demo purposes
-        const driversWithStatus = (result.users || []).map(driver => ({
-          ...driver,
-          // Simulate shift status based on verification or random assignment
-          shift_status: driver.is_verified ? 
-            (Math.random() > 0.5 ? 'active' : 'offline') : 
-            'offline',
-          last_active: new Date(Date.now() - Math.floor(Math.random() * 24 * 60 * 60 * 1000))
-        }));
+      // Fetch real driver status from the API
+      const response = await fetch('http://localhost:80/LakbAI/LakbAI-API/routes/api.php/admin/drivers');
+      
+      if (response.ok) {
+        const data = await response.json();
         
-        setDrivers(driversWithStatus);
+        if (data.status === 'success' && data.drivers) {
+          // Use real driver data with actual shift status
+          const driversWithStatus = data.drivers.map(driver => ({
+            ...driver,
+            shift_status: driver.shift_status || 'off_shift',
+            last_active: driver.last_active || driver.updated_at || driver.created_at
+          }));
+          
+          setDrivers(driversWithStatus);
+        } else {
+          // Fallback to UserService if API fails
+          const result = await UserService.getUsers({
+            userType: 'driver',
+            limit: 100
+          });
+
+          if (result.success) {
+            const driversWithStatus = (result.users || []).map(driver => ({
+              ...driver,
+              shift_status: 'off_shift', // Default to off_shift if no real data
+              last_active: driver.updated_at || driver.created_at
+            }));
+            
+            setDrivers(driversWithStatus);
+          } else {
+            setError(result.error || 'Failed to load drivers');
+          }
+        }
       } else {
-        setError(result.error || 'Failed to load drivers');
+        // Fallback to UserService if API fails
+        const result = await UserService.getUsers({
+          userType: 'driver',
+          limit: 100
+        });
+
+        if (result.success) {
+          const driversWithStatus = (result.users || []).map(driver => ({
+            ...driver,
+            shift_status: 'off_shift', // Default to off_shift if no real data
+            last_active: driver.updated_at || driver.created_at
+          }));
+          
+          setDrivers(driversWithStatus);
+        } else {
+          setError(result.error || 'Failed to load drivers');
+        }
       }
     } catch (error) {
       console.error('Error loading drivers:', error);
@@ -62,8 +94,8 @@ const DriverStatusContainer = ({ onDataUpdate }) => {
   };
 
   const getStatusStats = () => {
-    const active = drivers.filter(d => d.shift_status === 'active').length;
-    const offline = drivers.filter(d => d.shift_status === 'offline').length;
+    const active = drivers.filter(d => d.shift_status === 'on_shift').length;
+    const offline = drivers.filter(d => d.shift_status === 'off_shift').length;
     
     return { active, offline, total: drivers.length };
   };
@@ -81,10 +113,10 @@ const DriverStatusContainer = ({ onDataUpdate }) => {
                 <h6 className="mb-1 fw-bold">
                   {driver.first_name} {driver.last_name}
                   <Badge 
-                    bg={driver.shift_status === 'active' ? 'success' : 'secondary'} 
+                    bg={driver.shift_status === 'on_shift' ? 'success' : 'secondary'} 
                     className="ms-2"
                   >
-                    {driver.shift_status === 'active' ? 'On Duty' : 'Off Duty'}
+                    {driver.shift_status === 'on_shift' ? 'On Duty' : 'Off Duty'}
                   </Badge>
                 </h6>
                 <small className="text-muted">{driver.email}</small>
@@ -113,12 +145,12 @@ const DriverStatusContainer = ({ onDataUpdate }) => {
               <div className="mb-3">
                 <div 
                   className={`rounded-circle d-inline-flex align-items-center justify-content-center ${
-                    driver.shift_status === 'active' ? 'bg-success' : 'bg-secondary'
+                    driver.shift_status === 'on_shift' ? 'bg-success' : 'bg-secondary'
                   }`}
                   style={{ width: '60px', height: '60px' }}
                 >
                   <i className={`bi ${
-                    driver.shift_status === 'active' ? 'bi-check-circle' : 'bi-dash-circle'
+                    driver.shift_status === 'on_shift' ? 'bi-check-circle' : 'bi-dash-circle'
                   } fs-3 text-white`}></i>
                 </div>
               </div>
@@ -214,14 +246,14 @@ const DriverStatusContainer = ({ onDataUpdate }) => {
               All ({stats.total})
             </Button>
             <Button 
-              variant={statusFilter === 'active' ? 'success' : 'outline-success'}
-              onClick={() => setStatusFilter('active')}
+              variant={statusFilter === 'on_shift' ? 'success' : 'outline-success'}
+              onClick={() => setStatusFilter('on_shift')}
             >
               Active ({stats.active})
             </Button>
             <Button 
-              variant={statusFilter === 'offline' ? 'secondary' : 'outline-secondary'}
-              onClick={() => setStatusFilter('offline')}
+              variant={statusFilter === 'off_shift' ? 'secondary' : 'outline-secondary'}
+              onClick={() => setStatusFilter('off_shift')}
             >
               Offline ({stats.offline})
             </Button>

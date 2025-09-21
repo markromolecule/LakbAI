@@ -5,9 +5,7 @@ import MetricCard from '../../components/admin/shared/MetricCard';
 
 const Dashboard = () => {
   const [recentActivities, setRecentActivities] = useState([]);
-
-  // Mock data - can be replaced with API calls later
-  const metrics = [
+  const [metrics, setMetrics] = useState([
     {
       title: 'Jeepneys',
       value: '8',
@@ -18,7 +16,7 @@ const Dashboard = () => {
     },
     {
       title: 'Active Driver',
-      value: '3',
+      value: '0',
       subtitle: 'Current drivers',
       color: 'success',
       icon: 'bi-person-badge',
@@ -40,7 +38,46 @@ const Dashboard = () => {
       icon: 'bi-cash-coin',
       trend: { type: 'up', value: 22 }
     }
-  ];
+  ]);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch real-time driver data
+  useEffect(() => {
+    const fetchDriverStats = async () => {
+      try {
+        const response = await fetch('http://localhost:80/LakbAI/LakbAI-API/routes/api.php/admin/drivers');
+        
+        if (response.ok) {
+          const data = await response.json();
+          
+          if (data.status === 'success' && data.drivers) {
+            const activeDrivers = data.drivers.filter(driver => 
+              driver.shift_status === 'on_shift'
+            ).length;
+            
+            setMetrics(prevMetrics => 
+              prevMetrics.map(metric => 
+                metric.title === 'Active Driver' 
+                  ? { ...metric, value: activeDrivers.toString() }
+                  : metric
+              )
+            );
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching driver stats:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDriverStats();
+    
+    // Refresh every 30 seconds
+    const interval = setInterval(fetchDriverStats, 30000);
+    
+    return () => clearInterval(interval);
+  }, []);
 
   // Mock recent activities - We can use API or WebSocket for live updates
   useEffect(() => {

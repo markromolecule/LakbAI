@@ -113,12 +113,42 @@ export const ScannerView: React.FC<ScannerViewProps> = ({
 
   const parseRouteCheckpointQR = (data: string): RouteCheckpointQRData | null => {
     try {
+      console.log('🔍 Parsing QR data:', data);
       const parsed = JSON.parse(data);
-      if (parsed?.type === 'route_checkpoint' && parsed?.qrType === 'driver_scan') {
-        return parsed as RouteCheckpointQRData;
+      console.log('🔍 Parsed QR data:', parsed);
+      console.log('🔍 Type check:', parsed?.type, '===', 'route_checkpoint', '?', parsed?.type === 'route_checkpoint');
+      console.log('🔍 QRType check:', parsed?.qrType, '===', 'driver_scan', '?', parsed?.qrType === 'driver_scan');
+      
+      // Accept QR codes with type 'route_checkpoint' (from admin) or with both type and qrType
+      if (parsed?.type === 'route_checkpoint' && (parsed?.qrType === 'driver_scan' || !parsed?.qrType)) {
+        console.log('✅ QR validation passed');
+        
+        // Map admin QR data to expected format
+        const mappedData: RouteCheckpointQRData = {
+          type: 'route_checkpoint',
+          checkpointId: parsed.checkpoint_id?.toString() || '',
+          checkpointName: parsed.checkpoint_name || '',
+          checkpointType: parsed.is_origin ? 'start' : (parsed.is_destination ? 'end' : 'checkpoint'),
+          coordinates: {
+            latitude: parsed.coordinates?.lat || 0,
+            longitude: parsed.coordinates?.lng || 0
+          },
+          jeepneyNumber: parsed.jeepney_number || '',
+          route: parsed.route_name || '',
+          qrType: parsed.qrType || 'driver_scan',
+          timestamp: parsed.generated_at || new Date().toISOString(),
+          adminId: parsed.admin_id || '',
+          purpose: parsed.purpose || 'checkpoint_scan',
+          metadata: parsed
+        };
+        
+        console.log('🔍 Mapped QR data:', mappedData);
+        return mappedData;
       }
+      console.log('❌ QR validation failed');
       return null;
-    } catch {
+    } catch (error) {
+      console.log('❌ QR parsing error:', error);
       return null;
     }
   };
@@ -241,11 +271,13 @@ export const ScannerView: React.FC<ScannerViewProps> = ({
           
           // Notify parent components about trip completion
           if (onTripCompleted) {
+            console.log('🔄 Calling onTripCompleted callback');
             onTripCompleted(result.tripSummary);
           }
           
           // End shift after trip completion
           if (onShiftEnd) {
+            console.log('🔄 Calling onShiftEnd callback');
             onShiftEnd();
           }
           
@@ -271,7 +303,7 @@ export const ScannerView: React.FC<ScannerViewProps> = ({
           
           Alert.alert(
             '📍 Checkpoint Updated',
-            `${result.message}\n\nActive Trip: ${activeTrip?.startCheckpoint.name} → End Point\nCheckpoints passed: ${result.activeTrip?.intermediateCheckpoints.length || 0}`,
+            `${result.message}\n\nActive Trip: ${activeTrip?.startCheckpoint.name} → ${qrData.checkpointName}\nCheckpoints passed: ${result.activeTrip?.intermediateCheckpoints.length || 0}`,
             [{ text: 'Continue' }]
           );
         } else {
@@ -517,7 +549,7 @@ export const ScannerView: React.FC<ScannerViewProps> = ({
           </View>
           <View>
             <Text style={[scannerStyles.currentLocation, { color: '#1E40AF' }]}>
-              {activeTrip.startCheckpoint.name} → End Point
+              {activeTrip.startCheckpoint.name} → {activeTrip.route?.split(' → ')[1] || 'End Point'}
             </Text>
             <Text style={scannerStyles.lastUpdated}>
               Started: {new Date(activeTrip.startTime).toLocaleTimeString()}

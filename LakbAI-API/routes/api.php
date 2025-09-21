@@ -305,6 +305,25 @@ try {
         }
     }
 
+    // Handle earnings routes with /routes/api.php/earnings/shift/... pattern
+    if (isset($pathParts[2]) && $pathParts[2] === 'earnings' && isset($pathParts[3]) && $pathParts[3] === 'shift') {
+        // POST /routes/api.php/earnings/shift/end
+        if ($method === 'POST' && count($pathParts) === 5 && $pathParts[4] === 'end') {
+            $input = json_decode(file_get_contents('php://input'), true);
+            $result = $earningsController->endShift($input);
+            echo json_encode($result);
+            exit;
+        }
+        
+        // POST /routes/api.php/earnings/shift/start
+        if ($method === 'POST' && count($pathParts) === 5 && $pathParts[4] === 'start') {
+            $input = json_decode(file_get_contents('php://input'), true);
+            $result = $earningsController->startShift($input);
+            echo json_encode($result);
+            exit;
+        }
+    }
+
     // ---------------------------
     // Route Routes
     // ---------------------------

@@ -32,6 +32,36 @@ const CheckpointManagement = ({ visible, onClose }) => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
+  // Auto-dismiss success messages after 3 seconds
+  useEffect(() => {
+    if (success) {
+      const timer = setTimeout(() => {
+        setSuccess('');
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [success]);
+
+  // Auto-refresh driver locations every 10 seconds when on monitoring tab
+  useEffect(() => {
+    let interval;
+    if (activeTab === 'monitoring' && selectedRoute) {
+      // Initial fetch
+      fetchDriverLocations();
+      
+      // Set up auto-refresh
+      interval = setInterval(() => {
+        fetchDriverLocations();
+      }, 10000); // Refresh every 10 seconds
+    }
+    
+    return () => {
+      if (interval) {
+        clearInterval(interval);
+      }
+    };
+  }, [activeTab, selectedRoute]);
+
   // Fetch routes when component mounts
   useEffect(() => {
     if (visible) {
@@ -160,13 +190,20 @@ const CheckpointManagement = ({ visible, onClose }) => {
 
     try {
       setLoading(true);
+      console.log('🔄 Fetching driver locations for route:', selectedRoute);
       const response = await fetch(
         `http://localhost:80/LakbAI/LakbAI-API/routes/api.php/mobile/locations/route/${selectedRoute}`
       );
       
       if (response.ok) {
         const data = await response.json();
-        setDriverLocations(data.drivers || []);
+        console.log('📍 Driver locations data:', data);
+        console.log('📍 Individual driver data:', data.driver_locations?.[0]);
+        setDriverLocations(data.driver_locations || []);
+        setSuccess(`Found ${data.driver_locations?.length || 0} active drivers`);
+      } else {
+        console.error('API response error:', response.status, response.statusText);
+        setError('Failed to fetch driver locations');
       }
     } catch (error) {
       console.error('Error fetching driver locations:', error);
@@ -179,7 +216,13 @@ const CheckpointManagement = ({ visible, onClose }) => {
   const handleRouteChange = (e) => {
     const routeId = e.target.value;
     setSelectedRoute(routeId);
-    setGeneratedQRs([]);
+    
+    // Clear generated QRs when selecting a different route
+    if (generatedQRs.length > 0) {
+      setGeneratedQRs([]);
+      setSuccess('Generated QR codes cleared for new route selection');
+    }
+    
     setDriverLocations([]);
     if (routeId) {
       fetchCheckpoints(routeId);
@@ -228,9 +271,11 @@ const CheckpointManagement = ({ visible, onClose }) => {
 
   const getStatusBadge = (status) => {
     const statusConfig = {
+      'active': { variant: 'success', text: 'Active' },
       'live': { variant: 'success', text: 'Live' },
       'recent': { variant: 'warning', text: 'Recent' },
       'stale': { variant: 'secondary', text: 'Stale' },
+      'no_data': { variant: 'secondary', text: 'No Data' },
       'inactive': { variant: 'danger', text: 'Inactive' }
     };
     

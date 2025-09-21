@@ -198,12 +198,14 @@ export const useDriverState = () => {
   };
 
   const toggleDuty = async () => {
+    console.log('🔄 toggleDuty called, current isOnDuty:', isOnDuty);
     if (!userSession?.dbUserData?.id) {
       console.error('❌ No driver ID available for shift toggle');
       return;
     }
 
     const driverId = userSession.dbUserData.id.toString();
+    console.log('🔄 Driver ID for shift toggle:', driverId);
     
     if (isOnDuty) {
       // Ending shift - reset today's earnings and add to total
@@ -211,10 +213,12 @@ export const useDriverState = () => {
       const result = await earningsService.endShift(driverId);
       
       if (result.success) {
+        // Immediately update the state
+        setIsOnDuty(false);
         Alert.alert(
           'Shift Ended! 🏁',
           result.message,
-          [{ text: 'OK', onPress: () => setIsOnDuty(false) }]
+          [{ text: 'OK' }]
         );
       } else {
         Alert.alert('Error', result.message);

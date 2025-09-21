@@ -242,6 +242,16 @@ class EarningsController {
             $totalData = $totalStmt->fetch(PDO::FETCH_ASSOC);
             $totalEarnings = (float)$totalData['total_earnings'];
 
+            // Update driver status in users table (since shift_status is in users table)
+            $updateDriverStatusQuery = "
+                UPDATE users 
+                SET shift_status = 'off_shift', 
+                    updated_at = NOW()
+                WHERE id = ?
+            ";
+            $updateDriverStmt = $this->db->prepare($updateDriverStatusQuery);
+            $updateDriverStmt->execute([$driverId]);
+
             // Log shift end
             error_log("Driver $driverId ended shift - Today: $actualTodayEarnings, Total: $totalEarnings");
 
@@ -317,6 +327,16 @@ class EarningsController {
                 $createStmt = $this->db->prepare($createShiftQuery);
                 $createStmt->execute([$driverId]);
             }
+
+            // Update driver status in users table (since shift_status is in users table)
+            $updateDriverStatusQuery = "
+                UPDATE users 
+                SET shift_status = 'on_shift', 
+                    updated_at = NOW()
+                WHERE id = ?
+            ";
+            $updateDriverStmt = $this->db->prepare($updateDriverStatusQuery);
+            $updateDriverStmt->execute([$driverId]);
 
             // Log shift start
             error_log("Driver $driverId started shift at $timestamp");
