@@ -19,6 +19,14 @@ interface LogsViewProps {
   driverProfile?: DriverProfile;
 }
 
+interface PeriodTrips {
+  todayTrips: number;
+  weeklyTrips: number;
+  monthlyTrips: number;
+  yearlyTrips: number;
+  totalTrips: number;
+}
+
 export const LogsView: React.FC<LogsViewProps> = ({
   recentLogs,
   driverProfile
@@ -28,6 +36,14 @@ export const LogsView: React.FC<LogsViewProps> = ({
     totalTripsAllTime: 0,
     todayCheckpoints: 0,
     totalEarnings: 0
+  });
+
+  const [periodTrips, setPeriodTrips] = useState<PeriodTrips>({
+    todayTrips: 0,
+    weeklyTrips: 0,
+    monthlyTrips: 0,
+    yearlyTrips: 0,
+    totalTrips: 0
   });
 
   const [todaysScans, setTodaysScans] = useState<CheckpointScan[]>([]);
@@ -43,20 +59,119 @@ export const LogsView: React.FC<LogsViewProps> = ({
       // Get trip summary from trip tracking service
       const tripSummary = tripTrackingService.getTripSummary(driverId);
       
+      // Initialize scans from active and completed trips if scans are empty
+      if (todaysScans.length === 0) {
+        console.log('📅 Initializing scans from existing trips...');
+        const activeTrip = tripTrackingService.getActiveTrip(driverId);
+        const completedTrips = tripTrackingService.getCompletedTrips(driverId);
+        
+        const initialScans: CheckpointScan[] = [];
+        
+        // Add scans from completed trips today
+        completedTrips.forEach(trip => {
+          const tripDate = new Date(trip.startTime).toDateString();
+          const today = new Date().toDateString();
+          
+          if (tripDate === today) {
+            // Add start scan
+            initialScans.push({
+              id: `scan_${trip.id}_start`,
+              time: new Date(trip.startTime).toLocaleTimeString(),
+              location: trip.startCheckpoint.name,
+              scanType: 'start',
+              tripId: trip.id
+            });
+            
+            // Add intermediate scans
+            trip.intermediateCheckpoints.forEach((checkpoint, index) => {
+              initialScans.push({
+                id: `scan_${trip.id}_inter_${index}`,
+                time: new Date(checkpoint.scannedAt).toLocaleTimeString(),
+                location: checkpoint.name,
+                scanType: 'intermediate',
+                tripId: trip.id
+              });
+            });
+            
+            // Add end scan if completed
+            if (trip.endCheckpoint) {
+              initialScans.push({
+                id: `scan_${trip.id}_end`,
+                time: new Date(trip.endCheckpoint.scannedAt).toLocaleTimeString(),
+                location: trip.endCheckpoint.name,
+                scanType: 'end',
+                tripId: trip.id
+              });
+            }
+          }
+        });
+        
+        // Add scans from active trip
+        if (activeTrip) {
+          const tripDate = new Date(activeTrip.startTime).toDateString();
+          const today = new Date().toDateString();
+          
+          if (tripDate === today) {
+            // Add start scan
+            initialScans.push({
+              id: `scan_${activeTrip.id}_start`,
+              time: new Date(activeTrip.startTime).toLocaleTimeString(),
+              location: activeTrip.startCheckpoint.name,
+              scanType: 'start',
+              tripId: activeTrip.id
+            });
+            
+            // Add intermediate scans
+            activeTrip.intermediateCheckpoints.forEach((checkpoint, index) => {
+              initialScans.push({
+                id: `scan_${activeTrip.id}_inter_${index}`,
+                time: new Date(checkpoint.scannedAt).toLocaleTimeString(),
+                location: checkpoint.name,
+                scanType: 'intermediate',
+                tripId: activeTrip.id
+              });
+            });
+          }
+        }
+        
+        // Sort by most recent first
+        initialScans.sort((a, b) => new Date(`1970/01/01 ${b.time}`).getTime() - new Date(`1970/01/01 ${a.time}`).getTime());
+        
+        console.log('📅 Initialized scans:', initialScans);
+        setTodaysScans(initialScans.slice(0, 10)); // Keep last 10 scans
+      }
+      
       setTripData({
         todayTrips: earnings.todayTrips,
         totalTripsAllTime: earnings.totalTrips,
-        todayCheckpoints: recentLogs.length,
+        todayCheckpoints: todaysScans.length, // Use actual scanned checkpoints
         totalEarnings: earnings.totalEarnings
+      });
+
+      // Set period trips data (from database via API)
+      setPeriodTrips({
+        todayTrips: earnings.todayTrips,
+        weeklyTrips: earnings.weeklyTrips || 0,
+        monthlyTrips: earnings.monthlyTrips || 0, 
+        yearlyTrips: earnings.yearlyTrips || 0,
+        totalTrips: earnings.totalTrips
       });
       
       console.log('📅 LogsView trip data updated:', {
         todayTrips: earnings.todayTrips,
         totalTripsAllTime: earnings.totalTrips,
-        todayCheckpoints: recentLogs.length
+        todayCheckpoints: todaysScans.length
       });
     }
-  }, [driverProfile, recentLogs]);
+  }, [driverProfile]);
+
+  // Update checkpoint count when scans change
+  useEffect(() => {
+    setTripData(prev => ({
+      ...prev,
+      todayCheckpoints: todaysScans.length
+    }));
+  }, [todaysScans]);
 
   // Listen for trip changes to update in real-time
   useEffect(() => {
@@ -72,8 +187,19 @@ export const LogsView: React.FC<LogsViewProps> = ({
           ...prev,
           todayTrips: earnings.todayTrips,
           totalTripsAllTime: earnings.totalTrips,
-          totalEarnings: earnings.totalEarnings
+          totalEarnings: earnings.totalEarnings,
+          todayCheckpoints: prev.todayCheckpoints // Keep current checkpoint count
         }));
+        
+        // Update period trips as well
+        setPeriodTrips({
+          todayTrips: earnings.todayTrips,
+          weeklyTrips: earnings.weeklyTrips || 0,
+          monthlyTrips: earnings.monthlyTrips || 0, 
+          yearlyTrips: earnings.yearlyTrips || 0,
+          totalTrips: earnings.totalTrips
+        });
+        
         console.log('📅 LogsView earnings updated:', earnings);
       }
     });
@@ -81,7 +207,8 @@ export const LogsView: React.FC<LogsViewProps> = ({
     // Listen for trip tracking events to capture scan data
     const unsubscribeTrip = tripTrackingService.addTripListener((updatedDriverId, action) => {
       if (updatedDriverId === driverId) {
-        console.log('📅 Trip tracking event:', action, 'for driver:', updatedDriverId);
+        console.log('📅 LogsView - Trip tracking event:', action, 'for driver:', updatedDriverId);
+        console.log('📅 Current todaysScans count:', todaysScans.length);
         
         // Get active trip to extract scan information
         const activeTrip = tripTrackingService.getActiveTrip(driverId);
@@ -100,7 +227,15 @@ export const LogsView: React.FC<LogsViewProps> = ({
             tripId: activeTrip.id
           };
           
-          setTodaysScans(prev => [startScan, ...prev].slice(0, 10)); // Keep only last 10 scans
+          setTodaysScans(prev => {
+            const newScans = [startScan, ...prev].slice(0, 10);
+            // Update checkpoint count
+            setTripData(current => ({
+              ...current,
+              todayCheckpoints: newScans.length
+            }));
+            return newScans;
+          });
           console.log('📅 Added start scan:', startScan);
         } else if (action === 'checkpoint_added' && activeTrip) {
           // Add intermediate checkpoint scan
@@ -114,24 +249,49 @@ export const LogsView: React.FC<LogsViewProps> = ({
               tripId: activeTrip.id
             };
             
-            setTodaysScans(prev => [intermediateScan, ...prev].slice(0, 10));
+            setTodaysScans(prev => {
+              const newScans = [intermediateScan, ...prev].slice(0, 10);
+              // Update checkpoint count
+              setTripData(current => ({
+                ...current,
+                todayCheckpoints: newScans.length
+              }));
+              return newScans;
+            });
             console.log('📅 Added intermediate scan:', intermediateScan);
           }
-        } else if (action === 'trip_completed' && completedTrips.length > 0) {
-          // Add end checkpoint scan from most recently completed trip
-          const lastCompletedTrip = completedTrips[completedTrips.length - 1];
-          if (lastCompletedTrip.endCheckpoint) {
-            const endScan: CheckpointScan = {
-              id: `scan_${Date.now()}`,
-              time: scanTime,
-              location: lastCompletedTrip.endCheckpoint.name,
-              scanType: 'end',
-              tripId: lastCompletedTrip.id
-            };
-            
-            setTodaysScans(prev => [endScan, ...prev].slice(0, 10));
-            console.log('📅 Added end scan:', endScan);
-          }
+        } else if (action === 'trip_completed') {
+          // For trip completion, we need to get the end checkpoint from the event
+          // Since the active trip might be cleared, we'll add a small delay and check completed trips
+          setTimeout(() => {
+            const completedTrips = tripTrackingService.getCompletedTrips(driverId);
+            if (completedTrips.length > 0) {
+              const lastCompletedTrip = completedTrips[completedTrips.length - 1];
+              if (lastCompletedTrip.endCheckpoint) {
+                const endScan: CheckpointScan = {
+                  id: `scan_${Date.now()}`,
+                  time: new Date().toLocaleTimeString(),
+                  location: lastCompletedTrip.endCheckpoint.name,
+                  scanType: 'end',
+                  tripId: lastCompletedTrip.id
+                };
+                
+                setTodaysScans(prev => {
+                  const newScans = [endScan, ...prev].slice(0, 10);
+                  // Update checkpoint count
+                  setTripData(current => ({
+                    ...current,
+                    todayCheckpoints: newScans.length
+                  }));
+                  return newScans;
+                });
+                console.log('📅 Added end scan (delayed):', endScan);
+              }
+            }
+          }, 100); // Small delay to ensure trip is properly completed
+        } else if (action === 'trip_cleared') {
+          // Don't clear scans when trip is cleared - keep the history
+          console.log('📅 Trip cleared, but keeping scan history');
         }
       }
     });
@@ -171,9 +331,9 @@ export const LogsView: React.FC<LogsViewProps> = ({
               />
             ))
           ) : (
-            <View style={logsStyles.emptyState}>
+            <View style={logsStyles.emptyStateContainer}>
               <Text style={logsStyles.emptyStateText}>No checkpoint scans yet today</Text>
-              <Text style={logsStyles.emptyStateSubtext}>Start scanning QR codes to see activity here</Text>
+              <Text style={logsStyles.emptyStateText}>Start scanning QR codes to see activity here</Text>
             </View>
           )}
         </View>
@@ -193,12 +353,33 @@ export const LogsView: React.FC<LogsViewProps> = ({
         </View>
       </View>
 
+      {/* Period Trips Section - Similar to Period Earnings */}
       <View style={logsStyles.weeklyCard}>
-        <Text style={logsStyles.weeklySectionTitle}>All-Time Summary</Text>
+        <Text style={logsStyles.weeklySectionTitle}>Period Trips</Text>
         <View style={logsStyles.weeklyRow}>
-          <Text style={logsStyles.weeklyLabel}>Total Trips (All-Time):</Text>
-          <Text style={logsStyles.weeklyValue}>{tripData.totalTripsAllTime}</Text>
+          <Text style={logsStyles.weeklyLabel}>Today:</Text>
+          <Text style={[logsStyles.weeklyValue, { color: '#16A34A' }]}>{periodTrips.todayTrips} trips</Text>
         </View>
+        <View style={logsStyles.weeklyRow}>
+          <Text style={logsStyles.weeklyLabel}>This Week:</Text>
+          <Text style={[logsStyles.weeklyValue, { color: '#3B82F6' }]}>{periodTrips.weeklyTrips} trips</Text>
+        </View>
+        <View style={logsStyles.weeklyRow}>
+          <Text style={logsStyles.weeklyLabel}>This Month:</Text>
+          <Text style={[logsStyles.weeklyValue, { color: '#F59E0B' }]}>{periodTrips.monthlyTrips} trips</Text>
+        </View>
+        <View style={logsStyles.weeklyRow}>
+          <Text style={logsStyles.weeklyLabel}>This Year:</Text>
+          <Text style={[logsStyles.weeklyValue, { color: '#EF4444' }]}>{periodTrips.yearlyTrips} trips</Text>
+        </View>
+        <View style={logsStyles.weeklyRow}>
+          <Text style={logsStyles.weeklyLabel}>All-Time Total:</Text>
+          <Text style={[logsStyles.weeklyValue, { color: '#8B5CF6' }]}>{periodTrips.totalTrips} trips</Text>
+        </View>
+      </View>
+
+      <View style={logsStyles.weeklyCard}>
+        <Text style={logsStyles.weeklySectionTitle}>Performance Summary</Text>
         <View style={logsStyles.weeklyRow}>
           <Text style={logsStyles.weeklyLabel}>Total Earnings:</Text>
           <Text style={[logsStyles.weeklyValue, { color: '#16A34A' }]}>₱{tripData.totalEarnings.toFixed(2)}</Text>
@@ -208,6 +389,10 @@ export const LogsView: React.FC<LogsViewProps> = ({
           <Text style={logsStyles.weeklyValue}>
             ₱{tripData.totalTripsAllTime > 0 ? (tripData.totalEarnings / tripData.totalTripsAllTime).toFixed(2) : '0.00'}
           </Text>
+        </View>
+        <View style={logsStyles.weeklyRow}>
+          <Text style={logsStyles.weeklyLabel}>Checkpoints Today:</Text>
+          <Text style={[logsStyles.weeklyValue, { color: '#3B82F6' }]}>{tripData.todayCheckpoints} scanned</Text>
         </View>
       </View>
     </ScrollView>

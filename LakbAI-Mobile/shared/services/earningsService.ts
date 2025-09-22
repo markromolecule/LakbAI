@@ -24,6 +24,9 @@ export interface DriverEarnings {
   totalEarnings: number; // Lifetime earnings across all shifts
   totalTrips: number;
   todayTrips: number;
+  weeklyTrips: number;
+  monthlyTrips: number;
+  yearlyTrips: number;
   averageFarePerTrip: number;
   lastUpdate: string;
 }
@@ -55,8 +58,11 @@ class EarningsService {
             todayEarnings: result.earnings.todayEarnings,
             todayTrips: result.earnings.todayTrips,
             weeklyEarnings: result.earnings.weeklyEarnings,
+            weeklyTrips: result.earnings.weeklyTrips || 0,
             monthlyEarnings: result.earnings.monthlyEarnings,
+            monthlyTrips: result.earnings.monthlyTrips || 0,
             yearlyEarnings: result.earnings.yearlyEarnings || 0,
+            yearlyTrips: result.earnings.yearlyTrips || 0,
             totalEarnings: result.earnings.totalEarnings || 0,
             totalTrips: result.earnings.totalTrips,
             averageFarePerTrip: result.earnings.averageFarePerTrip,
@@ -138,6 +144,9 @@ class EarningsService {
         totalEarnings: 0,
         totalTrips: 0,
         todayTrips: 0,
+        weeklyTrips: 0,
+        monthlyTrips: 0,
+        yearlyTrips: 0,
         averageFarePerTrip: 0,
         lastUpdate: new Date().toISOString(),
       });
@@ -534,7 +543,7 @@ class EarningsService {
   }
 
   /**
-   * End shift - reset today's earnings and add to total earnings
+   * End shift - reset today's earnings but KEEP today's trip count (only reset after 24 hours)
    */
   async endShift(driverId: string): Promise<{ success: boolean; message: string; totalEarnings?: number }> {
     try {
@@ -545,14 +554,21 @@ class EarningsService {
       // Add today's earnings to total earnings before resetting
       const newTotalEarnings = currentEarnings.totalEarnings + currentEarnings.todayEarnings;
       
-      // Reset today's earnings and trips
+      // Reset today's earnings but KEEP today's trips (as requested)
+      // Trip count should only reset after 24 hours or logout
       const updatedEarnings: DriverEarnings = {
         ...currentEarnings,
-        todayEarnings: 0,
-        todayTrips: 0,
+        todayEarnings: 0, // Reset earnings
+        todayTrips: currentEarnings.todayTrips, // KEEP trip count
         totalEarnings: newTotalEarnings,
         lastUpdate: new Date().toISOString(),
       };
+      
+      console.log('🔄 Shift end - Earnings reset, trips preserved:', {
+        todayEarningsReset: 0,
+        todayTripsPreserved: currentEarnings.todayTrips,
+        newTotalEarnings
+      });
       
       // Update stored earnings
       this.earnings.set(driverId, updatedEarnings);
@@ -567,7 +583,7 @@ class EarningsService {
       
       return {
         success: true,
-        message: `Shift ended. Today's earnings ₱${currentEarnings.todayEarnings} added to total earnings.`,
+        message: `Shift ended. Today's earnings ₱${currentEarnings.todayEarnings} added to total earnings. Trip count preserved.`,
         totalEarnings: newTotalEarnings
       };
     } catch (error) {

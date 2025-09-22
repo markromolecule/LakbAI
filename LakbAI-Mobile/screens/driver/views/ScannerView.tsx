@@ -301,16 +301,16 @@ export const ScannerView: React.FC<ScannerViewProps> = ({
             onTripCompleted(result.tripSummary);
           }
           
-          // End shift after trip completion
+          // Auto-end shift after trip completion (as requested)
           if (onShiftEnd) {
-            console.log('🔄 Calling onShiftEnd callback');
+            console.log('🔄 Calling onShiftEnd callback - auto-ending shift after trip completion');
             onShiftEnd();
           }
           
           Alert.alert(
             '✅ Trip Completed!',
-            `${result.message}\n\nTrip Summary:\n• Duration: ${result.tripSummary?.duration} minutes\n• Checkpoints: ${result.tripSummary?.checkpoints}\n• Distance: ${result.tripSummary?.distance}\n\n✅ Trip count updated!\n\nYour shift will now end.`,
-            [{ text: 'Great!' }]
+            `${result.message}\n\nTrip Summary:\n• Duration: ${result.tripSummary?.duration} minutes\n• Checkpoints: ${result.tripSummary?.checkpoints}\n• Distance: ${result.tripSummary?.distance}\n\n✅ Trip count updated!\n\nYour shift will now end automatically.`,
+            [{ text: 'OK' }]
           );
         } else {
           Alert.alert('Cannot End Trip', result.message);

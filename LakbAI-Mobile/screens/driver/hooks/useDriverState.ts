@@ -112,7 +112,7 @@ export const useDriverState = () => {
       license: apiProfile.license_number || '', // Can be blank as requested
       jeepneyNumber: apiProfile.assignedJeepney?.jeepneyNumber || 'No Jeepney Assigned',
       rating: 4.5 + (Math.random() * 0.8), // Mock data - would come from ratings
-      totalTrips: 0, // Blank as requested
+      totalTrips: currentEarnings.totalTrips, // Get real total trips from earnings service
       yearsExperience: yearsExperience,
       todayTrips: currentEarnings.todayTrips, // Get from earnings service 
       todayEarnings: currentEarnings.todayEarnings, // Get real earnings from service
@@ -154,7 +154,7 @@ export const useDriverState = () => {
       license: dbUser.drivers_license_name || '', // Can be blank as requested
       jeepneyNumber,
       rating: 4.5 + (Math.random() * 0.8), // Random rating between 4.5-5.3
-      totalTrips: 0, // Blank as requested
+      totalTrips: currentEarnings.totalTrips, // Get real total trips from earnings service
       yearsExperience: yearsExperience,
       todayTrips: currentEarnings.todayTrips, // Get from earnings service
       todayEarnings: currentEarnings.todayEarnings, // Get real earnings from service
@@ -173,7 +173,7 @@ export const useDriverState = () => {
       license: '', // Can be blank as requested
       jeepneyNumber: 'LKB-001',
       rating: 4.8,
-      totalTrips: 0, // Blank as requested
+      totalTrips: currentEarnings.totalTrips, // Get real total trips from earnings service
       yearsExperience: 2, // Based on recent account
       todayTrips: currentEarnings.todayTrips, // Get from earnings service
       todayEarnings: currentEarnings.todayEarnings, // Get real earnings from service

@@ -85,8 +85,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             <Text style={profileStyles.profileTitle}>Professional Jeepney Driver</Text>
             <View style={profileStyles.ratingRow}>
               <Star size={16} color="#EAB308" />
-              <Text style={profileStyles.rating}>{driverProfile.rating}/5.0</Text>
-              <Text style={profileStyles.totalTrips}>({driverProfile.totalTrips} trips)</Text>
+              <Text style={profileStyles.rating}>{driverProfile.rating.toFixed(1)}/5.0</Text>
+              <Text style={[profileStyles.totalTrips, { color: '#8B5CF6', fontWeight: 'bold' }]}>({driverProfile.totalTrips.toLocaleString()} trips)</Text>
             </View>
           </View>
           {refreshIndicator && (
@@ -125,20 +125,26 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             <Text style={profileStyles.profileSectionTitle}>Performance Stats</Text>
             <View style={profileStyles.profileRow}>
               <Text style={profileStyles.profileLabel}>Total Trips:</Text>
-              <Text style={profileStyles.profileValue}>{driverProfile.totalTrips.toLocaleString()}</Text>
+              <Text style={[profileStyles.profileValue, { color: '#8B5CF6', fontWeight: 'bold' }]}>{driverProfile.totalTrips.toLocaleString()}</Text>
             </View>
             <View style={profileStyles.profileRow}>
               <Text style={profileStyles.profileLabel}>Today's Trips:</Text>
-              <Text style={profileStyles.profileValue}>{driverProfile.todayTrips}</Text>
+              <Text style={[profileStyles.profileValue, { color: '#16A34A', fontWeight: 'bold' }]}>{driverProfile.todayTrips}</Text>
             </View>
             <View style={profileStyles.profileRow}>
               <Text style={profileStyles.profileLabel}>Today's Earnings:</Text>
-              <Text style={[profileStyles.profileValue, { color: '#16A34A' }]}>₱{driverProfile.todayEarnings}</Text>
+              <Text style={[profileStyles.profileValue, { color: '#16A34A', fontWeight: 'bold' }]}>₱{driverProfile.todayEarnings.toFixed(2)}</Text>
             </View>
             <View style={profileStyles.profileRow}>
               <Text style={profileStyles.profileLabel}>Total Earnings:</Text>
-              <Text style={[profileStyles.profileValue, { color: '#1D4ED8', fontWeight: 'bold' }]}>₱{driverProfile.totalEarnings}</Text>
+              <Text style={[profileStyles.profileValue, { color: '#1D4ED8', fontWeight: 'bold' }]}>₱{driverProfile.totalEarnings.toFixed(2)}</Text>
             </View>
+            {driverProfile.totalTrips > 0 && (
+              <View style={profileStyles.profileRow}>
+                <Text style={profileStyles.profileLabel}>Avg per Trip:</Text>
+                <Text style={[profileStyles.profileValue, { color: '#F59E0B' }]}>₱{(driverProfile.totalEarnings / driverProfile.totalTrips).toFixed(2)}</Text>
+              </View>
+            )}
             {lastUpdate && (
               <View style={profileStyles.profileRow}>
                 <Text style={profileStyles.profileLabel}>Last Updated:</Text>
@@ -147,10 +153,30 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             )}
             <View style={profileStyles.profileRow}>
               <Text style={profileStyles.profileLabel}>Status:</Text>
-              <Text style={[profileStyles.profileValue, { color: isOnDuty ? '#16A34A' : '#DC2626' }]}>
+              <Text style={[profileStyles.profileValue, { color: isOnDuty ? '#16A34A' : '#DC2626', fontWeight: 'bold' }]}>
                 {isOnDuty ? 'On Duty' : 'Off Duty'}
               </Text>
             </View>
+          </View>
+        </View>
+      </View>
+
+      {/* Quick Stats Card */}
+      <View style={profileStyles.quickStatsCard}>
+        <View style={profileStyles.quickStatsRow}>
+          <View style={profileStyles.quickStatItem}>
+            <Text style={[profileStyles.quickStatValue, { color: '#16A34A' }]}>{driverProfile.todayTrips}</Text>
+            <Text style={profileStyles.quickStatLabel}>Today's Trips</Text>
+          </View>
+          <View style={profileStyles.quickStatDivider} />
+          <View style={profileStyles.quickStatItem}>
+            <Text style={[profileStyles.quickStatValue, { color: '#8B5CF6' }]}>{driverProfile.totalTrips.toLocaleString()}</Text>
+            <Text style={profileStyles.quickStatLabel}>Total Trips</Text>
+          </View>
+          <View style={profileStyles.quickStatDivider} />
+          <View style={profileStyles.quickStatItem}>
+            <Text style={[profileStyles.quickStatValue, { color: '#1D4ED8' }]}>₱{driverProfile.todayEarnings.toFixed(0)}</Text>
+            <Text style={profileStyles.quickStatLabel}>Today's Earnings</Text>
           </View>
         </View>
       </View>
