@@ -137,8 +137,13 @@ const UserModal = ({ show, onHide, user, mode, onSave }) => {
     <Modal show={show} onHide={onHide} size="xl" centered className="user-modal">
       <Modal.Header closeButton className="border-0 bg-gradient-primary text-white">
         <Modal.Title className="d-flex align-items-center">
-          <div className="bg-white bg-opacity-20 rounded-circle p-3 me-3 d-flex align-items-center justify-content-center" style={{ width: '50px', height: '50px' }}>
-            <i className={`bi ${mode === 'create' ? 'bi-person-plus' : mode === 'edit' ? 'bi-person-gear' : 'bi-person-check'} text-white fs-5`}></i>
+          <div className="bg-white bg-opacity-20 rounded-circle p-1 me-3 d-flex align-items-center justify-content-center" style={{ width: '60px', height: '60px' }}>
+            <img 
+              src="/image/logofinal.png" 
+              alt="LakbAI Logo" 
+              className="img-fluid" 
+              style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
+            />
           </div>
           <div>
             <h4 className="mb-0">{getModalTitle()}</h4>
@@ -249,22 +254,11 @@ const UserModal = ({ show, onHide, user, mode, onSave }) => {
 
             {/* Driver License Section - Only for Drivers */}
             {!isPassenger && (
-              <div className="mb-4">
-                <div className="d-flex align-items-center mb-3">
-                  <div className="bg-warning bg-opacity-10 section-icon me-3">
-                    <i className="bi bi-card-text text-warning"></i>
-                  </div>
-                  <div>
-                    <h5 className="mb-0 text-warning">Driver License</h5>
-                    <small className="text-muted">License information and verification status</small>
-                  </div>
-                </div>
-                <DriverLicenseForm
-                  formData={formData}
-                  handleInputChange={handleInputChange}
-                  isReadOnly={isReadOnly}
-                />
-              </div>
+              <DriverLicenseForm
+                formData={formData}
+                handleInputChange={handleInputChange}
+                isReadOnly={isReadOnly}
+              />
             )}
 
             {/* Additional Information */}
