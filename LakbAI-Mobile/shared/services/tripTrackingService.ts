@@ -46,6 +46,7 @@ export interface TripSummary {
 class TripTrackingService {
   private activeTrips: Map<string, ActiveTrip> = new Map();
   private completedTrips: Map<string, ActiveTrip[]> = new Map();
+  private listeners = new Set<(driverId: string, action: 'trip_cleared' | 'trip_started' | 'trip_completed' | 'checkpoint_added') => void>();
 
   /**
    * Start a new trip when driver scans a start checkpoint
@@ -65,9 +66,16 @@ class TripTrackingService {
     activeTrip?: ActiveTrip;
   }> {
     try {
+      console.log('🚀 TripTrackingService.startTrip called for driver:', driverId);
+      console.log('🚀 Driver info:', driverInfo);
+      console.log('🚀 Start checkpoint:', startCheckpoint);
+      
       // Check if driver already has an active trip
       const existingTrip = this.getActiveTrip(driverId);
+      console.log('🚀 Existing trip check:', existingTrip);
+      
       if (existingTrip) {
+        console.log('❌ Driver already has active trip:', existingTrip.id);
         return {
           success: false,
           message: `You already have an active trip from ${existingTrip.startCheckpoint.name}. Please complete or cancel it first.`
@@ -93,6 +101,39 @@ class TripTrackingService {
       };
 
       this.activeTrips.set(driverId, activeTrip);
+
+      // Notify listeners that trip was started
+      this.notifyListeners(driverId, 'trip_started');
+
+      // Increment trip count when starting a trip (NEW LOGIC)
+      try {
+        const { earningsService } = await import('./earningsService');
+        const earningsUpdate = await earningsService.updateDriverEarnings({
+          driverId: driverId,
+          amount: 0, // No fare collected for trip start
+          tripId: tripId,
+          passengerId: 'trip_start',
+          timestamp: now,
+          paymentMethod: 'other',
+          pickupLocation: startCheckpoint.name,
+          destination: 'Trip Started',
+          originalFare: 0,
+          finalFare: 0,
+          incrementTripCount: true // Increment trip count when starting trip
+        });
+        
+        if (earningsUpdate.success) {
+          console.log('✅ Trip count incremented on start:', earningsUpdate.newEarnings);
+          console.log('📈 NEW TRIP COUNT VALUES:');
+          console.log('  - Today\'s Trips:', earningsUpdate.newEarnings?.todayTrips);
+          console.log('  - Total Trips:', earningsUpdate.newEarnings?.totalTrips);
+          console.log('  - Today\'s Earnings:', earningsUpdate.newEarnings?.todayEarnings);
+        } else {
+          console.error('❌ Failed to increment trip count on start:', earningsUpdate.error);
+        }
+      } catch (error) {
+        console.error('❌ Error incrementing trip count on start:', error);
+      }
 
       // Log trip start
       console.log(`🚍 Trip Started:`, {
@@ -159,6 +200,9 @@ class TripTrackingService {
       activeTrip.intermediateCheckpoints.push(scannedCheckpoint);
       this.activeTrips.set(driverId, activeTrip);
 
+      // Notify listeners about checkpoint addition
+      this.notifyListeners(driverId, 'checkpoint_added');
+
       console.log(`📍 Checkpoint Added:`, {
         tripId: activeTrip.id,
         checkpoint: checkpoint.name,
@@ -213,8 +257,14 @@ class TripTrackingService {
     };
   }> {
     try {
+      console.log('🏁 TripTrackingService.endTrip called for driver:', driverId);
+      console.log('🏁 End checkpoint:', endCheckpoint);
+      
       const activeTrip = this.getActiveTrip(driverId);
+      console.log('🏁 Active trip found:', activeTrip);
+      
       if (!activeTrip) {
+        console.log('❌ No active trip found for driver:', driverId);
         return {
           success: false,
           message: 'No active trip found to complete.'
@@ -248,6 +298,9 @@ class TripTrackingService {
       const driverCompletedTrips = this.completedTrips.get(driverId) || [];
       driverCompletedTrips.push(completedTrip);
       this.completedTrips.set(driverId, driverCompletedTrips);
+
+      // Notify listeners that trip was completed
+      this.notifyListeners(driverId, 'trip_completed');
 
       console.log(`✅ Trip Completed:`, {
         tripId: completedTrip.id,
@@ -354,6 +407,10 @@ class TripTrackingService {
       if (activeTrip) {
         this.activeTrips.delete(driverId);
         console.log(`🧹 Active trip cleared for driver ${driverId}:`, activeTrip.id);
+        
+        // Notify listeners that trip was cleared
+        this.notifyListeners(driverId, 'trip_cleared');
+        
         return {
           success: true,
           message: 'Active trip cleared successfully'
@@ -483,6 +540,35 @@ class TripTrackingService {
 
   private toRad(deg: number): number {
     return deg * (Math.PI / 180);
+  }
+
+  /**
+   * Add a listener for trip changes
+   */
+  addTripListener(callback: (driverId: string, action: 'trip_cleared' | 'trip_started' | 'trip_completed' | 'checkpoint_added') => void): () => void {
+    this.listeners.add(callback);
+    console.log('👂 Registered new trip listener. Total listeners:', this.listeners.size);
+    
+    // Return unsubscribe function
+    return () => {
+      this.listeners.delete(callback);
+      console.log('🔇 Removed trip listener. Remaining listeners:', this.listeners.size);
+    };
+  }
+
+  /**
+   * Notify all listeners of trip changes
+   */
+  private notifyListeners(driverId: string, action: 'trip_cleared' | 'trip_started' | 'trip_completed' | 'checkpoint_added'): void {
+    console.log('📢 Notifying', this.listeners.size, 'listeners about trip change:', action, 'for driver', driverId);
+    
+    this.listeners.forEach((callback) => {
+      try {
+        callback(driverId, action);
+      } catch (error) {
+        console.error('❌ Error in trip listener:', error);
+      }
+    });
   }
 
   /**

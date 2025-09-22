@@ -43,13 +43,16 @@ export const HomeView: React.FC<HomeViewProps> = ({
         console.log('🔄 HomeView database auto-refresh - checking for earnings updates...');
         onRefresh();
       }
-    }, 10000); // Refresh every 10 seconds
+    }, 3000); // Refresh every 3 seconds for faster updates
     
     // Set up earnings listener for immediate updates (backup system)
     const unsubscribe = earningsService.addListener((driverId) => {
       if (driverProfile.id?.toString() === driverId && onRefresh) {
         console.log('💰 HomeView earnings listener triggered - immediate refresh...');
-        onRefresh();
+        // Add small delay to batch rapid updates and ensure smooth UI
+        setTimeout(() => {
+          onRefresh();
+        }, 100);
       }
     });
 
@@ -112,6 +115,15 @@ export const HomeView: React.FC<HomeViewProps> = ({
           value={driverProfile.todayTrips}
           icon={TrendingUp}
           iconColor="#3B82F6"
+          onPress={() => {
+            // Debug: Force refresh on tap
+            console.log('📊 Force refresh triggered - current todayTrips:', driverProfile.todayTrips);
+            const currentEarnings = earningsService.getEarnings(driverProfile.id.toString());
+            console.log('📊 Current earnings in service:', currentEarnings);
+            if (onRefresh) {
+              onRefresh();
+            }
+          }}
         />
         <StatCard
           label="Today's Earnings"
@@ -119,6 +131,15 @@ export const HomeView: React.FC<HomeViewProps> = ({
           icon={Calculator}
           iconColor="#22C55E"
           valueColor="#16A34A"
+          onPress={() => {
+            // Debug: Force refresh on tap
+            console.log('💰 Force refresh triggered - current todayEarnings:', driverProfile.todayEarnings);
+            const currentEarnings = earningsService.getEarnings(driverProfile.id.toString());
+            console.log('💰 Current earnings in service:', currentEarnings);
+            if (onRefresh) {
+              onRefresh();
+            }
+          }}
         />
       </View>
 

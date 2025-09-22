@@ -67,7 +67,10 @@ export const EarningsView: React.FC<EarningsViewProps> = ({
     const unsubscribe = earningsService.addListener((driverId) => {
       if (driverProfile.id?.toString() === driverId) {
         console.log('💰 Earnings updated, refreshing earnings view...');
-        loadEarningsData();
+        // Add small delay to batch rapid updates and ensure smooth UI
+        setTimeout(() => {
+          loadEarningsData();
+        }, 100);
       }
     });
 

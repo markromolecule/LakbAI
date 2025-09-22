@@ -43,7 +43,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
         // Hide refresh indicator after 1 second
         setTimeout(() => setRefreshIndicator(false), 1000);
       }
-    }, 5000); // Refresh every 5 seconds for real-time feel
+    }, 3000); // Refresh every 3 seconds for faster updates
 
     // Set up earnings listener for immediate updates (backup system)
     const unsubscribe = earningsService.addListener((driverId) => {
@@ -51,12 +51,14 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
         console.log('💰 Earnings listener triggered - immediate profile refresh...');
         setRefreshIndicator(true);
         
-        if (onRefresh) {
-          onRefresh();
-        }
-        
-        setLastUpdate(new Date().toLocaleTimeString());
-        setTimeout(() => setRefreshIndicator(false), 1000);
+        // Add small delay to batch rapid updates and ensure smooth UI
+        setTimeout(() => {
+          if (onRefresh) {
+            onRefresh();
+          }
+          setLastUpdate(new Date().toLocaleTimeString());
+          setTimeout(() => setRefreshIndicator(false), 1000);
+        }, 100);
       }
     });
 

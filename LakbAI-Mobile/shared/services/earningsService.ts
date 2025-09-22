@@ -13,7 +13,7 @@ export interface EarningsUpdate {
   originalFare: number;
   discountAmount?: number;
   finalFare: number;
-  incrementTripCount?: boolean; // New parameter to control trip count increment
+  incrementTripCount?: boolean; // IMPORTANT: Only set to true for trip completion, NOT for passenger payments
 }
 
 export interface DriverEarnings {
@@ -31,6 +31,7 @@ export interface DriverEarnings {
 class EarningsService {
   private earnings: Map<string, DriverEarnings> = new Map();
   private listeners = new Set<(driverId: string) => void>();
+  private lastResetDate: string = new Date().toDateString(); // Track last reset date
 
   /**
    * Get driver earnings from database API
@@ -90,7 +91,8 @@ class EarningsService {
         discountAmount: update.discountAmount,
         paymentMethod: update.paymentMethod,
         pickupLocation: update.pickupLocation,
-        destination: update.destination
+        destination: update.destination,
+        incrementTripCount: update.incrementTripCount // 🔥 CRITICAL FIX: Send incrementTripCount to API
       };
       
       console.log('💾 Saving earnings to API:', apiUrl, payload);
@@ -123,6 +125,9 @@ class EarningsService {
    * Initialize or get driver earnings (fallback to memory)
    */
   private getDriverEarnings(driverId: string): DriverEarnings {
+    // Check if we need to reset today's trips (24-hour reset)
+    this.checkAndResetDailyTrips(driverId);
+    
     if (!this.earnings.has(driverId)) {
       // Initialize with zeros as requested (real earnings will be updated when payments are made)
       this.earnings.set(driverId, {
@@ -141,6 +146,44 @@ class EarningsService {
   }
 
   /**
+   * Check if we need to reset today's trips (24-hour reset)
+   */
+  private checkAndResetDailyTrips(driverId: string): void {
+    const currentDate = new Date().toDateString();
+    
+    if (this.lastResetDate !== currentDate) {
+      console.log('🔄 New day detected - resetting today\'s trips for all drivers');
+      
+      // Reset today's trips for all drivers
+      this.earnings.forEach((earnings, id) => {
+        const updatedEarnings = {
+          ...earnings,
+          todayEarnings: 0,
+          todayTrips: 0,
+          lastUpdate: new Date().toISOString()
+        };
+        this.earnings.set(id, updatedEarnings);
+        console.log(`🔄 Reset today\'s data for driver ${id}:`, {
+          todayEarnings: updatedEarnings.todayEarnings,
+          todayTrips: updatedEarnings.todayTrips
+        });
+      });
+      
+      // Update last reset date
+      this.lastResetDate = currentDate;
+      
+      // Notify all listeners about the reset
+      this.listeners.forEach(listener => {
+        try {
+          listener(driverId);
+        } catch (error) {
+          console.error('❌ Error notifying listener about daily reset:', error);
+        }
+      });
+    }
+  }
+
+  /**
    * Update driver earnings when a passenger pays
    */
   async updateDriverEarnings(update: EarningsUpdate): Promise<{
@@ -152,11 +195,20 @@ class EarningsService {
       console.log('💰 Processing earnings update:', update);
       console.log('🔍 Call stack trace:', new Error().stack);
       console.log('🔍 incrementTripCount value:', update.incrementTripCount, 'type:', typeof update.incrementTripCount);
+      console.log('🔍 DETAILED ANALYSIS:');
+      console.log('  - incrementTripCount present:', 'incrementTripCount' in update);
+      console.log('  - incrementTripCount undefined:', update.incrementTripCount === undefined);
+      console.log('  - incrementTripCount null:', update.incrementTripCount === null);
+      console.log('  - incrementTripCount true:', update.incrementTripCount === true);
+      console.log('  - incrementTripCount false:', update.incrementTripCount === false);
+      console.log('  - Payment context:', update.passengerId?.includes('passenger') ? 'PASSENGER_PAYMENT' : 'OTHER');
 
       const currentEarnings = this.getDriverEarnings(update.driverId);
 
       // Calculate trip count increment (only when explicitly requested)
-      const tripIncrement = update.incrementTripCount ? 1 : 0;
+      // DEFAULT: Do NOT increment trip count unless explicitly set to true
+      // This ensures payments don't accidentally increment trip counts
+      const tripIncrement = update.incrementTripCount === true ? 1 : 0;
       
       // Calculate new earnings
       const newEarnings: DriverEarnings = {
@@ -181,7 +233,8 @@ class EarningsService {
         newTodayTrips: newEarnings.todayTrips,
         previousTotalTrips: currentEarnings.totalTrips,
         newTotalTrips: newEarnings.totalTrips,
-        context: update.passengerId === 'trip_completion' ? 'TRIP_COMPLETION' : 'PASSENGER_PAYMENT'
+        context: update.passengerId === 'trip_completion' ? 'TRIP_COMPLETION' : 'PASSENGER_PAYMENT',
+        shouldIncrementTrips: tripIncrement > 0 ? 'YES - Trip completed' : 'NO - Payment only'
       });
 
       // Update stored earnings
@@ -350,6 +403,7 @@ class EarningsService {
         originalFare: tripInfo.originalFare || paymentData.amount,
         discountAmount: tripInfo.discountAmount || 0,
         finalFare: paymentData.amount,
+        incrementTripCount: false // Don't increment trip count for Xendit payments
       };
 
       const result = await this.updateDriverEarnings(earningsUpdate);
@@ -416,6 +470,7 @@ class EarningsService {
       originalFare: 30,
       discountAmount: 5,
       finalFare: 25,
+      incrementTripCount: false // Mock payments should not increment trip count
     };
   }
 
@@ -431,6 +486,28 @@ class EarningsService {
       this.listeners.delete(callback);
       console.log('🔇 Removed earnings listener. Remaining listeners:', this.listeners.size);
     };
+  }
+
+  /**
+   * Reset today's data for a specific driver (used on logout)
+   */
+  resetTodaysData(driverId: string): void {
+    const currentEarnings = this.getDriverEarnings(driverId);
+    const resetEarnings = {
+      ...currentEarnings,
+      todayEarnings: 0,
+      todayTrips: 0,
+      lastUpdate: new Date().toISOString()
+    };
+    
+    this.earnings.set(driverId, resetEarnings);
+    console.log('🔄 Reset today\'s data for driver', driverId, ':', {
+      todayEarnings: resetEarnings.todayEarnings,
+      todayTrips: resetEarnings.todayTrips
+    });
+    
+    // Notify listeners about the reset
+    this.notifyListeners(driverId);
   }
 
   /**

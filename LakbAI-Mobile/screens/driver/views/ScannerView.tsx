@@ -75,10 +75,26 @@ export const ScannerView: React.FC<ScannerViewProps> = ({
   const [activeTrip, setActiveTrip] = useState<ActiveTrip | null>(null);
   const isHandlingScanRef = useRef(false);
 
-  // Check for active trip on component mount
+  // Check for active trip on component mount and listen for changes
   useEffect(() => {
+    console.log('🔍 ScannerView useEffect - checking for active trip for driver:', driverInfo.id);
     const existingTrip = tripTrackingService.getActiveTrip(driverInfo.id);
+    console.log('🔍 Existing trip found:', existingTrip);
     setActiveTrip(existingTrip);
+    
+    // Set up trip listener for real-time updates (e.g., when cleared by shift end)
+    const unsubscribe = tripTrackingService.addTripListener((driverId, action) => {
+      if (driverId === driverInfo.id) {
+        console.log('🔄 Trip listener triggered:', action, 'for driver', driverId);
+        const currentTrip = tripTrackingService.getActiveTrip(driverId);
+        console.log('🔄 Updated trip from listener:', currentTrip);
+        setActiveTrip(currentTrip);
+      }
+    });
+    
+    return () => {
+      unsubscribe();
+    };
   }, [driverInfo.id]);
 
   const handleOpenCamera = () => {
@@ -126,23 +142,25 @@ export const ScannerView: React.FC<ScannerViewProps> = ({
         // Map admin QR data to expected format
         const mappedData: RouteCheckpointQRData = {
           type: 'route_checkpoint',
-          checkpointId: parsed.checkpoint_id?.toString() || '',
-          checkpointName: parsed.checkpoint_name || '',
-          checkpointType: parsed.is_origin ? 'start' : (parsed.is_destination ? 'end' : 'checkpoint'),
+          checkpointId: parsed.checkpoint_id?.toString() || parsed.checkpointId?.toString() || '',
+          checkpointName: parsed.checkpoint_name || parsed.checkpointName || '',
+          checkpointType: parsed.is_origin ? 'start' : (parsed.is_destination ? 'end' : (parsed.checkpointType || 'checkpoint')),
           coordinates: {
-            latitude: parsed.coordinates?.lat || 0,
-            longitude: parsed.coordinates?.lng || 0
+            latitude: parsed.coordinates?.lat || parsed.coordinates?.latitude || 0,
+            longitude: parsed.coordinates?.lng || parsed.coordinates?.longitude || 0
           },
-          jeepneyNumber: parsed.jeepney_number || '',
-          route: parsed.route_name || '',
+          jeepneyNumber: parsed.jeepney_number || parsed.jeepneyNumber || '',
+          route: parsed.route_name || parsed.route || '',
           qrType: parsed.qrType || 'driver_scan',
-          timestamp: parsed.generated_at || new Date().toISOString(),
-          adminId: parsed.admin_id || '',
+          timestamp: parsed.generated_at || parsed.timestamp || new Date().toISOString(),
+          adminId: parsed.admin_id || parsed.adminId || '',
           purpose: parsed.purpose || 'checkpoint_scan',
           metadata: parsed
         };
         
         console.log('🔍 Mapped QR data:', mappedData);
+        console.log('🔍 Final checkpoint type:', mappedData.checkpointType);
+        console.log('🔍 Final checkpoint name:', mappedData.checkpointName);
         return mappedData;
       }
       console.log('❌ QR validation failed');
@@ -198,11 +216,29 @@ export const ScannerView: React.FC<ScannerViewProps> = ({
         coordinates: qrData.coordinates
       };
 
+      console.log('🔍 QR Data checkpoint type:', qrData.checkpointType);
+      console.log('🔍 Is it a start checkpoint?', qrData.checkpointType === 'start');
+      
       if (qrData.checkpointType === 'start') {
         // Start a new trip
+        console.log('🚀 ============ STARTING TRIP =============');
+        console.log('🚀 Starting trip for driver:', driverInfo.id);
+        console.log('🚀 Driver info object:', driverInfo);
+        console.log('🚀 Current activeTrip state:', activeTrip);
+        console.log('🚀 QR checkpoint data:', qrData);
+        
         const realDriverName = driverProfile?.name || driverInfo.name;
         const realJeepneyNumber = driverProfile?.jeepneyNumber || driverInfo.jeepneyNumber;
         const realRoute = driverProfile?.route || driverInfo.route;
+        
+        console.log('🚀 Driver info:', { realDriverName, realJeepneyNumber, realRoute });
+        
+        console.log('🚀 Calling tripTrackingService.startTrip with:');
+        console.log('🚀 - Driver ID:', driverInfo.id);
+        console.log('🚀 - Driver Name:', realDriverName);
+        console.log('🚀 - Jeepney Number:', realJeepneyNumber);
+        console.log('🚀 - Route:', realRoute);
+        console.log('🚀 - Checkpoint:', checkpoint);
         
         const result = await tripTrackingService.startTrip(
           driverInfo.id,
@@ -213,6 +249,12 @@ export const ScannerView: React.FC<ScannerViewProps> = ({
           },
           checkpoint
         );
+        
+        console.log('🚀 ============ TRIP START RESULT =============');
+        console.log('🚀 Success:', result.success);
+        console.log('🚀 Message:', result.message);
+        console.log('🚀 Trip ID:', result.tripId);
+        console.log('🚀 Full result:', result);
 
         if (result.success) {
           setActiveTrip(result.activeTrip || null);
@@ -229,44 +271,28 @@ export const ScannerView: React.FC<ScannerViewProps> = ({
         
       } else if (qrData.checkpointType === 'end') {
         // End the current trip
+        console.log('🏁 Ending trip for driver:', driverInfo.id);
+        console.log('🏁 Current activeTrip state:', activeTrip);
+        
         const result = await tripTrackingService.endTrip(
           driverInfo.id,
           checkpoint
         );
+        
+        console.log('🏁 Trip end result:', result);
 
         if (result.success) {
           setActiveTrip(null);
           onLocationUpdate(qrData.checkpointName);
           
-          // Update trip count in earnings
-          try {
-            const { earningsService } = await import('../../../shared/services/earningsService');
-            const earningsUpdate = await earningsService.updateDriverEarnings({
-              driverId: driverInfo.id,
-              amount: 0, // No fare collected for this trip
-              tripId: result.completedTrip?.id || `trip_${Date.now()}`,
-              passengerId: 'trip_completion',
-              timestamp: new Date().toISOString(),
-              paymentMethod: 'other',
-              pickupLocation: activeTrip?.startCheckpoint?.name || 'Unknown',
-              destination: qrData.checkpointName,
-              originalFare: 0,
-              finalFare: 0,
-              incrementTripCount: true // Only increment trip count when trip is completed
-            });
-            
-            if (earningsUpdate.success) {
-              console.log('✅ Trip count updated in earnings:', earningsUpdate.newEarnings);
-              console.log('🔄 Triggering driver profile refresh for driver:', driverInfo.id);
-              
-              // Force refresh the driver profile to show updated trip count
-              if (onRefresh) {
-                console.log('📱 Triggering driver profile refresh...');
-                onRefresh();
-              }
-            }
-          } catch (error) {
-            console.error('❌ Failed to update trip count:', error);
+          // Trip count is now incremented on START point scan, not END point
+          // Just refresh the UI to show trip completion
+          console.log('🏁 Trip completed - trip count was already incremented on start');
+          
+          // Force refresh the driver profile to show updated UI
+          if (onRefresh) {
+            console.log('📱 Triggering driver profile refresh...');
+            onRefresh();
           }
           
           // Notify parent components about trip completion
@@ -431,9 +457,17 @@ export const ScannerView: React.FC<ScannerViewProps> = ({
     if (isHandlingScanRef.current || scanned) return;
     isHandlingScanRef.current = true;
 
+    console.log('📲 QR SCAN DETECTED!');
+    console.log('📲 Raw QR data:', data);
+    console.log('📲 Data length:', data.length);
+    console.log('📲 Current driver ID:', driverInfo.id);
+
     // Try parsing as route checkpoint QR first (new system)
     const routeCheckpointData = parseRouteCheckpointQR(data);
+    console.log('📲 Parsed route checkpoint data:', routeCheckpointData);
+    
     if (routeCheckpointData) {
+      console.log('✅ ROUTE CHECKPOINT QR DETECTED - proceeding with handleRouteCheckpointScan');
       setScanned(true);
       setShowCamera(false);
       
@@ -541,7 +575,7 @@ export const ScannerView: React.FC<ScannerViewProps> = ({
       </View>
 
       {/* Active Trip Information */}
-      {activeTrip && (
+      {activeTrip ? (
         <View style={[scannerStyles.locationCard, { backgroundColor: '#E7F3FF', borderColor: '#2563EB' }]}>
           <View style={homeStyles.sectionHeader}>
             <Ionicons name="navigate" size={20} color="#2563EB" />
@@ -559,6 +593,24 @@ export const ScannerView: React.FC<ScannerViewProps> = ({
             </Text>
             <Text style={[scannerStyles.locationNote, { fontWeight: '600', color: '#2563EB' }]}>
               💡 Scan checkpoints and end point to complete trip
+            </Text>
+          </View>
+        </View>
+      ) : (
+        <View style={[scannerStyles.locationCard, { backgroundColor: '#F9FAFB', borderColor: '#D1D5DB' }]}>
+          <View style={homeStyles.sectionHeader}>
+            <Ionicons name="checkmark-circle" size={20} color="#6B7280" />
+            <Text style={[homeStyles.sectionTitle, { color: '#6B7280' }]}>No Active Trip</Text>
+          </View>
+          <View>
+            <Text style={[scannerStyles.currentLocation, { color: '#6B7280' }]}>
+              Ready to start a new trip
+            </Text>
+            <Text style={scannerStyles.lastUpdated}>
+              Scan a start checkpoint QR to begin
+            </Text>
+            <Text style={[scannerStyles.locationNote, { fontWeight: '600', color: '#6B7280' }]}>
+              💡 Start by scanning a route checkpoint QR
             </Text>
           </View>
         </View>

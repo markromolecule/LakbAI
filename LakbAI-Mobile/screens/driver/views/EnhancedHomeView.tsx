@@ -49,11 +49,8 @@ export const EnhancedHomeView: React.FC<EnhancedHomeViewProps> = ({
   useEffect(() => {
     console.log('🏠 Enhanced HomeView mounted - setting up database-driven auto-refresh');
     
-    // Clear any leftover active trips from previous sessions
-    const clearResult = tripTrackingService.clearActiveTrip(driverProfile.id.toString());
-    if (clearResult.success && clearResult.message !== 'No active trip to clear') {
-      console.log('🧹 Cleared leftover active trip on component mount:', clearResult.message);
-    }
+    // Note: We don't clear active trips on mount anymore to allow trips to persist
+    // Active trips should only be cleared when explicitly ending a shift
     
     // Set up frequent auto-refresh interval for real-time database sync
     const interval = setInterval(async () => {
@@ -61,13 +58,16 @@ export const EnhancedHomeView: React.FC<EnhancedHomeViewProps> = ({
         console.log('🔄 Enhanced HomeView database auto-refresh - checking for earnings updates...');
         onRefresh();
       }
-    }, 10000); // Refresh every 10 seconds
+    }, 3000); // Refresh every 3 seconds for faster updates
     
     // Set up earnings listener for immediate updates
     const unsubscribe = earningsService.addListener((driverId) => {
       if (driverProfile.id?.toString() === driverId && onRefresh) {
         console.log('💰 Enhanced HomeView earnings listener triggered - immediate refresh...');
-        onRefresh();
+        // Add small delay to batch rapid updates and ensure smooth UI
+        setTimeout(() => {
+          onRefresh();
+        }, 100);
       }
     });
 

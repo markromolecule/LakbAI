@@ -19,7 +19,7 @@ class EarningsController {
             // Get today's earnings (only for current active shift)
             $todayQuery = "
                 SELECT 
-                    COUNT(*) as today_trips,
+                    COALESCE(SUM(CASE WHEN de.counts_as_trip = 1 THEN 1 ELSE 0 END), 0) as today_trips,
                     COALESCE(SUM(final_fare), 0) as today_earnings
                 FROM driver_earnings de
                 INNER JOIN driver_shift_logs dsl ON de.driver_id = dsl.driver_id 
@@ -36,7 +36,7 @@ class EarningsController {
             // Get weekly earnings (rolling 7-day window)
             $weeklyQuery = "
                 SELECT 
-                    COUNT(*) as weekly_trips,
+                    COALESCE(SUM(CASE WHEN counts_as_trip = 1 THEN 1 ELSE 0 END), 0) as weekly_trips,
                     COALESCE(SUM(final_fare), 0) as weekly_earnings
                 FROM driver_earnings 
                 WHERE driver_id = ? AND transaction_date >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)
@@ -48,7 +48,7 @@ class EarningsController {
             // Get monthly earnings (current calendar month)
             $monthlyQuery = "
                 SELECT 
-                    COUNT(*) as monthly_trips,
+                    COALESCE(SUM(CASE WHEN counts_as_trip = 1 THEN 1 ELSE 0 END), 0) as monthly_trips,
                     COALESCE(SUM(final_fare), 0) as monthly_earnings
                 FROM driver_earnings 
                 WHERE driver_id = ? 
@@ -62,7 +62,7 @@ class EarningsController {
             // Get yearly earnings (current calendar year)
             $yearlyQuery = "
                 SELECT 
-                    COUNT(*) as yearly_trips,
+                    COALESCE(SUM(CASE WHEN counts_as_trip = 1 THEN 1 ELSE 0 END), 0) as yearly_trips,
                     COALESCE(SUM(final_fare), 0) as yearly_earnings
                 FROM driver_earnings 
                 WHERE driver_id = ? AND YEAR(transaction_date) = YEAR(CURDATE())
@@ -74,7 +74,7 @@ class EarningsController {
             // Get all-time earnings (never resets)
             $totalQuery = "
                 SELECT 
-                    COUNT(*) as total_trips,
+                    COALESCE(SUM(CASE WHEN counts_as_trip = 1 THEN 1 ELSE 0 END), 0) as total_trips,
                     COALESCE(SUM(final_fare), 0) as total_earnings,
                     COALESCE(AVG(final_fare), 0) as average_fare
                 FROM driver_earnings 
@@ -111,12 +111,18 @@ class EarningsController {
      */
     public function addEarnings($data) {
         try {
+            // IMPORTANT: Only count as trip if explicitly requested
+            // Default is FALSE to prevent passenger payments from incrementing trip count
+            $countsAsTrip = isset($data['incrementTripCount']) && $data['incrementTripCount'] === true ? 1 : 0;
+            
+            error_log("EarningsController: Adding earnings for driver {$data['driverId']} - counts_as_trip: $countsAsTrip");
+            
             $query = "
                 INSERT INTO driver_earnings (
                     driver_id, trip_id, passenger_id, amount, original_fare, 
-                    discount_amount, final_fare, payment_method, pickup_location, 
+                    discount_amount, final_fare, counts_as_trip, payment_method, pickup_location, 
                     destination, transaction_date
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURDATE())
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURDATE())
             ";
 
             $stmt = $this->db->prepare($query);
@@ -128,6 +134,7 @@ class EarningsController {
                 $data['originalFare'],
                 $data['discountAmount'] ?? 0,
                 $data['finalFare'],
+                $countsAsTrip,  // New field to track trip vs payment
                 $data['paymentMethod'] ?? 'xendit',
                 $data['pickupLocation'] ?? null,
                 $data['destination'] ?? null
@@ -206,7 +213,7 @@ class EarningsController {
             // Get today's actual earnings from database
             $todayQuery = "
                 SELECT 
-                    COUNT(*) as today_trips,
+                    COALESCE(SUM(CASE WHEN counts_as_trip = 1 THEN 1 ELSE 0 END), 0) as today_trips,
                     COALESCE(SUM(final_fare), 0) as today_earnings
                 FROM driver_earnings 
                 WHERE driver_id = ? AND transaction_date = CURDATE()
