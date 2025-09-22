@@ -148,6 +148,28 @@ export const useRegisterForm = () => {
       // Clear ALL errors including general error
       setErrors({});
       
+      let licensePath = null;
+      
+      // Upload driver license if provided
+      if (formData.driversLicense) {
+        const formDataUpload = new FormData();
+        formDataUpload.append('drivers_license', formData.driversLicense);
+        
+        const uploadResponse = await fetch('/api/upload-driver-license', {
+          method: 'POST',
+          body: formDataUpload,
+        });
+        
+        const uploadResult = await uploadResponse.json();
+        
+        if (uploadResult.status === 'success') {
+          licensePath = uploadResult.data.file_path;
+        } else {
+          setGeneralError(uploadResult.message || 'Failed to upload driver license');
+          return;
+        }
+      }
+      
       // Set user type to driver for web registration and format data for API
       const driverData = {
         username: formData.firstName.toLowerCase() + formData.lastName.toLowerCase(),
@@ -169,7 +191,7 @@ export const useRegisterForm = () => {
         discount_type: null,
         discount_verified: false,
         drivers_license: formData.driversLicense ? formData.driversLicense.name : null,
-        drivers_license_path: formData.driversLicense ? formData.driversLicense.name : null,
+        drivers_license_path: licensePath,
         drivers_license_verified: false
       };
       
@@ -226,8 +248,7 @@ export const useRegisterForm = () => {
       'firstName', 'lastName', 'email', 'phoneNumber', 'gender',
       'password', 'confirmPassword', 'houseNumber', 'streetName',
       'barangay', 'city', 'province', 'postalCode',
-      'birthMonth', 'birthDay', 'birthYear'
-      // Note: driversLicense is optional for now
+      'birthMonth', 'birthDay', 'birthYear', 'driversLicense'
     ];
     
     const completedFields = requiredFields.filter(field => {

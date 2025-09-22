@@ -164,7 +164,7 @@ export const validateRegistrationForm = (formData) => {
   }
 
   // Driver's license validation (required for drivers)
-  if (formData.userType === 'driver' && !formData.driversLicense) {
+  if (!formData.driversLicense) {
     errors.driversLicense = 'Driver\'s license is required for driver accounts';
   }
   

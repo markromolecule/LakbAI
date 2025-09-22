@@ -816,6 +816,75 @@ try {
         exit;
     }
 
+    // Driver license document serving route
+    if ($pathParts[0] === 'driver-license' && $method === 'GET' && isset($pathParts[1])) {
+        $documentPath = $pathParts[1];
+        $fullPath = __DIR__ . '/../uploads/licenses/' . $documentPath;
+        
+        if (file_exists($fullPath) && is_readable($fullPath)) {
+            $fileInfo = pathinfo($fullPath);
+            $extension = strtolower($fileInfo['extension']);
+            
+            // Set appropriate content type
+            $contentTypes = [
+                'jpg' => 'image/jpeg',
+                'jpeg' => 'image/jpeg',
+                'png' => 'image/png',
+                'pdf' => 'application/pdf'
+            ];
+            
+            $contentType = $contentTypes[$extension] ?? 'application/octet-stream';
+            
+            header('Content-Type: ' . $contentType);
+            header('Content-Disposition: inline; filename="' . $fileInfo['basename'] . '"');
+            header('Content-Length: ' . filesize($fullPath));
+            header('Cache-Control: public, max-age=3600');
+            
+            readfile($fullPath);
+            exit;
+        } else {
+            http_response_code(404);
+            echo json_encode(['status' => 'error', 'message' => 'Driver license document not found']);
+            exit;
+        }
+    }
+
+    // Simple document serving route for admin panel
+    if ($pathParts[0] === 'document' && ($method === 'GET' || $method === 'HEAD') && isset($pathParts[1])) {
+        // Reconstruct the full path from pathParts
+        $documentPath = implode('/', array_slice($pathParts, 1));
+        $fullPath = __DIR__ . '/../' . $documentPath;
+        
+        if (file_exists($fullPath) && is_readable($fullPath)) {
+            $fileInfo = pathinfo($fullPath);
+            $extension = strtolower($fileInfo['extension'] ?? '');
+            
+            // Set appropriate content type
+            $contentTypes = [
+                'jpg' => 'image/jpeg',
+                'jpeg' => 'image/jpeg',
+                'png' => 'image/png',
+                'pdf' => 'application/pdf'
+            ];
+            
+            $contentType = $contentTypes[$extension] ?? 'application/octet-stream';
+            
+            header('Content-Type: ' . $contentType);
+            header('Content-Disposition: inline; filename="' . $fileInfo['basename'] . '"');
+            header('Content-Length: ' . filesize($fullPath));
+            header('Cache-Control: public, max-age=3600');
+            
+            if ($method === 'GET') {
+                readfile($fullPath);
+            }
+            exit;
+        } else {
+            http_response_code(404);
+            echo json_encode(['status' => 'error', 'message' => 'Document not found', 'path' => $fullPath]);
+            exit;
+        }
+    }
+
     // Health check route
     if (empty($pathParts) || $pathParts[0] === '' && $method === 'GET') {
         echo json_encode([
@@ -936,11 +1005,51 @@ try {
                 exit;
             }
         }
+
+        // Serve driver license documents
+        if ($pathParts[1] === 'driver-license-document' && isset($pathParts[2]) && $method === 'GET') {
+            $documentPath = $pathParts[2];
+            $fullPath = __DIR__ . '/../uploads/' . $documentPath;
+            
+            if (file_exists($fullPath) && is_readable($fullPath)) {
+                $fileInfo = pathinfo($fullPath);
+                $extension = strtolower($fileInfo['extension']);
+                
+                // Set appropriate content type
+                $contentTypes = [
+                    'jpg' => 'image/jpeg',
+                    'jpeg' => 'image/jpeg',
+                    'png' => 'image/png',
+                    'pdf' => 'application/pdf'
+                ];
+                
+                $contentType = $contentTypes[$extension] ?? 'application/octet-stream';
+                
+                header('Content-Type: ' . $contentType);
+                header('Content-Disposition: inline; filename="' . $fileInfo['basename'] . '"');
+                header('Content-Length: ' . filesize($fullPath));
+                header('Cache-Control: public, max-age=3600');
+                
+                readfile($fullPath);
+                exit;
+            } else {
+                http_response_code(404);
+                echo json_encode(['status' => 'error', 'message' => 'Driver license document not found']);
+                exit;
+            }
+        }
     }
 
     // File upload routes
     if (end($pathParts) === 'upload-discount-document' && $method === 'POST') {
         $result = $fileUploadController->uploadDiscountDocument();
+        echo json_encode($result);
+        exit;
+    }
+
+    // Driver license upload routes
+    if (end($pathParts) === 'upload-driver-license' && $method === 'POST') {
+        $result = $fileUploadController->uploadDriverLicense();
         echo json_encode($result);
         exit;
     }
@@ -957,6 +1066,18 @@ try {
         exit;
     }
 
+    // Serve driver license file
+    if (isset($pathParts[0]) && $pathParts[0] === 'driver-license' && $method === 'GET') {
+        $filePath = isset($_GET['path']) ? $_GET['path'] : '';
+        if ($filePath) {
+            $fileUploadController->serveDriverLicense($filePath);
+        } else {
+            http_response_code(400);
+            echo json_encode(['error' => 'File path parameter is required']);
+        }
+        exit;
+    }
+
     // Delete discount document file
     if (isset($pathParts[0]) && $pathParts[0] === 'delete-discount-document' && $method === 'DELETE') {
         $input = json_decode(file_get_contents('php://input'), true);
@@ -964,6 +1085,21 @@ try {
         
         if ($filePath) {
             $result = $fileUploadController->deleteDiscountDocument($filePath);
+            echo json_encode($result);
+        } else {
+            http_response_code(400);
+            echo json_encode(['error' => 'File path is required']);
+        }
+        exit;
+    }
+
+    // Delete driver license file
+    if (isset($pathParts[0]) && $pathParts[0] === 'delete-driver-license' && $method === 'DELETE') {
+        $input = json_decode(file_get_contents('php://input'), true);
+        $filePath = isset($input['file_path']) ? $input['file_path'] : '';
+        
+        if ($filePath) {
+            $result = $fileUploadController->deleteDriverLicense($filePath);
             echo json_encode($result);
         } else {
             http_response_code(400);

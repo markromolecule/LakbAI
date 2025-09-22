@@ -371,9 +371,10 @@ class AuthService {
             }
 
             if ($approved) {
-                // Approve: set drivers_license_verified = 1
+                // Approve: set drivers_license_verified = 1 and is_verified = 1
                 $updateData = [
-                    'drivers_license_verified' => 1
+                    'drivers_license_verified' => 1,
+                    'is_verified' => 1
                 ];
                 $message = 'Driver license verified successfully';
             } else {
@@ -398,15 +399,26 @@ class AuthService {
     }
 
     /**
-     * Get pending discount approvals
+     * Get pending approvals (both discount and driver license)
      */
     public function getPendingApprovals() {
         try {
-            $pendingUsers = $this->userRepository->findUsersWithPendingDiscounts();
+            $pendingUsers = $this->userRepository->findUsersWithPendingApprovals();
 
-            // Remove passwords from all users
+            // Remove passwords from all users and add approval type
             $pendingUsers = array_map(function($user) {
                 unset($user['password']);
+                
+                // Determine what type of approval is pending
+                $approvalTypes = [];
+                if ($user['discount_type'] && $user['discount_verified'] == 0) {
+                    $approvalTypes[] = 'discount';
+                }
+                if ($user['user_type'] === 'driver' && $user['drivers_license_path'] && $user['drivers_license_verified'] == 0) {
+                    $approvalTypes[] = 'driver_license';
+                }
+                
+                $user['pending_approval_types'] = $approvalTypes;
                 return $user;
             }, $pendingUsers);
 

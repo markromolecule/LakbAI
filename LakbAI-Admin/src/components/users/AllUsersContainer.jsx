@@ -175,6 +175,7 @@ const AllUsersContainer = ({ userType = null, onDataUpdate }) => {
               <AllUsersTable
                 users={users}
                 onUserAction={handleUserAction}
+                userType={userType}
               />
             </div>
           </Card>

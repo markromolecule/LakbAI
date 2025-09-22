@@ -15,6 +15,7 @@ class UserRepository extends BaseRepository {
                     barangay=?, city_municipality=?, province=?, postal_code=?,
                     user_type=?, discount_type=?, discount_applied=?, discount_file_path=?, 
                     discount_status=?, discount_document_path=?, discount_document_name=?, 
+                    drivers_license_path=?, drivers_license_name=?, drivers_license_verified=?,
                     discount_verified=0, is_verified=0, created_at=NOW(), updated_at=NOW()";
 
         $stmt = $this->conn->prepare($query);
@@ -41,8 +42,11 @@ class UserRepository extends BaseRepository {
         $discount_status = $userData['discount_status'] ?? 'pending';
         $discount_document_path = $userData['discount_document_path'] ?? null;
         $discount_document_name = $userData['discount_document_name'] ?? null;
+        $drivers_license_path = $userData['drivers_license_path'] ?? null;
+        $drivers_license_name = $userData['drivers_license'] ?? null;
+        $drivers_license_verified = $userData['drivers_license_verified'] ?? 0;
 
-        $stmt->bind_param("ssssssssssssssssissss", 
+        $stmt->bind_param("ssssssssssssssssissssssi", 
             $username,
             $email,
             $password,
@@ -63,7 +67,10 @@ class UserRepository extends BaseRepository {
             $discount_file_path,
             $discount_status,
             $discount_document_path,
-            $discount_document_name
+            $discount_document_name,
+            $drivers_license_path,
+            $drivers_license_name,
+            $drivers_license_verified
         );
 
         if ($stmt->execute()) {
@@ -282,6 +289,43 @@ class UserRepository extends BaseRepository {
      */
     public function findUsersWithPendingDiscounts() {
         $query = "SELECT * FROM {$this->table_name} WHERE discount_type IS NOT NULL AND discount_verified = 0 ORDER BY created_at DESC";
+        $stmt = $this->conn->prepare($query);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        $users = [];
+        while ($row = $result->fetch_assoc()) {
+            $users[] = $row;
+        }
+
+        return $users;
+    }
+
+    /**
+     * Get users with pending driver license approvals
+     */
+    public function findUsersWithPendingDriverLicenses() {
+        $query = "SELECT * FROM {$this->table_name} WHERE user_type = 'driver' AND drivers_license_path IS NOT NULL AND drivers_license_verified = 0 ORDER BY created_at DESC";
+        $stmt = $this->conn->prepare($query);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        $users = [];
+        while ($row = $result->fetch_assoc()) {
+            $users[] = $row;
+        }
+
+        return $users;
+    }
+
+    /**
+     * Get all users with pending approvals (both discount and driver license)
+     */
+    public function findUsersWithPendingApprovals() {
+        $query = "SELECT * FROM {$this->table_name} WHERE 
+                    (discount_type IS NOT NULL AND discount_verified = 0 AND discount_document_path IS NOT NULL AND discount_document_path != '') OR 
+                    (user_type = 'driver' AND drivers_license_path IS NOT NULL AND drivers_license_path != '' AND drivers_license_verified = 0)
+                  ORDER BY created_at DESC";
         $stmt = $this->conn->prepare($query);
         $stmt->execute();
         $result = $stmt->get_result();

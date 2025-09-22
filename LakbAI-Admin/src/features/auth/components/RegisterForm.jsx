@@ -11,10 +11,6 @@ import {
   DocumentSection,
 } from './sections';
 
-/**
- * Ultra-Compact Register Form Component
- * All logic delegated to custom hook and section components
- */
 const RegisterForm = () => {
   const {
     formData,

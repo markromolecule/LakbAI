@@ -107,7 +107,7 @@ class JeepneyController {
                 $sanitizedData['capacity'],
                 $sanitizedData['status'],
                 $sanitizedData['driver_id'],
-                $id
+                $jeepneyId
             ]);
 
             if ($stmt->rowCount() > 0) {
@@ -222,40 +222,51 @@ class JeepneyController {
     }
 
     public function updateJeepney($id, $data) {
+        // Ensure ID is an integer
+        $jeepneyId = intval($id);
+        
         // Sanitize input data
         $sanitizedData = [
             'plate_number' => htmlspecialchars(strip_tags($data['plate_number'] ?? '')),
-            'route' => htmlspecialchars(strip_tags($data['route'] ?? '')),
+            'model' => htmlspecialchars(strip_tags($data['model'] ?? '')),
+            'route_id' => isset($data['route']) ? intval($data['route']) : null,
             'capacity' => intval($data['capacity'] ?? 0),
             'status' => htmlspecialchars(strip_tags($data['status'] ?? 'active')),
             'driver_id' => isset($data['driver_id']) ? intval($data['driver_id']) : null
         ];
 
         // Validate required fields
-        if (empty($sanitizedData['plate_number']) || empty($sanitizedData['route']) || $sanitizedData['capacity'] <= 0) {
+        if (empty($sanitizedData['plate_number']) || $sanitizedData['capacity'] <= 0) {
             return ["status" => "error", "message" => "Missing or invalid required fields"];
         }
 
         try {
-            $stmt = $this->db->prepare("UPDATE jeepneys SET plate_number=?, route=?, capacity=?, status=?, driver_id=? WHERE id=?");
+            // First check if jeepney exists
+            $checkStmt = $this->db->prepare("SELECT id FROM jeepneys WHERE id = ?");
+            $checkStmt->execute([$jeepneyId]);
+            $existingJeepney = $checkStmt->fetch();
+            
+            if (!$existingJeepney) {
+                return [
+                    "status" => "error",
+                    "message" => "No jeepney found with that ID"
+                ];
+            }
+            
+            $stmt = $this->db->prepare("UPDATE jeepneys SET plate_number=?, model=?, route_id=?, capacity=?, status=?, driver_id=? WHERE id=?");
             $stmt->execute([
                 $sanitizedData['plate_number'],
-                $sanitizedData['route'],
+                $sanitizedData['model'],
+                $sanitizedData['route_id'],
                 $sanitizedData['capacity'],
                 $sanitizedData['status'],
                 $sanitizedData['driver_id'],
-                $id
+                $jeepneyId
             ]);
 
-            if ($stmt->rowCount() > 0) {
-                return [
-                    "status" => "success",
-                    "message" => "Jeepney updated successfully"
-                ];
-            }
             return [
-                "status" => "error",
-                "message" => "No jeepney found with that ID"
+                "status" => "success",
+                "message" => "Jeepney updated successfully"
             ];
         } catch (Exception $e) {
             return [

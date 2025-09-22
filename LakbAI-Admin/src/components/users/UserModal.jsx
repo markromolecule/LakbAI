@@ -15,7 +15,8 @@ const UserModal = ({ show, onHide, user, mode, onSave }) => {
     street_name: '', barangay: '', city_municipality: '', province: '',
     postal_code: '', user_type: 'passenger', discount_type: '',
     discount_applied: false, discount_file_path: '', discount_status: 'pending',
-    discount_verified: false, is_verified: false, drivers_license_verified: 0
+    discount_verified: false, is_verified: false, drivers_license_verified: 0,
+    drivers_license_name: '', drivers_license_path: ''
   });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
@@ -43,7 +44,9 @@ const UserModal = ({ show, onHide, user, mode, onSave }) => {
           discount_type: user.discount_type || '', discount_applied: user.discount_applied || false,
           discount_file_path: user.discount_file_path || '', discount_status: user.discount_status || 'pending',
           discount_verified: user.discount_verified || false, is_verified: user.is_verified || false, 
-          drivers_license_verified: user.drivers_license_verified || 0
+          drivers_license_verified: user.drivers_license_verified || 0,
+          drivers_license_name: user.drivers_license_name || '',
+          drivers_license_path: user.drivers_license_path || ''
         });
       } else if (mode === 'create') {
         setFormData({
@@ -52,7 +55,8 @@ const UserModal = ({ show, onHide, user, mode, onSave }) => {
           street_name: '', barangay: '', city_municipality: '', province: '',
           postal_code: '', user_type: 'passenger', discount_type: '',
           discount_applied: false, discount_file_path: '', discount_status: 'pending',
-          discount_verified: false, is_verified: false, drivers_license_verified: 0
+          discount_verified: false, is_verified: false, drivers_license_verified: 0,
+          drivers_license_name: '', drivers_license_path: ''
         });
       }
     }
