@@ -118,17 +118,15 @@ const DiscountForm = ({ formData, handleInputChange, isReadOnly, errors = {} }) 
   return (
     <>
       <Card className="mb-4 border-0 shadow-sm">
-        <Card.Header className="bg-primary text-white">
-          <h6 className="mb-0">
-            <i className="bi bi-award me-2"></i>
-            Discount & Verification
-          </h6>
+        <Card.Header className="bg-primary text-white d-flex align-items-center">
+          <i className="bi bi-award me-2"></i>
+          <h6 className="mb-0">Discount & Verification</h6>
         </Card.Header>
-        <Card.Body>
-          <Row>
-            <Col md={6}>
+        <Card.Body className="p-0">
+          <Row className="g-0">
+            <Col md={6} className="p-4">
               <Form.Group className="mb-3">
-                <Form.Label className="fw-semibold">
+                <Form.Label className="fw-semibold text-muted d-flex align-items-center">
                   <i className="bi bi-tag me-1"></i>
                   Discount Type
                 </Form.Label>
@@ -149,9 +147,9 @@ const DiscountForm = ({ formData, handleInputChange, isReadOnly, errors = {} }) 
                 )}
               </Form.Group>
             </Col>
-            <Col md={6}>
+            <Col md={6} className="p-4 border-start">
               <Form.Group className="mb-3">
-                <Form.Label className="fw-semibold">
+                <Form.Label className="fw-semibold text-muted d-flex align-items-center">
                   <i className="bi bi-check-circle me-1"></i>
                   Verification Status
                 </Form.Label>
@@ -188,45 +186,42 @@ const DiscountForm = ({ formData, handleInputChange, isReadOnly, errors = {} }) 
           </Row>
 
           {/* Apply for Discount Section */}
-          <Row>
-            <Col md={12}>
-              <Form.Group className="mb-3">
-                <div className="checkbox-container">
-                  <Form.Check
-                    type="checkbox"
-                    name="discount_applied"
-                    checked={formData.discount_applied || false}
-                    onChange={handleApplyDiscountChange}
-                    disabled={isReadOnly || !formData.discount_type}
-                    className="mt-1"
-                  />
-                  <div className="checkbox-content">
-                    <Form.Label className="fw-semibold mb-1 d-block">
-                      <i className="bi bi-file-earmark-arrow-up me-1"></i>
-                      Apply for Discount
-                    </Form.Label>
-                    <Form.Text className="text-muted d-block">
-                      Check this box if you want to apply for a discount. You'll need to upload supporting documents.
-                    </Form.Text>
-                    {errors.discount_applied && (
-                      <div className="text-danger small mt-1">{errors.discount_applied}</div>
-                    )}
-                  </div>
+          <div className="p-4 border-top">
+            <Form.Group className="mb-3">
+              <div className="checkbox-container">
+                <Form.Check
+                  type="checkbox"
+                  name="discount_applied"
+                  checked={formData.discount_applied || false}
+                  onChange={handleApplyDiscountChange}
+                  disabled={isReadOnly || !formData.discount_type}
+                  className="mt-1"
+                />
+                <div className="checkbox-content">
+                  <Form.Label className="fw-semibold mb-1 d-block d-flex align-items-center">
+                    <i className="bi bi-file-earmark-arrow-up me-1"></i>
+                    Apply for Discount
+                  </Form.Label>
+                  <Form.Text className="text-muted d-block">
+                    Check this box if you want to apply for a discount. You'll need to upload supporting documents.
+                  </Form.Text>
+                  {errors.discount_applied && (
+                    <div className="text-danger small mt-1">{errors.discount_applied}</div>
+                  )}
                 </div>
-              </Form.Group>
-            </Col>
-          </Row>
+              </div>
+            </Form.Group>
+          </div>
 
           {/* File Upload Section - Only show if discount is applied */}
           {formData.discount_applied && (
-            <Row>
-              <Col md={12}>
-                <Form.Group className="mb-3">
-                  <Form.Label className="fw-semibold">
-                    <i className="bi bi-cloud-upload me-1"></i>
-                    Supporting Document
-                    <span className="text-danger"> *</span>
-                  </Form.Label>
+            <div className="px-4 pb-4">
+              <Form.Group className="mb-3">
+                <Form.Label className="fw-semibold d-flex align-items-center">
+                  <i className="bi bi-cloud-upload me-1"></i>
+                  Supporting Document
+                  <span className="text-danger"> *</span>
+                </Form.Label>
                   
                   {!formData.discount_file_path ? (
                     <div className="border border-2 border-dashed rounded p-3 text-center">
@@ -307,26 +302,23 @@ const DiscountForm = ({ formData, handleInputChange, isReadOnly, errors = {} }) 
                     <div className="text-danger small mt-1">{errors.discount_file_path}</div>
                   )}
                 </Form.Group>
-              </Col>
-            </Row>
+            </div>
           )}
 
           {/* Discount Status Display */}
           {formData.discount_status && (
-            <Row>
-              <Col md={12}>
-                <div className="alert alert-info py-2 mb-0">
-                  <i className="bi bi-info-circle me-1"></i>
-                  <strong>Discount Status:</strong> 
-                  <span className={`ms-1 badge ${
-                    formData.discount_status === 'approved' ? 'bg-success' :
-                    formData.discount_status === 'rejected' ? 'bg-danger' : 'bg-warning'
-                  }`}>
-                    {formData.discount_status.charAt(0).toUpperCase() + formData.discount_status.slice(1)}
-                  </span>
-                </div>
-              </Col>
-            </Row>
+            <div className="bg-info bg-opacity-10 p-3 border-top">
+              <div className="d-flex align-items-center">
+                <i className="bi bi-info-circle me-2 text-info"></i>
+                <strong className="text-muted">Discount Status:</strong>
+                <span className={`ms-2 badge ${
+                  formData.discount_status === 'approved' ? 'bg-success' :
+                  formData.discount_status === 'rejected' ? 'bg-danger' : 'bg-warning'
+                }`}>
+                  {formData.discount_status.charAt(0).toUpperCase() + formData.discount_status.slice(1)}
+                </span>
+              </div>
+            </div>
           )}
         </Card.Body>
       </Card>
