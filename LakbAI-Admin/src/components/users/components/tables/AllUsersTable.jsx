@@ -2,7 +2,7 @@ import React from 'react';
 import { Table, Badge, Button } from 'react-bootstrap';
 import styles from './TableStyles.module.css';
 
-const AllUsersTable = ({ users, onUserAction }) => {
+const AllUsersTable = ({ users, onUserAction, userType }) => {
   const getDiscountBadge = (user) => {
     if (!user.discount_type) {
       return <Badge className={`${styles.badge} ${styles.badgeSecondary}`}>No Discount</Badge>;
@@ -64,7 +64,9 @@ const AllUsersTable = ({ users, onUserAction }) => {
             <th className={styles.userColumn}>User</th>
             <th className={styles.typeColumn}>Type</th>
             <th className={styles.phoneColumn}>Phone</th>
-            <th className={styles.verificationColumn}>Discount Status</th>
+            {userType === 'passenger' && (
+              <th className={styles.verificationColumn}>Discount Status</th>
+            )}
             <th className={styles.statusColumn}>Status</th>
             <th className={styles.joinedColumn}>Joined</th>
             <th className={styles.actionsColumn}>Actions</th>
@@ -86,7 +88,9 @@ const AllUsersTable = ({ users, onUserAction }) => {
                 {renderUserType(user)}
               </td>
               <td>{user.phone_number}</td>
-              <td>{renderDiscountAndDocuments(user)}</td>
+              {userType === 'passenger' && (
+                <td>{renderDiscountAndDocuments(user)}</td>
+              )}
               <td className={styles.statusColumn}>
                 {renderStatus(user)}
               </td>

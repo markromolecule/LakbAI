@@ -16,8 +16,9 @@ class FileUploadController {
         $this->allowedTypes = ['pdf', 'jpg', 'jpeg', 'png'];
         $this->maxFileSize = 5 * 1024 * 1024; // 5MB in bytes
         
-        // Create upload directory if it doesn't exist
+        // Create upload directories if they don't exist
         $this->createUploadDirectory();
+        $this->createLicenseUploadDirectory();
     }
 
     /**
@@ -26,6 +27,16 @@ class FileUploadController {
     private function createUploadDirectory() {
         if (!file_exists($this->uploadPath)) {
             mkdir($this->uploadPath, 0755, true);
+        }
+    }
+
+    /**
+     * Create license upload directory if it doesn't exist
+     */
+    private function createLicenseUploadDirectory() {
+        $licensePath = __DIR__ . '/../uploads/licenses/';
+        if (!file_exists($licensePath)) {
+            mkdir($licensePath, 0755, true);
         }
     }
 
@@ -165,6 +176,120 @@ class FileUploadController {
             'message' => $message,
             'data' => $data
         ];
+    }
+
+    /**
+     * Handle driver license upload
+     */
+    public function uploadDriverLicense() {
+        try {
+            // Check if file was uploaded
+            if (!isset($_FILES['drivers_license']) || $_FILES['drivers_license']['error'] !== UPLOAD_ERR_OK) {
+                $errorMsg = 'No file uploaded or upload error occurred';
+                if (isset($_FILES['drivers_license'])) {
+                    $errorMsg .= ' (Error code: ' . $_FILES['drivers_license']['error'] . ')';
+                }
+                return $this->errorResponse($errorMsg);
+            }
+
+            $file = $_FILES['drivers_license'];
+            
+            // Validate file size
+            if ($file['size'] > $this->maxFileSize) {
+                return $this->errorResponse('File size exceeds 5MB limit');
+            }
+
+            // Get file extension
+            $fileExtension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+            
+            // Validate file type
+            if (!in_array($fileExtension, $this->allowedTypes)) {
+                return $this->errorResponse('Invalid file type. Only PDF, JPG, and PNG files are allowed');
+            }
+
+            // Generate unique filename
+            $uniqueFilename = uniqid() . '_' . time() . '.' . $fileExtension;
+            $licensePath = __DIR__ . '/../uploads/licenses/';
+            $filePath = $licensePath . $uniqueFilename;
+
+            // Move uploaded file
+            if (move_uploaded_file($file['tmp_name'], $filePath)) {
+                // Return relative path for database storage
+                $relativePath = 'uploads/licenses/' . $uniqueFilename;
+                
+                return $this->successResponse('Driver license uploaded successfully', [
+                    'file_path' => $relativePath,
+                    'original_name' => $file['name'],
+                    'file_size' => $file['size'],
+                    'file_type' => $fileExtension
+                ]);
+            } else {
+                return $this->errorResponse('Failed to save file');
+            }
+
+        } catch (Exception $e) {
+            return $this->errorResponse('Upload failed: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Serve driver license file
+     */
+    public function serveDriverLicense($filePath) {
+        try {
+            // Security: Only allow files from uploads/licenses directory
+            $fullPath = __DIR__ . '/../' . $filePath;
+            
+            // Validate file path
+            if (!file_exists($fullPath) || strpos($filePath, 'uploads/licenses/') !== 0) {
+                http_response_code(404);
+                echo json_encode(['error' => 'File not found']);
+                return;
+            }
+
+            // Get file info
+            $fileInfo = pathinfo($fullPath);
+            $mimeType = $this->getMimeType($fileInfo['extension']);
+
+            // Set headers
+            header('Content-Type: ' . $mimeType);
+            header('Content-Disposition: inline; filename="' . basename($filePath) . '"');
+            header('Content-Length: ' . filesize($fullPath));
+
+            // Output file
+            readfile($fullPath);
+
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(['error' => 'Failed to serve file: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Delete driver license file
+     */
+    public function deleteDriverLicense($filePath) {
+        try {
+            $fullPath = __DIR__ . '/../' . $filePath;
+            
+            // Security: Only allow deletion of files from uploads/licenses directory
+            if (strpos($filePath, 'uploads/licenses/') !== 0) {
+                return $this->errorResponse('Invalid file path');
+            }
+
+            if (file_exists($fullPath)) {
+                if (unlink($fullPath)) {
+                    return $this->successResponse('File deleted successfully');
+                } else {
+                    return $this->errorResponse('Failed to delete file');
+                }
+            } else {
+                return $this->errorResponse('File not found');
+            }
+
+        } catch (Exception $e) {
+            return $this->errorResponse('Delete failed: ' . $e->getMessage());
+        }
     }
 
     /**

@@ -6,8 +6,11 @@
 # Enable URL rewriting
 RewriteEngine On
 
+# Allow direct access to files in public directory
+RewriteRule ^public/(.*)$ public/$1 [L,QSA]
+
 # Handle /api/auth0/sync-user requests (for Auth0 action)
 RewriteRule ^api/auth0/sync-user$ api/auth0/sync-user.php [L,QSA]
 
-# Handle other API routes - route everything to index.php
+# Handle other API routes - route everything else to index.php
 RewriteRule ^(.*)$ index.php [L,QSA]

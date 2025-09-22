@@ -36,7 +36,8 @@ const DocumentViewerModal = ({
 
   const getDocumentUrl = () => {
     if (!document.path) return null;
-    return `http://localhost/LakbAI/LakbAI-API/uploads/documents/${document.path}`;
+    // Use the API endpoint for document serving
+    return `http://localhost/LakbAI/LakbAI-API/api/document/${document.path}`;
   };
 
   const isImageDocument = (filename) => {

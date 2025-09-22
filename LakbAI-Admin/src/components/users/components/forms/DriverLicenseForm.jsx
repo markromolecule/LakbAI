@@ -53,6 +53,19 @@ const DriverLicenseForm = ({ formData, handleInputChange, isReadOnly }) => {
               {formData.drivers_license_name ? (
                 <div>
                   <strong>Current:</strong> {formData.drivers_license_name}
+                  {formData.drivers_license_path && (
+                    <div className="mt-2">
+                      <a 
+                        href={`http://localhost/LakbAI/LakbAI-API/api/document/${formData.drivers_license_path}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn btn-outline-primary btn-sm"
+                      >
+                        <i className="bi bi-eye me-1"></i>
+                        View Document
+                      </a>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div>No license document uploaded</div>

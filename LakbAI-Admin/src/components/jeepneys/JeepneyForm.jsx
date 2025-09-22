@@ -42,8 +42,16 @@ const JeepneyForm = ({ onDataUpdate }) => {
   };
 
   const fetchDrivers = async () => {
-    const result = await DriverService.getAllDrivers();
-    if (result.success) setDrivers(result.drivers);
+    try {
+      const response = await fetch('/api/admin/users?user_type=driver');
+      const data = await response.json();
+      if (data.status === 'success') {
+        setDrivers(data.users || []);
+      }
+    } catch (error) {
+      console.error('Error fetching drivers:', error);
+      setError('Failed to fetch drivers');
+    }
   };
 
   const handleChange = (e) => {
@@ -202,7 +210,7 @@ const JeepneyForm = ({ onDataUpdate }) => {
               <option value="">Select Driver</option>
               {drivers.map((driver) => (
                 <option key={driver.id} value={driver.id}>
-                  {driver.name}
+                  {driver.first_name} {driver.last_name} ({driver.email})
                 </option>
               ))}
             </Form.Select>
