@@ -86,6 +86,7 @@ export const DriverScreen: React.FC = () => {
         return (
           <LogsView
             recentLogs={recentLogs}
+            driverProfile={driverProfile}
           />
         );
       case 'earnings':

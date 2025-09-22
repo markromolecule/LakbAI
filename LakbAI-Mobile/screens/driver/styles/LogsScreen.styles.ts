@@ -67,6 +67,10 @@ export const logsStyles = StyleSheet.create({
     fontSize: 14,
     color: '#6B7280',
   },
+  logDetails: {
+    fontSize: 14,
+    color: '#6B7280',
+  },
   logTime: {
     fontSize: 16,
     fontWeight: '500',
@@ -134,5 +138,21 @@ export const logsStyles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
     color: '#1F2937',
+  },
+  emptyState: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 32,
+  },
+  emptyStateText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#6B7280',
+    marginBottom: 4,
+  },
+  emptyStateSubtext: {
+    fontSize: 14,
+    color: '#9CA3AF',
+    textAlign: 'center',
   },
 });

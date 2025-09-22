@@ -22,7 +22,10 @@ export const useDriverState = () => {
     const unsubscribe = earningsService.addListener((driverId) => {
       console.log('🔄 Earnings changed for driver:', driverId, 'Refreshing profile...');
       if (userSession?.dbUserData?.id.toString() === driverId) {
-        loadDriverProfile();
+        // Add small delay to ensure earnings are saved before refreshing
+        setTimeout(() => {
+          loadDriverProfile();
+        }, 500);
       }
     });
     
@@ -109,7 +112,7 @@ export const useDriverState = () => {
       license: apiProfile.license_number || '', // Can be blank as requested
       jeepneyNumber: apiProfile.assignedJeepney?.jeepneyNumber || 'No Jeepney Assigned',
       rating: 4.5 + (Math.random() * 0.8), // Mock data - would come from ratings
-      totalTrips: 0, // Blank as requested
+      totalTrips: currentEarnings.totalTrips, // Get real total trips from earnings service
       yearsExperience: yearsExperience,
       todayTrips: currentEarnings.todayTrips, // Get from earnings service 
       todayEarnings: currentEarnings.todayEarnings, // Get real earnings from service
@@ -151,7 +154,7 @@ export const useDriverState = () => {
       license: dbUser.drivers_license_name || '', // Can be blank as requested
       jeepneyNumber,
       rating: 4.5 + (Math.random() * 0.8), // Random rating between 4.5-5.3
-      totalTrips: 0, // Blank as requested
+      totalTrips: currentEarnings.totalTrips, // Get real total trips from earnings service
       yearsExperience: yearsExperience,
       todayTrips: currentEarnings.todayTrips, // Get from earnings service
       todayEarnings: currentEarnings.todayEarnings, // Get real earnings from service
@@ -170,7 +173,7 @@ export const useDriverState = () => {
       license: '', // Can be blank as requested
       jeepneyNumber: 'LKB-001',
       rating: 4.8,
-      totalTrips: 0, // Blank as requested
+      totalTrips: currentEarnings.totalTrips, // Get real total trips from earnings service
       yearsExperience: 2, // Based on recent account
       todayTrips: currentEarnings.todayTrips, // Get from earnings service
       todayEarnings: currentEarnings.todayEarnings, // Get real earnings from service
@@ -208,8 +211,25 @@ export const useDriverState = () => {
     console.log('🔄 Driver ID for shift toggle:', driverId);
     
     if (isOnDuty) {
-      // Ending shift - reset today's earnings and add to total
+      // Ending shift - clear active trip first, then reset earnings
       console.log('🔄 Ending shift for driver:', driverId);
+      
+      // Clear any active trip when ending shift
+      try {
+        const { tripTrackingService } = await import('../../../shared/services/tripTrackingService');
+        const clearResult = tripTrackingService.clearActiveTrip(driverId);
+        console.log('🧹 Clearing active trip on shift end:', clearResult);
+        
+        if (clearResult.success) {
+          console.log('✅ Active trip cleared successfully');
+        } else {
+          console.log('⚠️ No active trip to clear or error occurred:', clearResult.message);
+        }
+      } catch (error) {
+        console.error('❌ Error clearing active trip:', error);
+      }
+      
+      // Now end the shift and reset earnings
       const result = await earningsService.endShift(driverId);
       
       if (result.success) {
@@ -217,7 +237,7 @@ export const useDriverState = () => {
         setIsOnDuty(false);
         Alert.alert(
           'Shift Ended! 🏁',
-          result.message,
+          `${result.message}\n\n✅ Any active trips have been cleared.`,
           [{ text: 'OK' }]
         );
       } else {

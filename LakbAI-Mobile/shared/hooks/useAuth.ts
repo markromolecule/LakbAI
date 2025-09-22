@@ -246,6 +246,29 @@ export const useAuth = (): UseAuthReturn => {
       
       console.log('🔄 Starting logout...');
       
+      // Reset trip counts for driver logout
+      try {
+        const { earningsService } = await import('../services/earningsService');
+        const { tripTrackingService } = await import('../services/tripTrackingService');
+        
+        // Get current session to find driver ID
+        const session = await sessionManager.getUserSession();
+        if (session?.userType === 'driver' && session.dbUserData?.id) {
+          const driverId = session.dbUserData.id.toString();
+          console.log('🧹 Resetting trip counts for driver logout:', driverId);
+          
+          // Clear active trip
+          tripTrackingService.clearActiveTrip(driverId);
+          
+          // Reset today's data for this driver
+          earningsService.resetTodaysData(driverId);
+          
+          console.log('✅ Trip counts reset for driver logout');
+        }
+      } catch (resetError) {
+        console.error('❌ Error resetting trip counts on logout:', resetError);
+      }
+      
       // Clear all authentication data
       await sessionManager.clearAllAuthData();
       

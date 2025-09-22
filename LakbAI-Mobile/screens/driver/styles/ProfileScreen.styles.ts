@@ -165,4 +165,42 @@ export const profileStyles = StyleSheet.create({
     fontSize: 14,
     color: '#6B7280',
   },
+  // Quick Stats Card
+  quickStatsCard: {
+    backgroundColor: '#FFFFFF',
+    padding: 20,
+    borderRadius: 12,
+    marginBottom: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  quickStatsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-around',
+  },
+  quickStatItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  quickStatValue: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#1F2937',
+    marginBottom: 4,
+  },
+  quickStatLabel: {
+    fontSize: 12,
+    color: '#6B7280',
+    textAlign: 'center',
+  },
+  quickStatDivider: {
+    width: 1,
+    height: 40,
+    backgroundColor: '#E5E7EB',
+    marginHorizontal: 16,
+  },
 });
