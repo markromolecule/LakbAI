@@ -235,6 +235,8 @@ class DriverController {
                     u.email,
                     u.user_type,
                     u.created_at,
+                    d.drivers_license_verified,
+                    d.license_status,
                     j.id as jeepney_id,
                     j.jeepney_number,
                     j.plate_number,
@@ -245,6 +247,7 @@ class DriverController {
                     r.origin,
                     r.destination
                 FROM users u
+                LEFT JOIN drivers d ON u.id = d.user_id
                 LEFT JOIN jeepneys j ON u.id = j.driver_id
                 LEFT JOIN routes r ON j.route_id = r.id
                 WHERE u.id = ? AND u.user_type = 'driver'
@@ -263,6 +266,9 @@ class DriverController {
                     'email' => $result['email'],
                     'license_number' => 'N/A', // TODO: Add license table
                     'created_at' => $result['created_at'],
+                    'drivers_license_verified' => (bool)$result['drivers_license_verified'],
+                    'license_status' => $result['license_status'],
+                    'is_verified' => (bool)$result['drivers_license_verified'] && $result['license_status'] === 'approved',
                     'assignedJeepney' => null
                 ];
 
@@ -297,6 +303,60 @@ class DriverController {
             return [
                 "status" => "error",
                 "message" => "Failed to get driver profile: " . $e->getMessage()
+            ];
+        }
+    }
+
+    /**
+     * Update driver route
+     */
+    public function updateDriverRoute($driverId, $routeId) {
+        try {
+            // Validate driver exists
+            $driverStmt = $this->db->prepare("SELECT id FROM users WHERE id = ? AND user_type = 'driver'");
+            $driverStmt->execute([$driverId]);
+            $driver = $driverStmt->fetch();
+            
+            if (!$driver) {
+                return [
+                    "status" => "error",
+                    "message" => "Driver not found"
+                ];
+            }
+            
+            // Validate route exists
+            $routeStmt = $this->db->prepare("SELECT id, route_name FROM routes WHERE id = ?");
+            $routeStmt->execute([$routeId]);
+            $route = $routeStmt->fetch();
+            
+            if (!$route) {
+                return [
+                    "status" => "error",
+                    "message" => "Route not found"
+                ];
+            }
+            
+            // Update jeepney route assignment
+            $updateStmt = $this->db->prepare("UPDATE jeepneys SET route_id = ? WHERE driver_id = ?");
+            $updateStmt->execute([$routeId, $driverId]);
+            
+            if ($updateStmt->rowCount() > 0) {
+                return [
+                    "status" => "success",
+                    "message" => "Driver route updated successfully",
+                    "route_name" => $route['route_name']
+                ];
+            } else {
+                return [
+                    "status" => "error",
+                    "message" => "No jeepney assigned to this driver"
+                ];
+            }
+            
+        } catch (Exception $e) {
+            return [
+                "status" => "error",
+                "message" => "Failed to update driver route: " . $e->getMessage()
             ];
         }
     }

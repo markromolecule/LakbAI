@@ -2,6 +2,10 @@ import { StyleSheet } from 'react-native';
 import { COLORS, SPACING } from '../../../shared/styles';
 
 const styles = StyleSheet.create({
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: SPACING.xl,
+  },
   scannerContainer: {
     alignItems: 'center',
     marginBottom: SPACING.xl,
@@ -138,6 +142,59 @@ const styles = StyleSheet.create({
     color: COLORS.gray500,
     textAlign: 'center',
     fontStyle: 'italic',
+  },
+  // Additional Information Section
+  additionalInfoContainer: {
+    backgroundColor: COLORS.white,
+    borderRadius: SPACING.md,
+    padding: SPACING.lg,
+    marginTop: SPACING.lg,
+    marginBottom: SPACING.xl,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  additionalInfoTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: COLORS.gray800,
+    marginBottom: SPACING.md,
+    textAlign: 'center',
+  },
+  infoSection: {
+    marginBottom: SPACING.lg,
+  },
+  infoItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: SPACING.sm,
+    paddingVertical: SPACING.xs,
+  },
+  infoItemText: {
+    fontSize: 14,
+    color: COLORS.gray700,
+    marginLeft: SPACING.sm,
+    flex: 1,
+  },
+  tipsSection: {
+    backgroundColor: COLORS.gray50,
+    borderRadius: SPACING.sm,
+    padding: SPACING.md,
+    borderLeftWidth: 4,
+    borderLeftColor: COLORS.primary,
+  },
+  tipsTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.gray800,
+    marginBottom: SPACING.sm,
+  },
+  tipsText: {
+    fontSize: 14,
+    color: COLORS.gray600,
+    lineHeight: 20,
   },
 });
 

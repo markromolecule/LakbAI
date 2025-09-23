@@ -59,6 +59,16 @@ export const profileStyles = StyleSheet.create({
     color: '#6B7280',
     marginBottom: 8,
   },
+  verificationStatus: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  verificationText: {
+    fontSize: 14,
+    fontWeight: '500',
+    marginLeft: 6,
+  },
   ratingRow: {
     flexDirection: 'row',
     alignItems: 'center',

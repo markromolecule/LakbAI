@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { ScrollView, View, Text, TouchableOpacity } from 'react-native';
-import { User, Star, Phone, LogOut, RefreshCw } from 'lucide-react-native';
+import { User, Star, Phone, LogOut, RefreshCw, CheckCircle, XCircle } from 'lucide-react-native';
 import { DriverProfile } from '../../../shared/types/driver';
 import { driverStyles, profileStyles, homeStyles } from '../styles';
 import { useLogout } from '../../../shared/utils/authUtils';
 import { earningsService } from '../../../shared/services/earningsService';
+import { RouteSelector } from '../../../components/driver/RouteSelector';
 
 interface ProfileViewProps {
   driverProfile: DriverProfile;
@@ -20,6 +21,19 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   const { logout } = useLogout();
   const [refreshIndicator, setRefreshIndicator] = useState(false);
   const [lastUpdate, setLastUpdate] = useState<string>('');
+  const [currentRoute, setCurrentRoute] = useState<string>(driverProfile.route);
+
+  // Update current route when driver profile changes
+  useEffect(() => {
+    setCurrentRoute(driverProfile.route);
+  }, [driverProfile.route]);
+
+  // Handle route change
+  const handleRouteChange = (newRoute: string) => {
+    setCurrentRoute(newRoute);
+    // Trigger a refresh to get updated profile data
+    onRefresh();
+  };
 
   // Auto-refresh earnings every 5 seconds when profile view is active (database-driven)
   useEffect(() => {
@@ -84,8 +98,17 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             <Text style={profileStyles.profileName}>{driverProfile.name}</Text>
             <Text style={profileStyles.profileTitle}>Professional Jeepney Driver</Text>
             <View style={profileStyles.ratingRow}>
-              <Star size={16} color="#EAB308" />
-              <Text style={profileStyles.rating}>{driverProfile.rating.toFixed(1)}/5.0</Text>
+              {driverProfile.is_verified ? (
+                <CheckCircle size={16} color="#16A34A" />
+              ) : (
+                <XCircle size={16} color="#DC2626" />
+              )}
+              <Text style={[
+                profileStyles.rating, 
+                { color: driverProfile.is_verified ? '#16A34A' : '#DC2626' }
+              ]}>
+                {driverProfile.is_verified ? 'Verified Account' : 'Unverified Account'}
+              </Text>
               <Text style={[profileStyles.totalTrips, { color: '#8B5CF6', fontWeight: 'bold' }]}>({driverProfile.totalTrips.toLocaleString()} trips)</Text>
             </View>
           </View>
@@ -119,6 +142,30 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               <Text style={profileStyles.profileLabel}>Experience:</Text>
               <Text style={profileStyles.profileValue}>{driverProfile.yearsExperience} years</Text>
             </View>
+            <View style={profileStyles.profileRow}>
+              <Text style={profileStyles.profileLabel}>Account Status:</Text>
+              <Text style={[
+                profileStyles.profileValue, 
+                { color: driverProfile.is_verified ? '#16A34A' : '#DC2626', fontWeight: 'bold' }
+              ]}>
+                {driverProfile.is_verified ? 'Verified' : 'Unverified'}
+              </Text>
+            </View>
+            {driverProfile.license_status && (
+              <View style={profileStyles.profileRow}>
+                <Text style={profileStyles.profileLabel}>License Status:</Text>
+                <Text style={[
+                  profileStyles.profileValue, 
+                  { 
+                    color: driverProfile.license_status === 'approved' ? '#16A34A' : 
+                           driverProfile.license_status === 'pending' ? '#F59E0B' : '#DC2626',
+                    fontWeight: 'bold'
+                  }
+                ]}>
+                  {driverProfile.license_status.charAt(0).toUpperCase() + driverProfile.license_status.slice(1)}
+                </Text>
+              </View>
+            )}
           </View>
 
           <View style={profileStyles.profileSection}>
@@ -160,6 +207,13 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           </View>
         </View>
       </View>
+
+      {/* Route Selector */}
+      <RouteSelector
+        currentRoute={currentRoute}
+        driverId={driverProfile.id}
+        onRouteChange={handleRouteChange}
+      />
 
       {/* Quick Stats Card */}
       <View style={profileStyles.quickStatsCard}>

@@ -217,7 +217,11 @@ class UserRepository extends BaseRepository {
         $whereClause = empty($conditions) ? "" : "WHERE " . implode(" AND ", $conditions);
         $offset = ($page - 1) * $limit;
 
-        $query = "SELECT * FROM {$this->table_name} {$whereClause} ORDER BY created_at DESC LIMIT {$limit} OFFSET {$offset}";
+        $query = "SELECT u.*, d.drivers_license_verified, d.license_status 
+                  FROM {$this->table_name} u 
+                  LEFT JOIN drivers d ON u.id = d.user_id 
+                  {$whereClause} 
+                  ORDER BY u.created_at DESC LIMIT {$limit} OFFSET {$offset}";
         $stmt = $this->conn->prepare($query);
 
         if (!empty($params)) {

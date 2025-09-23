@@ -356,97 +356,36 @@ class DiscountService {
     try {
       console.log('📡 Making API request to get user ID for Auth0 ID:', auth0Id);
       
-      // Try multiple API approaches to get the user ID
-      
-      // Method 1: Use the Auth0 sync endpoint (same as authentication)
-      const syncResponse = await fetch(this.baseUrl, {
+      // Use the dedicated user-by-auth0-id endpoint
+      const response = await fetch(`${this.baseUrl}/user-by-auth0-id`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          action: 'get_user_by_auth0_id',
           auth0_id: auth0Id,
         }),
       });
 
-      if (syncResponse.ok) {
-        const syncData = await syncResponse.json();
-        console.log('📋 Auth0 sync response:', syncData);
+      if (response.ok) {
+        const data = await response.json();
+        console.log('📋 User lookup response:', data);
         
-        if (syncData.status === 'success' && syncData.data?.user?.id) {
-          const userId = syncData.data.user.id.toString();
+        if (data.status === 'success' && data.user?.id) {
+          const userId = data.user.id.toString();
           console.log('✅ Successfully retrieved user ID via Auth0 lookup:', userId);
           
           // Store this for future use
-          await this.storeUserDataInSession(syncData.data.user);
+          await this.storeUserDataInSession(data.user);
           
           return userId;
         }
       } else {
-        console.log('📋 Sync endpoint failed with status:', syncResponse.status);
+        const errorText = await response.text();
+        console.error('❌ API response not ok:', response.status, response.statusText, errorText);
       }
       
-      // Method 2: Try using the profile endpoint with Auth0 ID
-      const profileUrl = `${this.apiUrl.replace('/routes/api.php', '')}/profile?auth0_id=${encodeURIComponent(auth0Id)}`;
-      console.log('📡 Trying profile endpoint:', profileUrl);
-      
-      const profileResponse = await fetch(profileUrl, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (profileResponse.ok) {
-        const profileData = await profileResponse.json();
-        console.log('📋 Profile response:', profileData);
-        
-        if (profileData.status === 'success' && profileData.user?.id) {
-          const userId = profileData.user.id.toString();
-          console.log('✅ Successfully retrieved user ID via profile endpoint:', userId);
-          
-          // Store this for future use
-          await this.storeUserDataInSession(profileData.user);
-          
-          return userId;
-        }
-      } else {
-        console.log('📋 Profile endpoint failed with status:', profileResponse.status);
-      }
-      
-      // Method 3: Create a direct database query endpoint call
-      const queryUrl = `${this.apiUrl.replace('/routes/api.php', '/routes/api.php')}/user-by-auth0-id`;
-      console.log('📡 Trying direct query endpoint:', queryUrl);
-      
-      const queryResponse = await fetch(queryUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          auth0_id: auth0Id,
-        }),
-      });
-
-      if (queryResponse.ok) {
-        const queryData = await queryResponse.json();
-        console.log('📋 Query response:', queryData);
-        
-        if (queryData.status === 'success' && queryData.user?.id) {
-          const userId = queryData.user.id.toString();
-          console.log('✅ Successfully retrieved user ID via query endpoint:', userId);
-          
-          // Store this for future use
-          await this.storeUserDataInSession(queryData.user);
-          
-          return userId;
-        }
-      } else {
-        console.log('📋 Query endpoint failed with status:', queryResponse.status);
-      }
-      
-      console.warn('⚠️ All API lookup methods failed');
+      console.log('❌ Auth0 lookup failed');
       return '';
     } catch (error) {
       console.error('❌ Error looking up user ID by Auth0 ID:', error);

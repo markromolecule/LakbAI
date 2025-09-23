@@ -14,8 +14,8 @@ const UserModal = ({ show, onHide, user, mode, onSave }) => {
     phone_number: '', birthday: '', gender: 'Male', house_number: '',
     street_name: '', barangay: '', city_municipality: '', province: '',
     postal_code: '', user_type: 'passenger', discount_type: '',
-    discount_applied: false, discount_file_path: '', discount_status: 'pending',
-    discount_verified: false, is_verified: false, drivers_license_verified: 0,
+    discount_applied: 0, discount_file_path: '', discount_status: 'pending',
+    discount_verified: 0, is_verified: 0, drivers_license_verified: 0,
     drivers_license_name: '', drivers_license_path: ''
   });
   const [errors, setErrors] = useState({});
@@ -41,9 +41,9 @@ const UserModal = ({ show, onHide, user, mode, onSave }) => {
           street_name: user.street_name || '', barangay: user.barangay || '',
           city_municipality: user.city_municipality || '', province: user.province || '',
           postal_code: user.postal_code || '', user_type: user.user_type || 'passenger',
-          discount_type: user.discount_type || '', discount_applied: user.discount_applied || false,
+          discount_type: user.discount_type || '', discount_applied: user.discount_applied || 0,
           discount_file_path: user.discount_file_path || '', discount_status: user.discount_status || 'pending',
-          discount_verified: user.discount_verified || false, is_verified: user.is_verified || false, 
+          discount_verified: user.discount_verified || 0, is_verified: user.is_verified || 0, 
           drivers_license_verified: user.drivers_license_verified || 0,
           drivers_license_name: user.drivers_license_name || '',
           drivers_license_path: user.drivers_license_path || ''
@@ -54,8 +54,8 @@ const UserModal = ({ show, onHide, user, mode, onSave }) => {
           phone_number: '', birthday: '', gender: 'Male', house_number: '',
           street_name: '', barangay: '', city_municipality: '', province: '',
           postal_code: '', user_type: 'passenger', discount_type: '',
-          discount_applied: false, discount_file_path: '', discount_status: 'pending',
-          discount_verified: false, is_verified: false, drivers_license_verified: 0,
+          discount_applied: 0, discount_file_path: '', discount_status: 'pending',
+          discount_verified: 0, is_verified: 0, drivers_license_verified: 0,
           drivers_license_name: '', drivers_license_path: ''
         });
       }
@@ -71,9 +71,20 @@ const UserModal = ({ show, onHide, user, mode, onSave }) => {
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
+    
+    // Fields that should be stored as integers (0 or 1) in the database
+    const integerCheckboxFields = [
+      'drivers_license_verified', 
+      'is_verified', 
+      'discount_verified', 
+      'discount_applied'
+    ];
+    
     setFormData(prev => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value
+      [name]: type === 'checkbox' ? 
+        (integerCheckboxFields.includes(name) ? (checked ? 1 : 0) : checked) : 
+        value
     }));
     
     if (errors[name]) {

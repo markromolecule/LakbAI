@@ -107,32 +107,11 @@ class TripTrackingService {
 
       // Increment trip count when starting a trip (NEW LOGIC)
       try {
-        const { earningsService } = await import('./earningsService');
-        const earningsUpdate = await earningsService.updateDriverEarnings({
-          driverId: driverId,
-          amount: 0, // No fare collected for trip start
-          tripId: tripId,
-          passengerId: 'trip_start',
-          timestamp: now,
-          paymentMethod: 'other',
-          pickupLocation: startCheckpoint.name,
-          destination: 'Trip Started',
-          originalFare: 0,
-          finalFare: 0,
-          incrementTripCount: true // Increment trip count when starting trip
-        });
-        
-        if (earningsUpdate.success) {
-          console.log('✅ Trip count incremented on start:', earningsUpdate.newEarnings);
-          console.log('📈 NEW TRIP COUNT VALUES:');
-          console.log('  - Today\'s Trips:', earningsUpdate.newEarnings?.todayTrips);
-          console.log('  - Total Trips:', earningsUpdate.newEarnings?.totalTrips);
-          console.log('  - Today\'s Earnings:', earningsUpdate.newEarnings?.todayEarnings);
-        } else {
-          console.error('❌ Failed to increment trip count on start:', earningsUpdate.error);
-        }
+        // Don't increment trip count on start - only on completion
+        // Trip start doesn't count as a completed trip
+        console.log('🚀 Trip started - trip count will be incremented on completion');
       } catch (error) {
-        console.error('❌ Error incrementing trip count on start:', error);
+        console.error('❌ Error on trip start:', error);
       }
 
       // Log trip start
@@ -309,30 +288,31 @@ class TripTrackingService {
         checkpoints: activeTrip.intermediateCheckpoints.length
       });
 
-      // Update driver earnings if fare was collected
-      if (tripData?.fareCollected && tripData.fareCollected > 0) {
-        const earningsUpdate = await earningsService.updateDriverEarnings({
-          driverId,
-          amount: tripData.fareCollected,
-          tripId: completedTrip.id,
-          passengerId: 'manual_collection',
-          timestamp: now,
-          paymentMethod: 'cash',
-          pickupLocation: activeTrip.startCheckpoint.name,
-          destination: endCheckpoint.name,
-          originalFare: tripData.fareCollected,
-          finalFare: tripData.fareCollected,
-          incrementTripCount: false // Don't increment trip count for fare collection
-        });
+      // Update driver earnings and increment trip count on completion
+      const earningsUpdate = await earningsService.updateDriverEarnings({
+        driverId,
+        amount: tripData?.fareCollected || 0,
+        tripId: completedTrip.id,
+        passengerId: 'trip_completion',
+        timestamp: now,
+        paymentMethod: 'cash',
+        pickupLocation: activeTrip.startCheckpoint.name,
+        destination: endCheckpoint.name,
+        originalFare: tripData?.fareCollected || 0,
+        finalFare: tripData?.fareCollected || 0,
+        incrementTripCount: true // Increment trip count when trip is completed
+      });
 
-        // Send real-time earnings notification
-        if (earningsUpdate.success) {
-          console.log('🔔 Would notify driver about payment:', {
-            fare: tripData.fareCollected,
-            source: 'Manual Collection',
-            route: `${activeTrip.startCheckpoint.name} → ${endCheckpoint.name}`
-          });
-        }
+      // Send real-time earnings notification
+      if (earningsUpdate.success) {
+        console.log('✅ Trip completed and trip count incremented:', {
+          tripId: completedTrip.id,
+          fareCollected: tripData?.fareCollected || 0,
+          newTripCount: earningsUpdate.newEarnings?.todayTrips,
+          route: `${activeTrip.startCheckpoint.name} → ${endCheckpoint.name}`
+        });
+      } else {
+        console.error('❌ Failed to update earnings on trip completion:', earningsUpdate.error);
       }
 
       // Send final location update and trip completion notification

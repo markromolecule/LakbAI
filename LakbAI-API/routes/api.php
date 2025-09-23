@@ -243,6 +243,22 @@ try {
             exit;
         }
 
+        // PUT /mobile/driver/route/{id} - Update driver route
+        if ($method === 'PUT' && count($pathParts) === 4 && $pathParts[2] === 'route' && is_numeric($pathParts[3])) {
+            $driverId = $pathParts[3];
+            $routeId = $input['route_id'] ?? null;
+            
+            if (!$routeId) {
+                http_response_code(400);
+                echo json_encode(['status' => 'error', 'message' => 'Route ID is required']);
+                exit;
+            }
+            
+            $result = $driverController->updateDriverRoute($driverId, $routeId);
+            echo json_encode($result);
+            exit;
+        }
+
         // GET /admin/drivers
         if ($method === 'GET' && count($pathParts) === 2) {
             $page = $_GET['page'] ?? 1;

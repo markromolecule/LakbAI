@@ -14,10 +14,17 @@ import { useAuthContext } from '../../shared/providers/AuthProvider';
 
 export default function PassengerProfile() {
   const router = useRouter();
-  const { passengerProfile } = usePassengerState();
+  const { passengerProfile, refreshProfile } = usePassengerState();
   const { submitApplication, isSubmitting, error, clearError } = useDiscountState();
   const { isAuthenticated, isLoading, user } = useAuthContext();
   const [showDiscountModal, setShowDiscountModal] = useState(false);
+
+  // Refresh profile data when component mounts
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      refreshProfile();
+    }
+  }, [isAuthenticated, user, refreshProfile]);
 
   // Clear error when modal is closed
   useEffect(() => {

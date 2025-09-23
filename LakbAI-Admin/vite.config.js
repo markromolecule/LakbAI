@@ -9,7 +9,7 @@ export default defineConfig({
       '/api': {
         target: 'http://localhost/LakbAI/LakbAI-API',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, ''),
+        rewrite: (path) => path.replace(/^\/api/, '/routes/api.php/api'),
         configure: (proxy, options) => {
           proxy.on('error', (err, req, res) => {
             console.log('proxy error', err);

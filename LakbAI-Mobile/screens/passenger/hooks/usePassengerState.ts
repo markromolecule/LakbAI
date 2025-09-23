@@ -122,6 +122,9 @@ export const usePassengerState = () => {
                   type: 'image/jpeg',
                 } : null,
               },
+              // Verification fields
+              isVerified: dbUser.is_verified === 1 || dbUser.is_verified === true,
+              verificationStatus: (dbUser.is_verified === 1 || dbUser.is_verified === true) ? 'verified' as const : 'unverified' as const,
             };
             console.log('✅ usePassengerState: Profile created from database data:', profile);
             setPassengerProfile(profile);
@@ -232,9 +235,69 @@ export const usePassengerState = () => {
     return mockPassengerProfile;
   }, [isAuthenticated, passengerProfile]);
 
+  const refreshProfile = async () => {
+    if (!isAuthenticated || !user) return;
+    
+    try {
+      setIsLoading(true);
+      console.log('🔄 usePassengerState: Manually refreshing profile data...');
+      
+      // Force refresh from backend
+      const syncResult = await sessionManager.syncUserWithDatabase(user);
+      if (syncResult.status === 'success' && syncResult.data?.user) {
+        const dbUser = syncResult.data.user;
+        console.log('✅ usePassengerState: Got fresh user data from backend');
+        
+        const profile: PassengerProfile = {
+          firstName: dbUser.first_name || dbUser.name?.split(' ')[0] || '',
+          lastName: dbUser.last_name || dbUser.name?.split(' ').slice(1).join(' ') || '',
+          email: dbUser.email || '',
+          phoneNumber: dbUser.phone_number || '',
+          username: dbUser.username || dbUser.nickname || 'user',
+          picture: dbUser.picture || undefined,
+          address: {
+            houseNumber: dbUser.house_number || '',
+            streetName: dbUser.street_name || '',
+            barangay: dbUser.barangay || '',
+            cityMunicipality: dbUser.city_municipality || '',
+            province: dbUser.province || '',
+            postalCode: dbUser.postal_code || '',
+          },
+          personalInfo: {
+            birthDate: dbUser.birthday || '',
+            gender: dbUser.gender ? (dbUser.gender.toLowerCase() === 'male' ? 'male' : 'female') : '',
+          },
+          fareDiscount: {
+            type: dbUser.discount_type || '' as const,
+            status: dbUser.discount_applied ? (dbUser.discount_status || (dbUser.discount_verified ? 'approved' as const : 'pending' as const)) : 'none' as const,
+            percentage: dbUser.discount_amount || (dbUser.discount_type === 'Student' ? 20 : 
+                       dbUser.discount_type === 'PWD' ? 20 :
+                       dbUser.discount_type === 'Senior Citizen' ? 30 : 0),
+            document: dbUser.discount_document_path ? {
+              uri: dbUser.discount_document_path,
+              name: dbUser.discount_document_name || 'document',
+              type: 'image/jpeg',
+            } : null,
+          },
+          // Verification fields
+          isVerified: dbUser.is_verified === 1 || dbUser.is_verified === true,
+          verificationStatus: (dbUser.is_verified === 1 || dbUser.is_verified === true) ? 'verified' as const : 'unverified' as const,
+        };
+        
+        setPassengerProfile(profile);
+        console.log('✅ usePassengerState: Profile refreshed successfully');
+      }
+    } catch (error) {
+      console.error('❌ usePassengerState: Error refreshing profile:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return {
     passengerProfile: profileToReturn,
     isLoading,
     error,
+    refreshProfile,
   };
 };

@@ -70,4 +70,7 @@ export interface PassengerProfile {
     verifiedBy?: string;
     verifiedAt?: string;
   };
+  // Verification fields
+  isVerified?: boolean;
+  verificationStatus?: 'verified' | 'unverified';
 }

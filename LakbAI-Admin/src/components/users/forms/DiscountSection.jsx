@@ -34,7 +34,7 @@ const DiscountSection = ({ formData, handleInputChange, isReadOnly }) => {
                 type="checkbox"
                 name="discount_verified"
                 label="Discount Verified"
-                checked={formData.discount_verified}
+                checked={formData.discount_verified === 1}
                 onChange={handleInputChange}
                 disabled={isReadOnly || !formData.discount_type}
               />
@@ -42,7 +42,7 @@ const DiscountSection = ({ formData, handleInputChange, isReadOnly }) => {
                 type="checkbox"
                 name="is_verified"
                 label="Account Verified"
-                checked={formData.is_verified}
+                checked={formData.is_verified === 1}
                 onChange={handleInputChange}
                 disabled={isReadOnly}
               />

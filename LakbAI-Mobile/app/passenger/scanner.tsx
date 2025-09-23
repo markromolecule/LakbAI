@@ -64,6 +64,7 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    backgroundColor: COLORS.white
+    backgroundColor: COLORS.white,
+    minHeight: '100%' // Ensure content can scroll beyond screen height
   }
 });

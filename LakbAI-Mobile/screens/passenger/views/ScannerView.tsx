@@ -331,7 +331,13 @@ export const ScannerScreen: React.FC = () => {
   ];
 
   return (
-    <ScrollView style={globalStyles.container}>
+    <ScrollView 
+      style={globalStyles.container}
+      contentContainerStyle={styles.scrollContent}
+      showsVerticalScrollIndicator={true}
+      bounces={true}
+      alwaysBounceVertical={false}
+    >
       <View style={styles.scannerContainer}>
         <Ionicons name="qr-code" size={96} color={COLORS.primary} />
         <Text style={styles.scannerTitle}>Scan QR Code</Text>
@@ -359,6 +365,47 @@ export const ScannerScreen: React.FC = () => {
       )}
 
       <InfoCard title="After scanning, you'll see:" items={scannerFeatures} />
+
+      {/* Additional Information Section */}
+      <View style={styles.additionalInfoContainer}>
+        <Text style={styles.additionalInfoTitle}>How to Use QR Scanner</Text>
+        <View style={styles.infoSection}>
+          <View style={styles.infoItem}>
+            <Ionicons name="checkmark-circle" size={20} color={COLORS.success} />
+            <Text style={styles.infoItemText}>
+              Point your camera at the driver's QR code
+            </Text>
+          </View>
+          <View style={styles.infoItem}>
+            <Ionicons name="checkmark-circle" size={20} color={COLORS.success} />
+            <Text style={styles.infoItemText}>
+              Wait for the scan confirmation
+            </Text>
+          </View>
+          <View style={styles.infoItem}>
+            <Ionicons name="checkmark-circle" size={20} color={COLORS.success} />
+            <Text style={styles.infoItemText}>
+              Select your pickup and destination
+            </Text>
+          </View>
+          <View style={styles.infoItem}>
+            <Ionicons name="checkmark-circle" size={20} color={COLORS.success} />
+            <Text style={styles.infoItemText}>
+              Review fare and payment options
+            </Text>
+          </View>
+        </View>
+        
+        <View style={styles.tipsSection}>
+          <Text style={styles.tipsTitle}>💡 Tips for Better Scanning</Text>
+          <Text style={styles.tipsText}>
+            • Ensure good lighting when scanning{'\n'}
+            • Hold your device steady{'\n'}
+            • Keep the QR code centered in the frame{'\n'}
+            • Make sure the QR code is not damaged or blurry
+          </Text>
+        </View>
+      </View>
 
       {/* Trip Booking Modal */}
       {showTripBooking && qrData && driverInfo && (
