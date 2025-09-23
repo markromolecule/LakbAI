@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Modal,
   View,
@@ -13,6 +13,7 @@ import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../shared/themes/colors';
+import { discountService } from '../../shared/services/discountService';
 
 interface DiscountDocument {
   uri: string;
@@ -44,6 +45,24 @@ export const DiscountApplicationModal: React.FC<DiscountApplicationModalProps> =
   const [selectedDiscountType, setSelectedDiscountType] = useState(currentDiscountType);
   const [selectedDocument, setSelectedDocument] = useState<DiscountDocument | null>(currentDocument);
   const [showDiscountDropdown, setShowDiscountDropdown] = useState(false);
+  const [currentDiscountStatus, setCurrentDiscountStatus] = useState<string>('none');
+
+  // Check current discount status when modal opens
+  useEffect(() => {
+    if (visible) {
+      checkCurrentDiscountStatus();
+    }
+  }, [visible]);
+
+  const checkCurrentDiscountStatus = async () => {
+    try {
+      const status = await discountService.getDiscountStatus();
+      setCurrentDiscountStatus(status.status);
+    } catch (error) {
+      console.error('Error checking discount status:', error);
+      setCurrentDiscountStatus('none');
+    }
+  };
 
   const handleFileSelection = () => {
     Alert.alert(
@@ -112,6 +131,26 @@ export const DiscountApplicationModal: React.FC<DiscountApplicationModalProps> =
   };
 
   const handleSubmit = () => {
+    // Check if user already has a pending application
+    if (currentDiscountStatus === 'pending') {
+      Alert.alert(
+        'Application Already Submitted',
+        'You already have a pending discount application. Please wait for it to be reviewed before submitting another application.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
+    // Check if user already has an approved application
+    if (currentDiscountStatus === 'approved') {
+      Alert.alert(
+        'Discount Already Approved',
+        'You already have an approved discount. You cannot apply for another discount.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
     if (!selectedDiscountType) {
       Alert.alert('Error', 'Please select a discount type.');
       return;
@@ -153,6 +192,29 @@ export const DiscountApplicationModal: React.FC<DiscountApplicationModalProps> =
         </View>
 
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+          {/* Current Status Display */}
+          {currentDiscountStatus !== 'none' && (
+            <View style={styles.statusContainer}>
+              <View style={[
+                styles.statusBadge,
+                currentDiscountStatus === 'pending' && styles.pendingBadge,
+                currentDiscountStatus === 'approved' && styles.approvedBadge,
+                currentDiscountStatus === 'rejected' && styles.rejectedBadge,
+              ]}>
+                <Text style={styles.statusText}>
+                  {currentDiscountStatus === 'pending' && '⏳ Pending Review'}
+                  {currentDiscountStatus === 'approved' && '✅ Discount Approved'}
+                  {currentDiscountStatus === 'rejected' && '❌ Application Rejected'}
+                </Text>
+              </View>
+              <Text style={styles.statusDescription}>
+                {currentDiscountStatus === 'pending' && 'Your discount application is currently under review. Please wait for approval.'}
+                {currentDiscountStatus === 'approved' && 'You already have an approved discount. You cannot apply for another one.'}
+                {currentDiscountStatus === 'rejected' && 'Your previous application was rejected. You can apply again with updated documents.'}
+              </Text>
+            </View>
+          )}
+
           {/* Discount Type Selection */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Select Discount Type</Text>
@@ -519,6 +581,46 @@ const styles = StyleSheet.create({
     color: '#92400E',
     marginLeft: 8,
     flex: 1,
+  },
+  statusContainer: {
+    margin: 16,
+    padding: 16,
+    backgroundColor: '#F8FAFC',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  statusBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    alignSelf: 'flex-start',
+    marginBottom: 8,
+  },
+  pendingBadge: {
+    backgroundColor: '#FEF3C7',
+    borderColor: '#F59E0B',
+    borderWidth: 1,
+  },
+  approvedBadge: {
+    backgroundColor: '#D1FAE5',
+    borderColor: '#10B981',
+    borderWidth: 1,
+  },
+  rejectedBadge: {
+    backgroundColor: '#FEE2E2',
+    borderColor: '#EF4444',
+    borderWidth: 1,
+  },
+  statusText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#374151',
+  },
+  statusDescription: {
+    fontSize: 13,
+    color: '#6B7280',
+    lineHeight: 18,
   },
   footer: {
     flexDirection: 'row',

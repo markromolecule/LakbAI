@@ -1,6 +1,6 @@
 import React from 'react';
 import { ScrollView, View, Text, TouchableOpacity, Image } from 'react-native';
-import { User, Mail, Phone, MapPin, Edit, FileText, LogOut, CreditCard, Plus } from 'lucide-react-native';
+import { User, Mail, Phone, MapPin, Edit, FileText, LogOut, CreditCard, Plus, CheckCircle, XCircle } from 'lucide-react-native';
 import { PassengerProfile } from '../../../shared/types/authentication';
 import { passengerStyles, profileStyles, homeStyles } from '../styles/ProfileScreen.styles';
 import { useAuthContext } from '../../../shared/providers/AuthProvider';
@@ -93,6 +93,25 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             <Text style={profileStyles.profileTitle}>
               {passengerProfile.username === 'guest' ? 'Guest' : 'LakbAI Passenger'}
             </Text>
+            
+            {/* Verification Status */}
+            <View style={profileStyles.verificationStatus}>
+              {passengerProfile.isVerified ? (
+                <>
+                  <CheckCircle size={16} color="#10B981" />
+                  <Text style={[profileStyles.verificationText, { color: '#10B981' }]}>
+                    Verified Account
+                  </Text>
+                </>
+              ) : (
+                <>
+                  <XCircle size={16} color="#EF4444" />
+                  <Text style={[profileStyles.verificationText, { color: '#EF4444' }]}>
+                    Unverified Account
+                  </Text>
+                </>
+              )}
+            </View>
           </View>
         </View>
 

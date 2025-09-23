@@ -33,6 +33,7 @@ require_once __DIR__ . '/../controllers/EarningsController.php';
 require_once __DIR__ . '/../controllers/FileUploadController.php';
 require_once __DIR__ . '/../controllers/DiscountController.php';
 require_once __DIR__ . '/../controllers/NotificationController.php';
+require_once __DIR__ . '/../controllers/FareMatrixController.php';
 
 
 // Initialize controller with database connection
@@ -46,6 +47,7 @@ $earningsController = new EarningsController($app->get('PDO'));
 $fileUploadController = new FileUploadController($app->get('Database'));
 $discountController = new DiscountController($app->get('Database'));
 $notificationController = new NotificationController($app->get('PDO'));
+$fareMatrixController = new FareMatrixController($app->get('PDO'));
 
 // Get the request method and path
 $method = $_SERVER['REQUEST_METHOD'];
@@ -239,6 +241,22 @@ try {
         if ($method === 'GET' && count($pathParts) === 4 && $pathParts[2] === 'info' && is_numeric($pathParts[3])) {
             $driverId = $pathParts[3];
             $result = $driverController->getDriverWithJeepney($driverId);
+            echo json_encode($result);
+            exit;
+        }
+
+        // PUT /mobile/driver/route/{id} - Update driver route
+        if ($method === 'PUT' && count($pathParts) === 4 && $pathParts[2] === 'route' && is_numeric($pathParts[3])) {
+            $driverId = $pathParts[3];
+            $routeId = $input['route_id'] ?? null;
+            
+            if (!$routeId) {
+                http_response_code(400);
+                echo json_encode(['status' => 'error', 'message' => 'Route ID is required']);
+                exit;
+            }
+            
+            $result = $driverController->updateDriverRoute($driverId, $routeId);
             echo json_encode($result);
             exit;
         }
@@ -1180,6 +1198,85 @@ try {
             echo json_encode(['error' => 'File path is required']);
         }
         exit;
+    }
+
+    // ---------------------------
+    // Fare Matrix Routes
+    // ---------------------------
+    if ($pathParts[0] === 'fare-matrix') {
+        // GET /fare-matrix - Get all fare matrices
+        if ($method === 'GET' && count($pathParts) === 1) {
+            $result = $fareMatrixController->getAllFareMatrices();
+            echo json_encode($result);
+            exit;
+        }
+
+        // GET /fare-matrix/route/{routeId} - Get fare matrix for specific route
+        if ($method === 'GET' && count($pathParts) === 3 && $pathParts[1] === 'route') {
+            $routeId = intval($pathParts[2]);
+            $result = $fareMatrixController->getFareMatrixForRoute($routeId);
+            echo json_encode($result);
+            exit;
+        }
+
+        // GET /fare-matrix/fare/{fromCheckpointId}/{toCheckpointId} - Get fare between two checkpoints
+        if ($method === 'GET' && count($pathParts) === 4 && $pathParts[1] === 'fare') {
+            $fromCheckpointId = intval($pathParts[2]);
+            $toCheckpointId = intval($pathParts[3]);
+            $routeId = isset($_GET['route_id']) ? intval($_GET['route_id']) : null;
+            $result = $fareMatrixController->getFareBetweenCheckpoints($fromCheckpointId, $toCheckpointId, $routeId);
+            echo json_encode($result);
+            exit;
+        }
+
+        // POST /fare-matrix/generate/{routeId} - Generate fare matrix for route
+        if ($method === 'POST' && count($pathParts) === 3 && $pathParts[1] === 'generate') {
+            $routeId = intval($pathParts[2]);
+            $baseFare = isset($input['base_fare']) ? floatval($input['base_fare']) : 13.00;
+            $result = $fareMatrixController->generateFareMatrixForRoute($routeId, $baseFare);
+            echo json_encode($result);
+            exit;
+        }
+
+        // POST /fare-matrix/create - Create or update fare matrix entry
+        if ($method === 'POST' && count($pathParts) === 2 && $pathParts[1] === 'create') {
+            $result = $fareMatrixController->createOrUpdateFareEntry($input);
+            echo json_encode($result);
+            exit;
+        }
+
+        // PUT /fare-matrix/{fareMatrixId} - Update fare matrix entry
+        if ($method === 'PUT' && count($pathParts) === 2 && is_numeric($pathParts[1])) {
+            $fareMatrixId = intval($pathParts[1]);
+            $input['fare_matrix_id'] = $fareMatrixId;
+            $result = $fareMatrixController->createOrUpdateFareEntry($input);
+            echo json_encode($result);
+            exit;
+        }
+
+        // DELETE /fare-matrix/{fareMatrixId} - Delete fare matrix entry
+        if ($method === 'DELETE' && count($pathParts) === 2 && is_numeric($pathParts[1])) {
+            $fareMatrixId = intval($pathParts[1]);
+            $result = $fareMatrixController->deleteFareEntry($fareMatrixId);
+            echo json_encode($result);
+            exit;
+        }
+
+        // GET /fare-matrix/stats - Get fare matrix statistics
+        if ($method === 'GET' && count($pathParts) === 2 && $pathParts[1] === 'stats') {
+            $result = $fareMatrixController->getFareMatrixStats();
+            echo json_encode($result);
+            exit;
+        }
+
+        // GET /fare-matrix/history/{fareMatrixId} - Get fare matrix history
+        if ($method === 'GET' && count($pathParts) === 3 && $pathParts[1] === 'history') {
+            $fareMatrixId = intval($pathParts[2]);
+            $limit = isset($_GET['limit']) ? intval($_GET['limit']) : 50;
+            $result = $fareMatrixController->getFareMatrixHistory($fareMatrixId, $limit);
+            echo json_encode($result);
+            exit;
+        }
     }
 
     // ---------------------------

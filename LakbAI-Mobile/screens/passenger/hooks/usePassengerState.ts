@@ -72,6 +72,7 @@ export const usePassengerState = () => {
 
         // For Auth0 users, check if we need to refresh data from backend
         if (isAuth0User && session?.dbUserData) {
+          console.log('🔍 usePassengerState: Auth0 user with session data:', session.dbUserData);
           let dbUser = session.dbUserData;
           
           // If profile is marked as incomplete but user is on home screen, refresh data
@@ -89,6 +90,12 @@ export const usePassengerState = () => {
           }
           
           // Verify the session data belongs to the current user
+          console.log('🔍 usePassengerState: Verifying session data:', {
+            dbUserAuth0Id: dbUser.auth0_id,
+            userSub: user.sub,
+            match: dbUser.auth0_id === user.sub
+          });
+          
           if (dbUser.auth0_id === user.sub) {
             console.log('✅ usePassengerState: Using stored database user data for Auth0 user');
             const profile: PassengerProfile = {
@@ -112,8 +119,10 @@ export const usePassengerState = () => {
               },
               fareDiscount: {
                 type: dbUser.discount_type || '' as const,
-                status: dbUser.discount_applied ? (dbUser.discount_status || (dbUser.discount_verified ? 'approved' as const : 'pending' as const)) : 'none' as const,
-                percentage: dbUser.discount_amount || (dbUser.discount_type === 'Student' ? 20 : 
+                status: dbUser.discount_applied && dbUser.discount_status === 'approved' ? 'approved' as const : 
+                       dbUser.discount_applied && dbUser.discount_status === 'pending' ? 'pending' as const :
+                       dbUser.discount_applied && dbUser.discount_status === 'rejected' ? 'rejected' as const : 'none' as const,
+                percentage: dbUser.discount_amount ? parseFloat(dbUser.discount_amount) : (dbUser.discount_type === 'Student' ? 20 : 
                            dbUser.discount_type === 'PWD' ? 20 :
                            dbUser.discount_type === 'Senior Citizen' ? 30 : 0),
                 document: dbUser.discount_document_path ? {
@@ -122,12 +131,21 @@ export const usePassengerState = () => {
                   type: 'image/jpeg',
                 } : null,
               },
+              // Verification fields
+              isVerified: dbUser.is_verified === 1 || dbUser.is_verified === true,
+              verificationStatus: (dbUser.is_verified === 1 || dbUser.is_verified === true) ? 'verified' as const : 'unverified' as const,
             };
             console.log('✅ usePassengerState: Profile created from database data:', profile);
             setPassengerProfile(profile);
             return;
           } else {
             console.log('⚠️ usePassengerState: Session data mismatch, clearing stale data');
+            console.log('🔍 Mismatch details:', {
+              dbUserAuth0Id: dbUser.auth0_id,
+              userSub: user.sub,
+              dbUserEmail: dbUser.email,
+              userEmail: user.email
+            });
             // Session data doesn't match current user, clear it
             setPassengerProfile(null);
           }
@@ -167,8 +185,10 @@ export const usePassengerState = () => {
             },
             fareDiscount: {
               type: traditionalUser.discount_type || '' as const,
-              status: traditionalUser.discount_applied ? (traditionalUser.discount_status || (traditionalUser.discount_verified ? 'approved' as const : 'pending' as const)) : 'none' as const,
-              percentage: traditionalUser.discount_amount || (traditionalUser.discount_type === 'Student' ? 20 : 
+              status: traditionalUser.discount_applied && traditionalUser.discount_status === 'approved' ? 'approved' as const : 
+                     traditionalUser.discount_applied && traditionalUser.discount_status === 'pending' ? 'pending' as const :
+                     traditionalUser.discount_applied && traditionalUser.discount_status === 'rejected' ? 'rejected' as const : 'none' as const,
+              percentage: traditionalUser.discount_amount ? parseFloat(traditionalUser.discount_amount) : (traditionalUser.discount_type === 'Student' ? 20 : 
                          traditionalUser.discount_type === 'PWD' ? 20 :
                          traditionalUser.discount_type === 'Senior Citizen' ? 30 : 0),
               document: traditionalUser.discount_document_path ? {
@@ -226,15 +246,86 @@ export const usePassengerState = () => {
 
   // Return the profile data, with fallback to mock data if not authenticated
   const profileToReturn = useMemo(() => {
+    console.log('🎯 Profile Selection Debug:', {
+      isAuthenticated,
+      hasPassengerProfile: !!passengerProfile,
+      passengerProfileDiscount: passengerProfile?.fareDiscount,
+      mockProfileDiscount: mockPassengerProfile.fareDiscount,
+      userEmail: user?.email,
+      sessionAuth0Id: session?.auth0Id
+    });
+    
     if (isAuthenticated && passengerProfile) {
+      console.log('✅ Using authenticated passenger profile');
       return passengerProfile;
     }
+    console.log('⚠️ Using mock passenger profile');
     return mockPassengerProfile;
   }, [isAuthenticated, passengerProfile]);
+
+  const refreshProfile = async () => {
+    if (!isAuthenticated || !user) return;
+    
+    try {
+      setIsLoading(true);
+      console.log('🔄 usePassengerState: Manually refreshing profile data...');
+      
+      // Force refresh from backend
+      const syncResult = await sessionManager.syncUserWithDatabase(user);
+      if (syncResult.status === 'success' && syncResult.data?.user) {
+        const dbUser = syncResult.data.user;
+        console.log('✅ usePassengerState: Got fresh user data from backend');
+        
+        const profile: PassengerProfile = {
+          firstName: dbUser.first_name || dbUser.name?.split(' ')[0] || '',
+          lastName: dbUser.last_name || dbUser.name?.split(' ').slice(1).join(' ') || '',
+          email: dbUser.email || '',
+          phoneNumber: dbUser.phone_number || '',
+          username: dbUser.username || dbUser.nickname || 'user',
+          picture: dbUser.picture || undefined,
+          address: {
+            houseNumber: dbUser.house_number || '',
+            streetName: dbUser.street_name || '',
+            barangay: dbUser.barangay || '',
+            cityMunicipality: dbUser.city_municipality || '',
+            province: dbUser.province || '',
+            postalCode: dbUser.postal_code || '',
+          },
+          personalInfo: {
+            birthDate: dbUser.birthday || '',
+            gender: dbUser.gender ? (dbUser.gender.toLowerCase() === 'male' ? 'male' : 'female') : '',
+          },
+          fareDiscount: {
+            type: dbUser.discount_type || '' as const,
+            status: dbUser.discount_applied ? (dbUser.discount_status || (dbUser.discount_verified ? 'approved' as const : 'pending' as const)) : 'none' as const,
+            percentage: dbUser.discount_amount || (dbUser.discount_type === 'Student' ? 20 : 
+                       dbUser.discount_type === 'PWD' ? 20 :
+                       dbUser.discount_type === 'Senior Citizen' ? 30 : 0),
+            document: dbUser.discount_document_path ? {
+              uri: dbUser.discount_document_path,
+              name: dbUser.discount_document_name || 'document',
+              type: 'image/jpeg',
+            } : null,
+          },
+          // Verification fields
+          isVerified: dbUser.is_verified === 1 || dbUser.is_verified === true,
+          verificationStatus: (dbUser.is_verified === 1 || dbUser.is_verified === true) ? 'verified' as const : 'unverified' as const,
+        };
+        
+        setPassengerProfile(profile);
+        console.log('✅ usePassengerState: Profile refreshed successfully');
+      }
+    } catch (error) {
+      console.error('❌ usePassengerState: Error refreshing profile:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return {
     passengerProfile: profileToReturn,
     isLoading,
     error,
+    refreshProfile,
   };
 };

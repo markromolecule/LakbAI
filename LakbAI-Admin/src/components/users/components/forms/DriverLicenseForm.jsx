@@ -123,15 +123,7 @@ const DriverLicenseForm = ({ formData, handleInputChange, isReadOnly }) => {
                       type="checkbox"
                       name="drivers_license_verified"
                       checked={formData.drivers_license_verified === 1}
-                      onChange={(e) => {
-                        handleInputChange({
-                          target: {
-                            name: 'drivers_license_verified',
-                            value: e.target.checked ? 1 : 0,
-                            type: 'checkbox'
-                          }
-                        });
-                      }}
+                      onChange={handleInputChange}
                       disabled={isReadOnly}
                     />
                     <div className="checkbox-content">
@@ -142,7 +134,7 @@ const DriverLicenseForm = ({ formData, handleInputChange, isReadOnly }) => {
                     <Form.Check
                       type="checkbox"
                       name="is_verified"
-                      checked={formData.is_verified}
+                      checked={formData.is_verified === 1}
                       onChange={handleInputChange}
                       disabled={isReadOnly}
                     />

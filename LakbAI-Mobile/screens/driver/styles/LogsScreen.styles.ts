@@ -36,6 +36,7 @@ export const logsStyles = StyleSheet.create({
   },
   logsList: {
     padding: 16,
+    maxHeight: 300, // Limit height to show approximately 5 items, then scroll
   },
   logItem: {
     flexDirection: 'row',
@@ -154,5 +155,23 @@ export const logsStyles = StyleSheet.create({
     fontSize: 14,
     color: '#9CA3AF',
     textAlign: 'center',
+  },
+  emptyStateContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 32,
+  },
+  scrollIndicator: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
+    marginTop: 8,
+  },
+  scrollIndicatorText: {
+    fontSize: 12,
+    color: '#9CA3AF',
+    fontStyle: 'italic',
   },
 });

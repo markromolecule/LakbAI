@@ -7,6 +7,7 @@ import {
   Alert,
   Share,
   Dimensions,
+  ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import QRCode from 'react-native-qrcode-svg';
@@ -38,12 +39,13 @@ export const QRGenerator: React.FC<QRGeneratorProps> = ({ driverInfo }) => {
   }, [driverInfo]);
 
   const generateQRCode = () => {
-    // Create QR data with real driver information
+    // Create QR data with real driver information including current location
     const qrData = {
       type: 'driver_pickup',
       driverId: driverInfo.id.toString(), // Use actual database ID
       jeepneyId: driverInfo.jeepneyNumber,
       route: driverInfo.route,
+      currentLocation: driverInfo.currentLocation, // Include driver's current location
       timestamp: new Date().toISOString(),
     };
     
@@ -81,7 +83,13 @@ export const QRGenerator: React.FC<QRGeneratorProps> = ({ driverInfo }) => {
   };
 
   return (
-    <View style={styles.container}>
+    <ScrollView 
+      style={styles.container}
+      contentContainerStyle={styles.scrollContent}
+      showsVerticalScrollIndicator={true}
+      bounces={true}
+      alwaysBounceVertical={false}
+    >
       <View style={styles.header}>
         <Ionicons name="qr-code" size={24} color={COLORS.driverPrimary} />
         <Text style={styles.title}>Your Passenger QR Code</Text>
@@ -154,20 +162,60 @@ export const QRGenerator: React.FC<QRGeneratorProps> = ({ driverInfo }) => {
       <View style={styles.instructionsCard}>
         <Text style={styles.instructionsTitle}>How passengers use this QR code:</Text>
         <Text style={styles.instructionText}>1. Open LakbAI passenger app</Text>
-        <Text style={styles.instructionText}>2. Go to Scanner screen</Text>
+        <Text style={styles.instructionText}>2. Go to Scanner</Text>
         <Text style={styles.instructionText}>3. Scan your QR code</Text>
         <Text style={styles.instructionText}>4. Select pickup and destination</Text>
         <Text style={styles.instructionText}>5. Pay fare through Xendit</Text>
       </View>
-    </View>
+
+      {/* Additional Information */}
+      <View style={styles.additionalInfoCard}>
+        <Text style={styles.additionalInfoTitle}>💡 Tips for Better QR Code Display</Text>
+        <View style={styles.tipsContainer}>
+          <View style={styles.tipItem}>
+            <Ionicons name="sunny" size={16} color={COLORS.driverPrimary} />
+            <Text style={styles.tipText}>Ensure good lighting when showing your QR code</Text>
+          </View>
+          <View style={styles.tipItem}>
+            <Ionicons name="phone-portrait" size={16} color={COLORS.driverPrimary} />
+            <Text style={styles.tipText}>Keep your phone screen clean and bright</Text>
+          </View>
+          <View style={styles.tipItem}>
+            <Ionicons name="eye" size={16} color={COLORS.driverPrimary} />
+            <Text style={styles.tipText}>Make sure the QR code is clearly visible</Text>
+          </View>
+          <View style={styles.tipItem}>
+            <Ionicons name="refresh" size={16} color={COLORS.driverPrimary} />
+            <Text style={styles.tipText}>Refresh the QR code if passengers have trouble scanning</Text>
+          </View>
+        </View>
+      </View>
+
+      {/* QR Code Information */}
+      <View style={styles.qrInfoCard}>
+        <Text style={styles.qrInfoTitle}>📱 About Your QR Code</Text>
+        <Text style={styles.qrInfoText}>
+          Your QR code contains your driver information, current location, and route details. 
+          When passengers scan it, they can instantly pay the fare with you and see your route information.
+        </Text>
+        <Text style={styles.qrInfoText}>
+          The QR code updates automatically when you change your location or route, 
+          ensuring passengers always have the most current information.
+        </Text>
+      </View>
+    </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: SPACING.lg,
     backgroundColor: COLORS.white,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    padding: SPACING.lg,
+    paddingBottom: SPACING.xl,
   },
   header: {
     flexDirection: 'row',
@@ -284,5 +332,62 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: COLORS.gray700,
     marginBottom: 4,
+  },
+  // Additional Information Card
+  additionalInfoCard: {
+    backgroundColor: COLORS.white,
+    borderRadius: SPACING.md,
+    padding: SPACING.lg,
+    marginTop: SPACING.lg,
+    marginBottom: SPACING.lg,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+    borderLeftWidth: 4,
+    borderLeftColor: COLORS.driverPrimary,
+  },
+  additionalInfoTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.gray800,
+    marginBottom: SPACING.md,
+  },
+  tipsContainer: {
+    gap: SPACING.sm,
+  },
+  tipItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: SPACING.xs,
+  },
+  tipText: {
+    fontSize: 14,
+    color: COLORS.gray700,
+    marginLeft: SPACING.sm,
+    flex: 1,
+    lineHeight: 20,
+  },
+  // QR Code Information Card
+  qrInfoCard: {
+    backgroundColor: COLORS.gray50,
+    borderRadius: SPACING.md,
+    padding: SPACING.lg,
+    marginBottom: SPACING.xl,
+    borderWidth: 1,
+    borderColor: COLORS.gray200,
+  },
+  qrInfoTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.gray800,
+    marginBottom: SPACING.md,
+  },
+  qrInfoText: {
+    fontSize: 14,
+    color: COLORS.gray600,
+    lineHeight: 20,
+    marginBottom: SPACING.sm,
   },
 });

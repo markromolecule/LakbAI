@@ -31,6 +31,9 @@ export interface DriverProfile {
   todayEarnings: number;
   totalEarnings: number; // Lifetime earnings across all shifts
   route: string;
+  drivers_license_verified?: boolean;
+  license_status?: string;
+  is_verified?: boolean;
 }
 
 export interface TripLog {
@@ -59,6 +62,7 @@ export interface QRCodeData {
   driverId: string;
   jeepneyId: string;
   route: string;
+  currentLocation?: string; // Driver's current location for auto-fill
   timestamp: string;
   // For legacy payment QR codes
   amount?: number;

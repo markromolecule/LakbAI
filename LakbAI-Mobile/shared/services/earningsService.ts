@@ -155,13 +155,18 @@ class EarningsService {
   }
 
   /**
-   * Check if we need to reset today's trips (24-hour reset)
+   * Check if we need to reset today's trips (5:00 AM reset)
    */
   private checkAndResetDailyTrips(driverId: string): void {
-    const currentDate = new Date().toDateString();
+    const now = new Date();
+    const currentHour = now.getHours();
+    const currentDate = now.toDateString();
     
-    if (this.lastResetDate !== currentDate) {
-      console.log('🔄 New day detected - resetting today\'s trips for all drivers');
+    // Check if it's 5:00 AM or later and we haven't reset today
+    const shouldReset = currentHour >= 5 && this.lastResetDate !== currentDate;
+    
+    if (shouldReset) {
+      console.log('🔄 5:00 AM reset time reached - resetting today\'s trips for all drivers');
       
       // Reset today's trips for all drivers
       this.earnings.forEach((earnings, id) => {
@@ -228,6 +233,9 @@ class EarningsService {
         totalEarnings: currentEarnings.totalEarnings + update.finalFare,
         totalTrips: currentEarnings.totalTrips + tripIncrement,
         todayTrips: currentEarnings.todayTrips + tripIncrement,
+        weeklyTrips: currentEarnings.weeklyTrips + tripIncrement,
+        monthlyTrips: currentEarnings.monthlyTrips + tripIncrement,
+        yearlyTrips: currentEarnings.yearlyTrips + tripIncrement,
         averageFarePerTrip: (currentEarnings.todayTrips + tripIncrement) > 0 
           ? Math.round((currentEarnings.todayEarnings + update.finalFare) / (currentEarnings.todayTrips + tripIncrement))
           : 0,

@@ -158,7 +158,7 @@ const DiscountForm = ({ formData, handleInputChange, isReadOnly, errors = {} }) 
                     <Form.Check
                       type="checkbox"
                       name="discount_verified"
-                      checked={formData.discount_verified || false}
+                      checked={formData.discount_verified === 1}
                       onChange={handleInputChange}
                       disabled={isReadOnly || !formData.discount_type}
                     />
@@ -172,7 +172,7 @@ const DiscountForm = ({ formData, handleInputChange, isReadOnly, errors = {} }) 
                     <Form.Check
                       type="checkbox"
                       name="is_verified"
-                      checked={formData.is_verified || false}
+                      checked={formData.is_verified === 1}
                       onChange={handleInputChange}
                       disabled={isReadOnly}
                     />
@@ -192,7 +192,7 @@ const DiscountForm = ({ formData, handleInputChange, isReadOnly, errors = {} }) 
                 <Form.Check
                   type="checkbox"
                   name="discount_applied"
-                  checked={formData.discount_applied || false}
+                  checked={formData.discount_applied === 1}
                   onChange={handleApplyDiscountChange}
                   disabled={isReadOnly || !formData.discount_type}
                   className="mt-1"

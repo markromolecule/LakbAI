@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { CreditCard, RefreshCw } from 'lucide-react-native';
-import { discountStatusService, DiscountStatus } from '../../../shared/services/discountStatusService';
+import { discountService } from '../../../shared/services/discountService';
+import { DiscountStatus } from '../../../shared/services/discountService';
 import { homeStyles, profileStyles } from '../styles/ProfileScreen.styles';
 
 interface DiscountStatusCardProps {
@@ -25,14 +26,8 @@ export const DiscountStatusCard: React.FC<DiscountStatusCardProps> = ({
         setLoading(true);
       }
 
-      const response = await discountStatusService.getUserDiscountStatus(userId);
-      
-      if (response.status === 'success' && response.data) {
-        setDiscountStatus(response.data);
-      } else {
-        console.error('Failed to fetch discount status:', response.message);
-        Alert.alert('Error', 'Failed to load discount status. Please try again.');
-      }
+      const status = await discountService.getDiscountStatus();
+      setDiscountStatus(status);
     } catch (error) {
       console.error('Error fetching discount status:', error);
       Alert.alert('Error', 'Network error. Please check your connection.');
@@ -72,8 +67,26 @@ export const DiscountStatusCard: React.FC<DiscountStatusCardProps> = ({
     }
   };
 
-  const canApplyForDiscount = !discountStatus?.discount_applied || 
-                              discountStatus?.discount_status === 'rejected';
+  const canApplyForDiscount = discountStatus?.status === 'none' || 
+                              discountStatus?.status === 'rejected';
+
+  const getDiscountStatusColor = (status: string) => {
+    switch (status) {
+      case 'pending': return '#F59E0B';
+      case 'approved': return '#10B981';
+      case 'rejected': return '#EF4444';
+      default: return '#6B7280';
+    }
+  };
+
+  const getDiscountStatusMessage = (status: string) => {
+    switch (status) {
+      case 'pending': return 'Your discount application is under review. Please wait for approval.';
+      case 'approved': return 'Your discount has been approved and is now active.';
+      case 'rejected': return 'Your discount application was rejected. You can apply again with updated documents.';
+      default: return 'No discount application submitted.';
+    }
+  };
 
   if (loading) {
     return (
@@ -113,33 +126,32 @@ export const DiscountStatusCard: React.FC<DiscountStatusCardProps> = ({
           <>
             <View style={profileStyles.discountTypeRow}>
               <Text style={profileStyles.discountIcon}>
-                {discountStatusService.getDiscountStatusIcon(discountStatus)}
+                {getDiscountIcon(discountStatus.type)}
               </Text>
               <View style={profileStyles.discountInfo}>
                 <Text style={profileStyles.discountType}>
-                  {discountStatus.discount_applied ? 
-                    getDiscountTypeDisplay(discountStatus.discount_type) : 
+                  {discountStatus.status !== 'none' ? 
+                    getDiscountTypeDisplay(discountStatus.type) : 
                     'No discount applied'
                   }
                 </Text>
                 
                 <Text style={[
                   profileStyles.discountStatus,
-                  { color: discountStatusService.getDiscountStatusColor(discountStatus) }
+                  { color: getDiscountStatusColor(discountStatus.status) }
                 ]}>
-                  {discountStatus.discount_status?.charAt(0).toUpperCase() + 
-                   (discountStatus.discount_status?.slice(1) || '')}
+                  {discountStatus.status.charAt(0).toUpperCase() + discountStatus.status.slice(1)}
                 </Text>
                 
                 <Text style={profileStyles.discountMessage}>
-                  {discountStatusService.getDiscountStatusMessage(discountStatus)}
+                  {getDiscountStatusMessage(discountStatus.status)}
                 </Text>
                 
-                {discountStatus.discount_amount && discountStatus.discount_status === 'approved' && (
+                {discountStatus.percentage > 0 && discountStatus.status === 'approved' && (
                   <View style={profileStyles.discountAmountContainer}>
                     <Text style={profileStyles.discountAmountLabel}>Discount Percentage:</Text>
                     <Text style={profileStyles.discountAmountValue}>
-                      {discountStatus.discount_amount}% off regular fare
+                      {discountStatus.percentage}% off regular fare
                     </Text>
                   </View>
                 )}
@@ -156,7 +168,7 @@ export const DiscountStatusCard: React.FC<DiscountStatusCardProps> = ({
               >
                 <CreditCard size={16} color="#3B82F6" />
                 <Text style={profileStyles.applyDiscountButtonText}>
-                  {discountStatus.discount_status === 'rejected' ? 'Reapply for Discount' : 'Apply for Discount'}
+                  {discountStatus.status === 'rejected' ? 'Reapply for Discount' : 'Apply for Discount'}
                 </Text>
               </TouchableOpacity>
             )}

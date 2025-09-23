@@ -5,6 +5,7 @@ import { CHECKPOINTS } from '../../../constants/checkpoints';
 import sessionManager, { UserSession } from '../../../shared/services/sessionManager';
 import { getBaseUrl } from '../../../config/apiConfig';
 import { earningsService } from '../../../shared/services/earningsService';
+import { tripTrackingService } from '../../../shared/services/tripTrackingService';
 
 export const useDriverState = () => {
   const [currentView, setCurrentView] = useState<ViewType>('home');
@@ -20,7 +21,7 @@ export const useDriverState = () => {
     loadDriverLocation(); // Load current location from API
     
     // Listen for earnings changes and refresh profile
-    const unsubscribe = earningsService.addListener((driverId) => {
+    const unsubscribeEarnings = earningsService.addListener((driverId) => {
       console.log('🔄 Earnings changed for driver:', driverId, 'Refreshing profile...');
       if (userSession?.dbUserData?.id.toString() === driverId) {
         // Add small delay to ensure earnings are saved before refreshing
@@ -29,8 +30,22 @@ export const useDriverState = () => {
         }, 500);
       }
     });
+
+    // Listen for trip completion events to update profile immediately
+    const unsubscribeTrips = tripTrackingService.addTripListener((driverId, action) => {
+      if (userSession?.dbUserData?.id.toString() === driverId && action === 'trip_completed') {
+        console.log('🚗 Trip completed for driver:', driverId, 'Refreshing profile...');
+        // Update profile immediately when trip is completed
+        setTimeout(() => {
+          loadDriverProfile();
+        }, 100);
+      }
+    });
     
-    return unsubscribe;
+    return () => {
+      unsubscribeEarnings();
+      unsubscribeTrips();
+    };
   }, [userSession?.dbUserData?.id]);
 
   const loadDriverProfile = async () => {
@@ -131,6 +146,17 @@ export const useDriverState = () => {
     }
   };
 
+  // Helper function to get actual completed trips count for today
+  const getTodayCompletedTripsCount = (driverId: string): number => {
+    const completedTrips = tripTrackingService.getCompletedTrips(driverId);
+    const todayCompletedTrips = completedTrips.filter(trip => {
+      const tripDate = new Date(trip.startTime).toDateString();
+      const today = new Date().toDateString();
+      return tripDate === today && trip.endCheckpoint; // Only count completed trips
+    }).length;
+    return todayCompletedTrips;
+  };
+
   const transformApiProfileToDriverProfile = async (apiProfile: any): Promise<DriverProfile> => {
     // Calculate years of experience based on account creation date
     const createdDate = new Date(apiProfile.created_at);
@@ -140,8 +166,12 @@ export const useDriverState = () => {
     // Get current earnings from earnings service (try API first)
     const currentEarnings = await earningsService.getEarningsAsync(apiProfile.id.toString());
     console.log('💰 Current earnings for driver', apiProfile.id, ':', currentEarnings);
+    
+    // Get actual completed trips count from trip tracking service
+    const actualTodayTrips = getTodayCompletedTripsCount(apiProfile.id.toString());
     console.log('📊 Trip counts:', {
-      todayTrips: currentEarnings.todayTrips,
+      earningsTodayTrips: currentEarnings.todayTrips,
+      actualTodayTrips: actualTodayTrips,
       totalTrips: currentEarnings.totalTrips
     });
     
@@ -153,10 +183,13 @@ export const useDriverState = () => {
       rating: 4.5 + (Math.random() * 0.8), // Mock data - would come from ratings
       totalTrips: currentEarnings.totalTrips, // Get real total trips from earnings service
       yearsExperience: yearsExperience,
-      todayTrips: currentEarnings.todayTrips, // Get from earnings service 
+      todayTrips: actualTodayTrips, // Use actual completed trips count
       todayEarnings: currentEarnings.todayEarnings, // Get real earnings from service
       totalEarnings: currentEarnings.totalEarnings, // Get total lifetime earnings
-      route: apiProfile.assignedJeepney?.route?.name || 'No Route Assigned'
+      route: apiProfile.assignedJeepney?.route?.name || 'No Route Assigned',
+      drivers_license_verified: apiProfile.drivers_license_verified,
+      license_status: apiProfile.license_status,
+      is_verified: apiProfile.is_verified
     };
   };
 
@@ -213,10 +246,13 @@ export const useDriverState = () => {
       rating: 4.5 + (Math.random() * 0.8), // Random rating between 4.5-5.3
       totalTrips: currentEarnings.totalTrips, // Get real total trips from earnings service
       yearsExperience: yearsExperience,
-      todayTrips: currentEarnings.todayTrips, // Get from earnings service
+      todayTrips: getTodayCompletedTripsCount(dbUser.id.toString()), // Use actual completed trips count
       todayEarnings: currentEarnings.todayEarnings, // Get real earnings from service
       totalEarnings: currentEarnings.totalEarnings, // Get total lifetime earnings
-      route
+      route,
+      drivers_license_verified: dbUser.drivers_license_verified,
+      license_status: dbUser.license_status,
+      is_verified: dbUser.is_verified
     };
   };
 
@@ -232,7 +268,7 @@ export const useDriverState = () => {
       rating: 4.8,
       totalTrips: currentEarnings.totalTrips, // Get real total trips from earnings service
       yearsExperience: 2, // Based on recent account
-      todayTrips: currentEarnings.todayTrips, // Get from earnings service
+      todayTrips: getTodayCompletedTripsCount('001'), // Use actual completed trips count
       todayEarnings: currentEarnings.todayEarnings, // Get real earnings from service
       totalEarnings: currentEarnings.totalEarnings, // Get total lifetime earnings
       route: 'SM Epza → SM Dasmariñas'

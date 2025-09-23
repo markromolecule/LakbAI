@@ -350,16 +350,16 @@ const CheckpointManagement = ({ visible, onClose }) => {
 
   const getStatusBadge = (status) => {
     const statusConfig = {
-      'active': { variant: 'success', text: 'Active' },
-      'live': { variant: 'success', text: 'Live' },
-      'recent': { variant: 'warning', text: 'Recent' },
-      'stale': { variant: 'secondary', text: 'Stale' },
-      'no_data': { variant: 'secondary', text: 'No Data' },
-      'inactive': { variant: 'danger', text: 'Inactive' }
+      'active': { variant: 'success', text: 'Active', className: 'status-active' },
+      'live': { variant: 'success', text: 'Live', className: 'status-active' },
+      'recent': { variant: 'warning', text: 'Recent', className: 'status-recent' },
+      'stale': { variant: 'secondary', text: 'Stale', className: 'status-stale' },
+      'no_data': { variant: 'secondary', text: 'No Data', className: 'status-no-data' },
+      'inactive': { variant: 'danger', text: 'Inactive', className: 'status-inactive' }
     };
     
     const config = statusConfig[status] || statusConfig['inactive'];
-    return <Badge bg={config.variant}>{config.text}</Badge>;
+    return <Badge bg={config.variant} className={config.className}>{config.text}</Badge>;
   };
 
   const formatLastUpdate = (timestamp) => {
@@ -698,7 +698,7 @@ const CheckpointManagement = ({ visible, onClose }) => {
             Active Drivers ({driverLocations.length})
           </Card.Title>
           <div className="d-flex align-items-center gap-2">
-            <Badge bg="success" className="pulse-animation">
+            <Badge bg="success" className="pulse-animation live-tracking-badge">
               <i className="bi bi-circle-fill me-1"></i>
               Live Tracking
             </Badge>
@@ -717,7 +717,7 @@ const CheckpointManagement = ({ visible, onClose }) => {
                   <Row>
                     {driverLocations.map((driver, index) => (
                       <Col md={6} lg={4} key={index} className="mb-3">
-                        <Card className="h-100 border-success">
+                        <Card className="h-100 active-driver-card">
                           <Card.Body>
                             <div className="d-flex justify-content-between align-items-start mb-2">
                               <h6 className="mb-0">
@@ -726,7 +726,7 @@ const CheckpointManagement = ({ visible, onClose }) => {
                               </h6>
                               <div className="d-flex flex-column align-items-end">
                               {getStatusBadge(driver.status)}
-                                <Badge bg="success" className="mt-1 pulse-animation">
+                                <Badge bg="success" className="mt-1 pulse-animation status-active">
                                   <i className="bi bi-circle-fill me-1"></i>
                                   On Shift
                                 </Badge>
@@ -846,6 +846,166 @@ const CheckpointManagement = ({ visible, onClose }) => {
           }
           100% {
             opacity: 1;
+          }
+        }
+
+        /* Enhanced Active Driver Card Styles */
+        .active-driver-card {
+          border: 2px solid #10b981 !important;
+          border-radius: 16px !important;
+          background: linear-gradient(135deg, rgba(16, 185, 129, 0.02) 0%, rgba(16, 185, 129, 0.05) 100%) !important;
+          box-shadow: 0 4px 20px rgba(16, 185, 129, 0.15) !important;
+          transition: all 0.3s ease !important;
+          position: relative !important;
+          overflow: hidden !important;
+        }
+
+        .active-driver-card::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          height: 3px;
+          background: linear-gradient(90deg, #10b981, #34d399, #10b981);
+          background-size: 200% 100%;
+          animation: shimmer-border 3s ease-in-out infinite;
+        }
+
+        @keyframes shimmer-border {
+          0% {
+            background-position: -200% 0;
+          }
+          100% {
+            background-position: 200% 0;
+          }
+        }
+
+        .active-driver-card:hover {
+          transform: translateY(-4px) scale(1.02) !important;
+          box-shadow: 0 8px 32px rgba(16, 185, 129, 0.25) !important;
+          border-color: #059669 !important;
+        }
+
+        .active-driver-card .card-body {
+          padding: 1.25rem !important;
+          background: rgba(255, 255, 255, 0.95) !important;
+          backdrop-filter: blur(10px) !important;
+        }
+
+        .active-driver-card .card-header {
+          background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(16, 185, 129, 0.05) 100%) !important;
+          border-bottom: 1px solid rgba(16, 185, 129, 0.2) !important;
+          border-radius: 16px 16px 0 0 !important;
+        }
+
+        .active-driver-card h6 {
+          color: #065f46 !important;
+          font-weight: 700 !important;
+          font-size: 1.1rem !important;
+        }
+
+        .active-driver-card .bi-truck {
+          color: #10b981 !important;
+          font-size: 1.2rem !important;
+        }
+
+        .active-driver-card .badge {
+          border-radius: 12px !important;
+          font-weight: 600 !important;
+          padding: 0.5rem 0.75rem !important;
+          font-size: 0.75rem !important;
+        }
+
+        .active-driver-card .badge.bg-success {
+          background: linear-gradient(135deg, #10b981, #059669) !important;
+          box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3) !important;
+        }
+
+        .active-driver-card .list-group-item {
+          border: none !important;
+          background: transparent !important;
+          padding: 0.5rem 0 !important;
+        }
+
+        .active-driver-card .list-group-item small {
+          color: #6b7280 !important;
+          font-weight: 500 !important;
+          font-size: 0.8rem !important;
+        }
+
+        .active-driver-card .list-group-item strong {
+          color: #1f2937 !important;
+          font-weight: 600 !important;
+        }
+
+        .active-driver-card .text-success {
+          color: #059669 !important;
+        }
+
+        .active-driver-card .bi-geo-alt,
+        .active-driver-card .bi-qr-code,
+        .active-driver-card .bi-phone,
+        .active-driver-card .bi-stopwatch {
+          color: #10b981 !important;
+        }
+
+        /* Status Badge Enhancements */
+        .status-active {
+          background: linear-gradient(135deg, #10b981, #059669) !important;
+          color: white !important;
+          border: none !important;
+          box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3) !important;
+        }
+
+        .status-inactive {
+          background: linear-gradient(135deg, #6b7280, #4b5563) !important;
+          color: white !important;
+          border: none !important;
+          box-shadow: 0 2px 8px rgba(107, 114, 128, 0.3) !important;
+        }
+
+        .status-recent {
+          background: linear-gradient(135deg, #f59e0b, #d97706) !important;
+          color: white !important;
+          border: none !important;
+          box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3) !important;
+        }
+
+        .status-stale {
+          background: linear-gradient(135deg, #6b7280, #4b5563) !important;
+          color: white !important;
+          border: none !important;
+          box-shadow: 0 2px 8px rgba(107, 114, 128, 0.3) !important;
+        }
+
+        .status-no-data {
+          background: linear-gradient(135deg, #6b7280, #4b5563) !important;
+          color: white !important;
+          border: none !important;
+          box-shadow: 0 2px 8px rgba(107, 114, 128, 0.3) !important;
+        }
+
+        /* Live Tracking Badge */
+        .live-tracking-badge {
+          background: linear-gradient(135deg, #10b981, #059669) !important;
+          border: 2px solid rgba(255, 255, 255, 0.2) !important;
+          box-shadow: 0 4px 16px rgba(16, 185, 129, 0.4) !important;
+          backdrop-filter: blur(10px) !important;
+        }
+
+        /* Responsive Enhancements */
+        @media (max-width: 768px) {
+          .active-driver-card {
+            margin-bottom: 1rem !important;
+          }
+          
+          .active-driver-card .card-body {
+            padding: 1rem !important;
+          }
+          
+          .active-driver-card h6 {
+            font-size: 1rem !important;
           }
         }
       `}</style>

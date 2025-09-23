@@ -271,8 +271,30 @@ class AuthService {
                 $updateData['password'] = password_hash($updateData['password'], PASSWORD_DEFAULT);
             }
 
-            // Update user
-            $success = $this->userRepository->update($userId, $updateData);
+            // Separate driver-specific fields
+            $driverFields = [];
+            if (isset($updateData['drivers_license_verified'])) {
+                $driverFields['drivers_license_verified'] = $updateData['drivers_license_verified'];
+                unset($updateData['drivers_license_verified']);
+            }
+            if (isset($updateData['license_status'])) {
+                $driverFields['license_status'] = $updateData['license_status'];
+                unset($updateData['license_status']);
+            }
+
+            // Update user (only if there are user fields to update)
+            $success = true;
+            if (!empty($updateData)) {
+                $success = $this->userRepository->update($userId, $updateData);
+            }
+
+            // Update driver fields if user is a driver and driver fields exist
+            if ($success && $currentUser['user_type'] === 'driver' && !empty($driverFields)) {
+                $driverSuccess = $this->updateDriverFields($userId, $driverFields);
+                if (!$driverSuccess) {
+                    return $this->errorResponse('User updated but failed to update driver information');
+                }
+            }
 
             if ($success) {
                 return $this->successResponse('User updated successfully');
@@ -282,6 +304,45 @@ class AuthService {
 
         } catch (Exception $e) {
             return $this->errorResponse('Update failed: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Update driver-specific fields
+     */
+    private function updateDriverFields($userId, $driverFields) {
+        try {
+            // Create PDO connection
+            $host = '127.0.0.1';
+            $user = 'root';
+            $pass = '';
+            $db = 'lakbai_db';
+            
+            $dsn = "mysql:host={$host};dbname={$db};charset=utf8mb4";
+            $pdo = new PDO($dsn, $user, $pass, [
+                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                PDO::ATTR_EMULATE_PREPARES => false,
+            ]);
+            
+            $setClause = [];
+            $params = [];
+            
+            foreach ($driverFields as $field => $value) {
+                $setClause[] = "{$field} = ?";
+                $params[] = $value;
+            }
+            
+            $params[] = $userId;
+            
+            $query = "UPDATE drivers SET " . implode(', ', $setClause) . " WHERE user_id = ?";
+            $stmt = $pdo->prepare($query);
+            
+            return $stmt->execute($params);
+            
+        } catch (Exception $e) {
+            error_log("Error updating driver fields: " . $e->getMessage());
+            return false;
         }
     }
 
@@ -324,16 +385,18 @@ class AuthService {
             }
 
             if ($approved) {
-                // Approve: set discount_verified = 1, clear rejection reason
+                // Approve: set discount_verified = 1, discount_status = 'approved', clear rejection reason
                 $updateData = [
                     'discount_verified' => 1,
+                    'discount_status' => 'approved',
                     'discount_rejection_reason' => null
                 ];
                 $message = 'Discount application approved successfully';
             } else {
-                // Reject: set discount_verified = -1 (rejected status)
+                // Reject: set discount_verified = -1, discount_status = 'rejected'
                 $updateData = [
                     'discount_verified' => -1,
+                    'discount_status' => 'rejected',
                     'discount_rejection_reason' => $rejectionReason
                 ];
                 $message = 'Discount application rejected';

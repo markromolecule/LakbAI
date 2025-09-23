@@ -1,6 +1,6 @@
 // LakbAI-Mobile/app/passenger/profile.tsx
 import React, { useEffect, useMemo, useState } from 'react';
-import { SafeAreaView, StyleSheet, View, Alert } from 'react-native';
+import { StyleSheet, View, Alert, SafeAreaView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Header } from '../../components/common/Header';
 import { Footer } from '../../components/common/Footer';
@@ -14,10 +14,17 @@ import { useAuthContext } from '../../shared/providers/AuthProvider';
 
 export default function PassengerProfile() {
   const router = useRouter();
-  const { passengerProfile } = usePassengerState();
+  const { passengerProfile, refreshProfile } = usePassengerState();
   const { submitApplication, isSubmitting, error, clearError } = useDiscountState();
   const { isAuthenticated, isLoading, user } = useAuthContext();
   const [showDiscountModal, setShowDiscountModal] = useState(false);
+
+  // Refresh profile data when component mounts
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      refreshProfile();
+    }
+  }, [isAuthenticated, user, refreshProfile]);
 
   // Clear error when modal is closed
   useEffect(() => {
