@@ -26,7 +26,8 @@ export const DriverScreen: React.FC = () => {
     simulateQRScan,
     toggleDuty,
     updateLocation,
-    refreshDriverProfile
+    refreshDriverProfile,
+    refreshDriverLocation
   } = useDriverState();
 
   const renderCurrentView = () => {
@@ -41,6 +42,7 @@ export const DriverScreen: React.FC = () => {
             onNavigate={setCurrentView}
             onToggleDuty={toggleDuty}
             onRefresh={refreshDriverProfile}
+            onRefreshLocation={refreshDriverLocation}
           />
         );
       case 'scanner':

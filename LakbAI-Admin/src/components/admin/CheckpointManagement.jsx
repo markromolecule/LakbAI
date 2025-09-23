@@ -31,6 +31,8 @@ const CheckpointManagement = ({ visible, onClose }) => {
   const [activeTab, setActiveTab] = useState('qr-generation');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [lastUpdateTime, setLastUpdateTime] = useState(null);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   // Auto-dismiss success messages after 3 seconds
   useEffect(() => {
@@ -42,25 +44,55 @@ const CheckpointManagement = ({ visible, onClose }) => {
     }
   }, [success]);
 
-  // Auto-refresh driver locations every 10 seconds when on monitoring tab
+  // Force refresh function
+  const forceRefresh = () => {
+    console.log('🔄 Force refresh triggered');
+    setRefreshKey(prev => prev + 1);
+    fetchDriverLocations();
+  };
+
+  // Auto-refresh driver locations every 3 seconds when on monitoring tab
   useEffect(() => {
+    console.log('🔄 Auto-refresh effect triggered. activeTab:', activeTab, 'selectedRoute:', selectedRoute);
     let interval;
     if (activeTab === 'monitoring' && selectedRoute) {
       // Initial fetch
+      console.log('🔄 Initial fetch triggered for route:', selectedRoute);
       fetchDriverLocations();
       
       // Set up auto-refresh
       interval = setInterval(() => {
+        console.log('🔄 Auto-refresh triggered at', new Date().toLocaleTimeString(), 'for route:', selectedRoute);
         fetchDriverLocations();
-      }, 10000); // Refresh every 10 seconds
+      }, 3000); // Refresh every 3 seconds for faster updates
+      console.log('🔄 Auto-refresh interval set up successfully');
+    } else {
+      console.log('🔄 Auto-refresh NOT set up. activeTab:', activeTab, 'selectedRoute:', selectedRoute);
     }
     
     return () => {
       if (interval) {
+        console.log('🔄 Clearing auto-refresh interval');
         clearInterval(interval);
       }
     };
-  }, [activeTab, selectedRoute]);
+  }, [activeTab, selectedRoute, refreshKey]);
+
+  // Additional effect to ensure refresh happens when tab changes
+  useEffect(() => {
+    if (activeTab === 'monitoring' && selectedRoute) {
+      console.log('🔄 Tab changed to monitoring, triggering refresh');
+      fetchDriverLocations();
+    }
+  }, [activeTab]);
+
+  // Force refresh when component becomes visible
+  useEffect(() => {
+    if (visible && activeTab === 'monitoring' && selectedRoute) {
+      console.log('🔄 Force refresh on visibility change');
+      fetchDriverLocations();
+    }
+  }, [visible, activeTab, selectedRoute]);
 
   // Fetch routes when component mounts
   useEffect(() => {
@@ -72,7 +104,7 @@ const CheckpointManagement = ({ visible, onClose }) => {
 
   const fetchRoutes = async () => {
     try {
-      const response = await fetch('http://localhost:80/LakbAI/LakbAI-API/routes/api.php/routes');
+      const response = await fetch('http://192.168.254.110/LakbAI/LakbAI-API/routes/api.php/routes');
       if (response.ok) {
         const data = await response.json();
         setRoutes(data.routes || []);
@@ -85,7 +117,7 @@ const CheckpointManagement = ({ visible, onClose }) => {
 
   const fetchJeepneys = async () => {
     try {
-      const response = await fetch('http://localhost:80/LakbAI/LakbAI-API/routes/api.php/jeepneys');
+      const response = await fetch('http://192.168.254.110/LakbAI/LakbAI-API/routes/api.php/jeepneys');
       if (response.ok) {
         const data = await response.json();
         setJeepneys(data.jeepneys || []);
@@ -99,7 +131,7 @@ const CheckpointManagement = ({ visible, onClose }) => {
   const fetchCheckpoints = async (routeId) => {
     try {
       setLoading(true);
-      const response = await fetch(`http://localhost:80/LakbAI/LakbAI-API/routes/api.php/routes/${routeId}/checkpoints`);
+      const response = await fetch(`http://192.168.254.110/LakbAI/LakbAI-API/routes/api.php/routes/${routeId}/checkpoints`);
       if (response.ok) {
         const data = await response.json();
         setCheckpoints(data.checkpoints || []);
@@ -121,7 +153,7 @@ const CheckpointManagement = ({ visible, onClose }) => {
     try {
       setLoading(true);
       const response = await fetch(
-        `http://localhost:80/LakbAI/LakbAI-API/routes/api.php/admin/checkpoints/qr/generate/${checkpointId}/${selectedRoute}`,
+        `http://192.168.254.110/LakbAI/LakbAI-API/routes/api.php/admin/checkpoints/qr/generate/${checkpointId}/${selectedRoute}`,
         { method: 'POST' }
       );
       
@@ -156,7 +188,7 @@ const CheckpointManagement = ({ visible, onClose }) => {
     try {
       setLoading(true);
       const response = await fetch(
-        `http://localhost:80/LakbAI/LakbAI-API/routes/api.php/admin/checkpoints/qr/route/${selectedRoute}`,
+        `http://192.168.254.110/LakbAI/LakbAI-API/routes/api.php/admin/checkpoints/qr/route/${selectedRoute}`,
         { method: 'POST' }
       );
       
@@ -191,20 +223,67 @@ const CheckpointManagement = ({ visible, onClose }) => {
     try {
       setLoading(true);
       console.log('🔄 Fetching driver locations for route:', selectedRoute);
-      const response = await fetch(
-        `http://localhost:80/LakbAI/LakbAI-API/routes/api.php/mobile/locations/route/${selectedRoute}`
+      
+      // Get driver locations for the specific route (this already filters by route)
+      const timestamp = new Date().getTime();
+      const locationsResponse = await fetch(
+        `http://192.168.254.110/LakbAI/LakbAI-API/routes/api.php/mobile/locations/route/${selectedRoute}?t=${timestamp}`
       );
       
-      if (response.ok) {
-        const data = await response.json();
-        console.log('📍 Driver locations data:', data);
-        console.log('📍 Individual driver data:', data.driver_locations?.[0]);
-        setDriverLocations(data.driver_locations || []);
-        setSuccess(`Found ${data.driver_locations?.length || 0} active drivers`);
+      // Also get driver details for contact information
+      const driversResponse = await fetch(
+        `http://192.168.254.110/LakbAI/LakbAI-API/routes/api.php/admin/drivers?t=${timestamp}`
+      );
+      
+      let driverLocations = [];
+      let driverDetails = [];
+      
+      if (locationsResponse.ok) {
+        const locationsResult = await locationsResponse.json();
+        console.log('📍 Location data from API:', locationsResult);
+        
+        if (locationsResult.status === 'success' && locationsResult.driver_locations) {
+          driverLocations = locationsResult.driver_locations.filter(driver => driver.shift_status === 'on_shift');
+        }
       } else {
-        console.error('API response error:', response.status, response.statusText);
-        setError('Failed to fetch driver locations');
+        console.error('❌ Failed to fetch locations:', locationsResponse.status, locationsResponse.statusText);
       }
+      
+      if (driversResponse.ok) {
+        const driversResult = await driversResponse.json();
+        console.log('🚗 Driver details from API:', driversResult);
+        
+        if (driversResult.status === 'success' && driversResult.drivers) {
+          driverDetails = driversResult.drivers;
+        }
+      } else {
+        console.error('❌ Failed to fetch driver details:', driversResponse.status, driversResponse.statusText);
+      }
+      
+      // Merge location data with driver details
+      const mergedDriverLocations = driverLocations.map(driver => {
+        const driverInfo = driverDetails.find(d => d.id == driver.driver_id);
+        
+        return {
+          driver_id: driver.driver_id,
+          driver_name: driver.driver_name,
+          jeepney_number: driver.jeepney_number || 'N/A',
+          current_location: driver.last_scanned_checkpoint || 'Unknown',
+          last_update: driver.last_update || 'Never',
+          estimated_arrival: driver.estimated_arrival || 'N/A',
+          status: driver.status || 'active',
+          shift_status: driver.shift_status,
+          phone: driverInfo?.phone || 'N/A',
+          email: driverInfo?.email || 'N/A'
+        };
+      });
+      
+      console.log('📍 Merged driver locations:', mergedDriverLocations);
+      console.log('🔄 Setting driver locations in state...');
+      setDriverLocations(mergedDriverLocations);
+      setLastUpdateTime(new Date());
+      setSuccess(`Found ${mergedDriverLocations.length} active drivers on this route`);
+      console.log('✅ Driver locations updated successfully');
     } catch (error) {
       console.error('Error fetching driver locations:', error);
       setError('Failed to fetch driver locations');
@@ -515,7 +594,7 @@ const CheckpointManagement = ({ visible, onClose }) => {
                 <div className="d-flex align-items-end">
                   <Button 
                     variant="primary" 
-                    onClick={fetchDriverLocations}
+                    onClick={forceRefresh}
                     disabled={!selectedRoute || loading}
                   >
                     {loading ? <Spinner animation="border" size="sm" className="me-2" /> : null}
@@ -528,38 +607,67 @@ const CheckpointManagement = ({ visible, onClose }) => {
 
             {driverLocations.length > 0 ? (
               <Card>
-                <Card.Header>
-                  <Card.Title className="mb-0">Active Drivers</Card.Title>
-                </Card.Header>
+        <Card.Header className="d-flex justify-content-between align-items-center">
+          <Card.Title className="mb-0">
+            <i className="bi bi-people-fill me-2"></i>
+            Active Drivers ({driverLocations.length})
+          </Card.Title>
+          <div className="d-flex align-items-center gap-2">
+            <Badge bg="success" className="pulse-animation">
+              <i className="bi bi-circle-fill me-1"></i>
+              Live Tracking
+            </Badge>
+            {loading && (
+              <Spinner animation="border" size="sm" variant="primary" />
+            )}
+            {lastUpdateTime && (
+              <small className="text-muted">
+                <i className="bi bi-clock me-1"></i>
+                Updated: {lastUpdateTime.toLocaleTimeString()}
+              </small>
+            )}
+          </div>
+        </Card.Header>
                 <Card.Body>
                   <Row>
                     {driverLocations.map((driver, index) => (
                       <Col md={6} lg={4} key={index} className="mb-3">
-                        <Card className="h-100">
+                        <Card className="h-100 border-success">
                           <Card.Body>
                             <div className="d-flex justify-content-between align-items-start mb-2">
                               <h6 className="mb-0">
-                                <i className="bi bi-truck me-2"></i>
+                                <i className="bi bi-truck me-2 text-success"></i>
                                 {driver.jeepney_number}
                               </h6>
-                              {getStatusBadge(driver.status)}
+                              <div className="d-flex flex-column align-items-end">
+                                {getStatusBadge(driver.status)}
+                                <Badge bg="success" className="mt-1 pulse-animation">
+                                  <i className="bi bi-circle-fill me-1"></i>
+                                  On Shift
+                                </Badge>
+                              </div>
                             </div>
                             <ListGroup variant="flush" className="border-0">
                               <ListGroup.Item className="px-0 py-1">
                                 <small className="text-muted">Driver:</small><br />
-                                {driver.driver_name}
+                                <strong>{driver.driver_name}</strong>
                               </ListGroup.Item>
                               <ListGroup.Item className="px-0 py-1">
                                 <small className="text-muted">Current Location:</small><br />
-                                <i className="bi bi-geo-alt me-1"></i>
-                                {driver.current_location || 'Unknown'}
+                                <i className="bi bi-geo-alt me-1 text-success"></i>
+                                <strong className="text-success">{driver.current_location || 'Unknown'}</strong>
                               </ListGroup.Item>
                               <ListGroup.Item className="px-0 py-1">
-                                <small className="text-muted">Last Update:</small><br />
-                                <i className="bi bi-clock me-1"></i>
+                                <small className="text-muted">Last QR Scan:</small><br />
+                                <i className="bi bi-qr-code me-1"></i>
                                 {formatLastUpdate(driver.last_update)}
                               </ListGroup.Item>
-                              {driver.estimated_arrival && (
+                              <ListGroup.Item className="px-0 py-1">
+                                <small className="text-muted">Contact:</small><br />
+                                <i className="bi bi-phone me-1"></i>
+                                {driver.phone || 'N/A'}
+                              </ListGroup.Item>
+                              {driver.estimated_arrival && driver.estimated_arrival !== 'N/A' && (
                                 <ListGroup.Item className="px-0 py-1">
                                   <small className="text-muted">Next Arrival:</small><br />
                                   <i className="bi bi-stopwatch me-1"></i>
@@ -638,6 +746,24 @@ const CheckpointManagement = ({ visible, onClose }) => {
           )}
         </Modal.Body>
       </Modal>
+      
+      <style jsx>{`
+        .pulse-animation {
+          animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+          0% {
+            opacity: 1;
+          }
+          50% {
+            opacity: 0.5;
+          }
+          100% {
+            opacity: 1;
+          }
+        }
+      `}</style>
     </Modal>
   );
 };

@@ -22,6 +22,7 @@ interface HomeViewProps {
   onNavigate: (view: ViewType) => void;
   onToggleDuty: () => void;
   onRefresh: () => void; // Required for automatic refresh
+  onRefreshLocation: () => void; // Required for location refresh
 }
 
 export const HomeView: React.FC<HomeViewProps> = ({
@@ -31,7 +32,8 @@ export const HomeView: React.FC<HomeViewProps> = ({
   lastScanTime,
   onNavigate,
   onToggleDuty,
-  onRefresh
+  onRefresh,
+  onRefreshLocation
 }) => {
   // Auto-refresh earnings on HomeView with database polling
   useEffect(() => {
@@ -213,6 +215,8 @@ export const HomeView: React.FC<HomeViewProps> = ({
         icon={MapPin}
         iconColor="#22C55E"
         rows={statusRows}
+        onRefresh={onRefreshLocation}
+        showRefreshButton={true}
       />
 
       {/* Duty Toggle */}

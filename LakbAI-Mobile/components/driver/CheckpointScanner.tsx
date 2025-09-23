@@ -165,11 +165,11 @@ export const CheckpointScanner: React.FC<CheckpointScannerProps> = ({
       };
       
       console.log('📡 Sending scan request:', {
-        url: `${baseUrl}/api/mobile/driver/scan/checkpoint`,
+        url: `${baseUrl}/mobile/driver/scan/checkpoint`,
         payload
       });
       
-      const response = await fetch(`${baseUrl}/api/mobile/driver/scan/checkpoint`, {
+      const response = await fetch(`${baseUrl}/mobile/driver/scan/checkpoint`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -181,9 +181,10 @@ export const CheckpointScanner: React.FC<CheckpointScannerProps> = ({
       console.log('📡 API response:', result);
       
       if (result.status === 'success') {
-        // Update local driver location
+        // Update local driver location with the actual checkpoint name from API response
+        const checkpointName = result.data?.checkpoint?.name || qrData.checkpoint_name;
         onLocationUpdate(
-          qrData.checkpoint_name, 
+          checkpointName, 
           result.data?.scan_timestamp || new Date().toISOString()
         );
         
@@ -421,69 +422,96 @@ export const CheckpointScanner: React.FC<CheckpointScannerProps> = ({
       setProcessing(true);
 
       try {
-        // Use trip logic instead of just API call
-        const result = await handleTripLogic(checkpointQR);
-        setLastScanResult(result);
+        // First, process the checkpoint scan to update location in backend
+        const scanResult = await processCheckpointScan(checkpointQR);
         
-        if (result.status === 'success') {
-          // Show different alerts based on checkpoint type
-          const checkpointType = checkpointQR.is_origin ? 'start' : 
-                                (checkpointQR.is_destination ? 'end' : 'checkpoint');
+        if (scanResult.status === 'success') {
+          // Update local location immediately
+          const checkpointName = scanResult.data?.checkpoint?.name || checkpointQR.checkpoint_name;
+          onLocationUpdate(
+            checkpointName, 
+            scanResult.data?.scan_timestamp || new Date().toISOString()
+          );
           
-          let alertTitle = '✅ Location Updated!';
-          let alertMessage = `Successfully scanned ${checkpointQR.checkpoint_name}.\n\nRoute: ${checkpointQR.route_name}\n\n`;
+          // Then handle trip logic
+          const result = await handleTripLogic(checkpointQR);
+          setLastScanResult(result);
           
-          if (checkpointType === 'start') {
-            alertTitle = '🚍 Trip Started!';
-            alertMessage += `Trip started from ${checkpointQR.checkpoint_name}.\n\nPassengers have been notified.`;
-          } else if (checkpointType === 'end') {
-            alertTitle = '✅ Trip Completed!';
-            alertMessage += `Trip completed! You have finished 1 trip.\n\nYour shift will now end.`;
-          } else {
-            alertMessage += `Location updated: ${checkpointQR.checkpoint_name}.\n\nPassengers have been notified of your location.`;
-          }
+          if (result.status === 'success') {
+            // Show different alerts based on checkpoint type
+            const checkpointType = checkpointQR.is_origin ? 'start' : 
+                                  (checkpointQR.is_destination ? 'end' : 'checkpoint');
+            
+            let alertTitle = '✅ Location Updated!';
+            let alertMessage = `Successfully scanned ${checkpointQR.checkpoint_name}.\n\nRoute: ${checkpointQR.route_name}\n\n`;
+            
+            if (checkpointType === 'start') {
+              alertTitle = '🚍 Trip Started!';
+              alertMessage += `Trip started from ${checkpointQR.checkpoint_name}.\n\nPassengers have been notified.`;
+            } else if (checkpointType === 'end') {
+              alertTitle = '✅ Trip Completed!';
+              alertMessage += `Trip completed! You have finished 1 trip.\n\nYour shift will now end.`;
+            } else {
+              alertMessage += `Location updated: ${checkpointQR.checkpoint_name}.\n\nPassengers have been notified of your location.`;
+            }
 
-          Alert.alert(
-            alertTitle,
-            alertMessage,
-            [
-              {
-                text: 'Continue',
-                onPress: () => {
-                  setScanned(false);
-                  isHandlingScanRef.current = false;
+            Alert.alert(
+              alertTitle,
+              alertMessage,
+              [
+                {
+                  text: 'Continue',
+                  onPress: () => {
+                    setScanned(false);
+                    isHandlingScanRef.current = false;
+                  }
                 }
-              }
-            ]
-          );
-          
-          onScanSuccess?.(result);
-        } else if (result.status === 'warning') {
-          Alert.alert(
-            '⚠️ Warning',
-            result.message,
-            [
-              {
-                text: 'Continue Anyway',
-                onPress: () => {
-                  setScanned(false);
-                  isHandlingScanRef.current = false;
+              ]
+            );
+            
+            onScanSuccess?.(result);
+          } else if (result.status === 'warning') {
+            Alert.alert(
+              '⚠️ Warning',
+              result.message,
+              [
+                {
+                  text: 'Continue Anyway',
+                  onPress: () => {
+                    setScanned(false);
+                    isHandlingScanRef.current = false;
+                  }
+                },
+                {
+                  text: 'Cancel',
+                  style: 'cancel',
+                  onPress: () => {
+                    setScanned(false);
+                    isHandlingScanRef.current = false;
+                  }
                 }
-              },
-              {
-                text: 'Cancel',
-                style: 'cancel',
-                onPress: () => {
-                  setScanned(false);
-                  isHandlingScanRef.current = false;
+              ]
+            );
+          } else {
+            Alert.alert(
+              '❌ Trip Logic Failed',
+              result.message,
+              [
+                {
+                  text: 'Try Again',
+                  onPress: () => {
+                    setScanned(false);
+                    isHandlingScanRef.current = false;
+                  }
                 }
-              }
-            ]
-          );
+              ]
+            );
+          }
         } else {
+          // Scan failed - show error
           Alert.alert(
             '❌ Scan Failed',
-            result.message,
+            scanResult.message,
             [
               {
                 text: 'Try Again',

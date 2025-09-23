@@ -71,7 +71,7 @@ export interface LoginResponse {
 }
 
 class DriverAuthService {
-  private readonly API_BASE_URL = 'http://localhost/LakbAI-API'; // Update based on environment
+  private readonly API_BASE_URL = 'http://192.168.254.110/LakbAI/LakbAI-API'; // Updated for Joseph's setup
   private currentDriver: DriverProfile | null = null;
   private authToken: string | null = null;
 
@@ -83,13 +83,12 @@ class DriverAuthService {
       console.log('🔐 Attempting driver login:', { username: credentials.username });
 
       // Use the existing authentication API
-      const response = await fetch(`${buildAuth0Url().replace('/routes/auth0.php', '/routes/auth_routes.php')}`, {
+      const response = await fetch(`${buildAuth0Url()}/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          action: 'login',
           username: credentials.username,
           password: credentials.password,
         }),
@@ -161,16 +160,8 @@ class DriverAuthService {
   private async transformUserToDriverProfile(user: any): Promise<DriverProfile> {
     const now = new Date().toISOString();
     
-    // Mock jeepney assignment - in production, fetch from database
-    const mockJeepneyAssignment = {
-      id: `jeep_${user.id}`,
-      jeepneyNumber: `LKB-${String(user.id).padStart(3, '0')}`,
-      plateNumber: `ABC ${String(user.id * 123).padStart(4, '0')}`,
-      model: 'Toyota Coaster',
-      capacity: 18,
-      route: this.getDriverRoute(user),
-      status: 'active' as const
-    };
+    // Fetch real jeepney assignment from API
+    const jeepneyAssignment = await this.getDriverJeepneyAssignment(user);
 
     return {
       id: `driver_${user.id}`,
@@ -183,7 +174,7 @@ class DriverAuthService {
       dateOfBirth: user.birthday,
       profileImageUrl: user.picture || `https://via.placeholder.com/150/0066cc/ffffff?text=${user.first_name?.charAt(0) || 'D'}${user.last_name?.charAt(0) || 'R'}`,
       
-      assignedJeepney: mockJeepneyAssignment,
+      assignedJeepney: jeepneyAssignment,
 
       status: user.is_verified ? 'active' : 'inactive',
       verificationStatus: user.is_verified ? 'verified' : 'pending',
@@ -213,19 +204,49 @@ class DriverAuthService {
   }
 
   /**
-   * Get driver route based on location
+   * Get driver's jeepney assignment from API
    */
-  private getDriverRoute(user: any): string {
+  private async getDriverJeepneyAssignment(user: any): Promise<any> {
+    try {
+      const response = await fetch(`${this.API_BASE_URL}/jeepneys`);
+      if (response.ok) {
+        const data = await response.json();
+        const jeepney = data.jeepneys?.find((j: any) => j.driver_id === user.id);
+        if (jeepney) {
+          return {
+            id: jeepney.id,
+            jeepneyNumber: jeepney.jeepney_number,
+            plateNumber: jeepney.plate_number || `ABC ${String(user.id * 123).padStart(4, '0')}`,
+            model: jeepney.model || 'Toyota Coaster',
+            capacity: jeepney.capacity || 18,
+            route: jeepney.route_name,
+            status: 'active' as const
+          };
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to fetch jeepney assignment from API, using fallback:', error);
+    }
+    
+    // Fallback to mock data if API fails
     const routes = [
-      'Robinson Tejero - Robinson Pala-pala',
+      'SM Epza → SM Dasmariñas',
+      'SM Dasmariñas → SM Epza',
       'Ayala Center - Lahug', 
       'SM City Cebu - IT Park',
       'Colon Street - USC Main',
       'Fuente Circle - Capitol Site'
     ];
     
-    // Use user ID to consistently assign route
-    return routes[user.id % routes.length];
+    return {
+      id: `jeep_${user.id}`,
+      jeepneyNumber: `LKB-${String(user.id).padStart(3, '0')}`,
+      plateNumber: `ABC ${String(user.id * 123).padStart(4, '0')}`,
+      model: 'Toyota Coaster',
+      capacity: 18,
+      route: routes[user.id % routes.length],
+      status: 'active' as const
+    };
   }
 
   /**
@@ -269,7 +290,7 @@ class DriverAuthService {
           plateNumber: 'ABC 1234',
           model: 'Toyota Coaster',
           capacity: 18,
-          route: 'Robinson Tejero - Robinson Pala-pala',
+          route: 'SM Epza → SM Dasmariñas',
           status: 'active'
         },
 

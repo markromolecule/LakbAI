@@ -4,7 +4,7 @@
  */
 
 // CHANGE THIS TO YOUR LOCAL IP ADDRESS
-export const DEVELOPER_IP = '192.168.254.110:8000';
+export const DEVELOPER_IP = '192.168.254.110';
 
 // Instructions for co-developers:
 // 1. Find your computer's IP address:
@@ -26,8 +26,8 @@ export const DEVELOPER_IP = '192.168.254.110:8000';
 
 // Alternative configuration for different developers
 export const DEVELOPER_IPS = {
-  joseph: '192.168.254.110:8000',
-  jiro: 'localhost:8000', // For tunnel mode users
+  joseph: '192.168.254.110',
+  jiro: 'localhost', // For local XAMPP development
 };
 
 // Set which developer to use (change this to your name)
@@ -48,13 +48,13 @@ export const buildApiUrl = (): string => {
 export const buildAuth0Url = (): string => {
   const ip = getCurrentDeveloperIP();
   // The IP already includes the port, so don't add another one
-  return `http://${ip}/routes/auth0.php`;
+  return `http://${ip}/LakbAI/LakbAI-API/routes/api.php`;
 };
 
 // Get the base URL for the project
 export const getBaseUrl = (): string => {
   const ip = getCurrentDeveloperIP();
-  return `http://${ip}/LakbAI`;
+  return `http://${ip}/LakbAI/LakbAI-API/routes/api.php`;
 };
 
 // Helper to log current configuration

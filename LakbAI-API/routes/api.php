@@ -42,7 +42,7 @@ $jeepneyController = new JeepneyController($app->get('PDO'));
 $driverController = new DriverController($app->get('PDO'));
 $routeController = new RouteController($app->get('PDO'));
 $checkpointController = new CheckpointController($app->get('PDO'));
-$earningsController = new EarningsController();
+$earningsController = new EarningsController($app->get('PDO'));
 $fileUploadController = new FileUploadController($app->get('Database'));
 $discountController = new DiscountController($app->get('Database'));
 $notificationController = new NotificationController($app->get('PDO'));
@@ -52,21 +52,29 @@ $method = $_SERVER['REQUEST_METHOD'];
 $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 $rawParts = array_values(array_filter(explode('/', trim($path, '/'))));
 
-// Normalize path: support both /LakbAI/LakbAI-API/api/... and /api/...
+// Normalize path: support both /LakbAI/LakbAI-API/routes/api.php/... and /api/...
 $idxApiRoot = array_search('LakbAI-API', $rawParts, true);
 if ($idxApiRoot !== false) {
     $rawParts = array_slice($rawParts, $idxApiRoot + 1);
+}
+// Remove 'routes' and 'api.php' from the path
+if (isset($rawParts[0]) && $rawParts[0] === 'routes') {
+    $rawParts = array_slice($rawParts, 1);
+}
+if (isset($rawParts[0]) && $rawParts[0] === 'api.php') {
+    $rawParts = array_slice($rawParts, 1);
 }
 if (isset($rawParts[0]) && $rawParts[0] === 'api') {
     $rawParts = array_slice($rawParts, 1);
 }
 
-// Debug logging (remove in production)
-error_log("API Request - Method: $method, Path: $path");
-error_log("RawParts: " . json_encode($rawParts));
-
 // Use normalized parts
 $pathParts = $rawParts;
+
+// Debug logging (remove in production)
+// error_log("API Request - Method: $method, Path: $path");
+// error_log("RawParts: " . json_encode($rawParts));
+// error_log("PathParts: " . json_encode($pathParts));
 
 // Get request data
 $input = [];
@@ -726,14 +734,80 @@ try {
     // PUBLIC ROUTES (for frontend access)
     // ===================================
     
-    // GET /routes - Public access to routes
+    // GET /routes - Public access to routes (direct path)
+    if ($pathParts[0] === 'routes' && $method === 'GET' && count($pathParts) === 1) {
+        $result = $routeController->getAllRoutes();
+        echo json_encode($result);
+        exit;
+    }
+    
+    // GET /routes - Public access to routes (nested path)
     if (isset($pathParts[2]) && $pathParts[2] === 'routes' && $method === 'GET' && count($pathParts) === 3) {
         $result = $routeController->getAllRoutes();
         echo json_encode($result);
         exit;
     }
     
-    // GET /routes/{id}/checkpoints - Get checkpoints for a specific route
+    // GET /jeepneys - Public access to jeepneys (direct path)
+    if ($pathParts[0] === 'jeepneys' && $method === 'GET' && count($pathParts) === 1) {
+        $result = $jeepneyController->getAllJeepneys();
+        echo json_encode($result);
+        exit;
+    }
+    
+    // GET /mobile/locations/route/{routeId} - Direct path for driver locations
+    if ($pathParts[0] === 'mobile' && $pathParts[1] === 'locations' && $pathParts[2] === 'route' && $method === 'GET' && count($pathParts) === 4) {
+        $routeId = $pathParts[3];
+        $result = $checkpointController->getDriverLocationsForRoute($routeId);
+        echo json_encode($result);
+        exit;
+    }
+    
+    // POST /mobile/driver/scan/checkpoint - Direct path for checkpoint scanning
+    if ($pathParts[0] === 'mobile' && $pathParts[1] === 'driver' && $pathParts[2] === 'scan' && $pathParts[3] === 'checkpoint' && $method === 'POST' && count($pathParts) === 4) {
+        $driverId = $input['driver_id'] ?? null;
+        $qrData = $input['qr_data'] ?? null;
+        $scanTimestamp = $input['scan_timestamp'] ?? null;
+
+        if (!$driverId || !$qrData) {
+            echo json_encode([
+                "status" => "error",
+                "message" => "Driver ID and QR data are required"
+            ]);
+            exit;
+        }
+
+        $result = $checkpointController->processDriverScan($driverId, $qrData, $scanTimestamp);
+        echo json_encode($result);
+        exit;
+    }
+    
+    // GET /routes/{id}/checkpoints - Get checkpoints for a specific route (direct path)
+    if ($pathParts[0] === 'routes' && $method === 'GET' && count($pathParts) === 3 && $pathParts[2] === 'checkpoints') {
+        $routeId = $pathParts[1];
+        $result = $checkpointController->getCheckpointsByRoute($routeId);
+        echo json_encode($result);
+        exit;
+    }
+    
+    // POST /admin/checkpoints/qr/generate/{checkpointId}/{routeId} - Direct path for single QR generation
+    if ($pathParts[0] === 'admin' && $pathParts[1] === 'checkpoints' && $pathParts[2] === 'qr' && $pathParts[3] === 'generate' && $method === 'POST' && count($pathParts) === 6) {
+        $checkpointId = $pathParts[4];
+        $routeId = $pathParts[5];
+        $result = $checkpointController->generateCheckpointQR($checkpointId, $routeId);
+        echo json_encode($result);
+        exit;
+    }
+    
+    // POST /admin/checkpoints/qr/route/{routeId} - Direct path for route QR generation
+    if ($pathParts[0] === 'admin' && $pathParts[1] === 'checkpoints' && $pathParts[2] === 'qr' && $pathParts[3] === 'route' && $method === 'POST' && count($pathParts) === 5) {
+        $routeId = $pathParts[4];
+        $result = $checkpointController->generateRouteQRCodes($routeId);
+        echo json_encode($result);
+        exit;
+    }
+    
+    // GET /routes/{id}/checkpoints - Get checkpoints for a specific route (nested path)
     if (isset($pathParts[2]) && $pathParts[2] === 'routes' && $method === 'GET' && count($pathParts) === 5 && $pathParts[4] === 'checkpoints') {
         $routeId = $pathParts[3];
         $result = $checkpointController->getCheckpointsByRoute($routeId);

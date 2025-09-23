@@ -158,6 +158,7 @@ export const homeStyles = StyleSheet.create({
   sectionHeader: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "space-between",
     marginBottom: 12,
   },
   sectionTitle: {
@@ -165,6 +166,12 @@ export const homeStyles = StyleSheet.create({
     fontWeight: "600",
     color: "#1F2937",
     marginLeft: 8,
+    flex: 1,
+  },
+  refreshButton: {
+    padding: 4,
+    borderRadius: 4,
+    backgroundColor: "#F3F4F6",
   },
   statusInfo: {
     gap: 12,

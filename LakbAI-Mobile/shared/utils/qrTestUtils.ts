@@ -5,7 +5,7 @@ import { QRCodeData } from '../types';
 export const generateDriverPickupQR = (
   driverId: string = 'driver_001',
   jeepneyId: string = 'LKB-001',
-  route: string = 'Robinson Tejero - Robinson Pala-pala'
+  route: string = 'SM Epza → SM Dasmariñas' 
 ): string => {
   const qrData: QRCodeData = {
     type: 'driver_pickup',
@@ -21,7 +21,7 @@ export const generateDriverPickupQR = (
 export const generatePaymentQR = (
   amount: number = 25,
   jeepneyId: string = 'LKB-001',
-  route: string = 'Robinson Tejero - Robinson Pala-pala',
+  route: string = 'SM Epza → SM Dasmariñas',
   description?: string
 ): string => {
   const qrData: QRCodeData = {

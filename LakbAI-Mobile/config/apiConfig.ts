@@ -4,7 +4,8 @@ import Constants from 'expo-constants';
 // Network configuration for different developers
 const DEVELOPER_CONFIGS: { [key: string]: string } = {
   joseph: '192.168.254.110',
-  jiro: '192.168.254.111',  
+  jiro: '192.168.254.111',
+  localhost: 'localhost'
 };
 
 // Tunnel mode configuration
@@ -36,7 +37,7 @@ const getApiBaseUrl = (): string => {
   if (__DEV__) {
     // Development mode - use local server
     const developer = getCurrentDeveloper();
-    const ip = DEVELOPER_CONFIGS[developer] || DEVELOPER_CONFIGS.jiro;
+    const ip = DEVELOPER_CONFIGS[developer] || DEVELOPER_CONFIGS.joseph;
     
     console.log('API Config Debug:', {
       developer,
@@ -54,8 +55,8 @@ const getApiBaseUrl = (): string => {
       return `http://${ip}/LakbAI/LakbAI-API/routes/api.php`;
     }
     
-    // Regular LAN mode (no port specified) - add port 8000
-    return `http://${ip}:8000/LakbAI/LakbAI-API/routes/api.php`;
+    // Regular LAN mode (no port specified) - use port 80 for XAMPP
+    return `http://${ip}/LakbAI/LakbAI-API/routes/api.php`;
   } else {
     // Production mode - use production server
     return 'https://your-production-domain.com/LakbAI/LakbAI-API/routes/api.php';

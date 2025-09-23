@@ -20,6 +20,13 @@ const DriverStatusContainer = ({ onDataUpdate }) => {
 
   useEffect(() => {
     loadDrivers();
+    
+    // Auto-refresh driver status every 30 seconds
+    const interval = setInterval(() => {
+      loadDrivers();
+    }, 30000);
+    
+    return () => clearInterval(interval);
   }, []);
 
   const loadDrivers = async () => {
@@ -28,7 +35,7 @@ const DriverStatusContainer = ({ onDataUpdate }) => {
       setError(null);
 
       // Fetch real driver status from the API
-      const response = await fetch('http://localhost:80/LakbAI/LakbAI-API/routes/api.php/admin/drivers');
+      const response = await fetch('http://192.168.254.110/LakbAI/LakbAI-API/routes/api.php/admin/drivers');
       
       if (response.ok) {
         const data = await response.json();
@@ -38,7 +45,10 @@ const DriverStatusContainer = ({ onDataUpdate }) => {
           const driversWithStatus = data.drivers.map(driver => ({
             ...driver,
             shift_status: driver.shift_status || 'off_shift',
-            last_active: driver.last_active || driver.updated_at || driver.created_at
+            last_active: driver.last_active || driver.updated_at || driver.created_at,
+            // Add real-time status indicators
+            is_active: driver.shift_status === 'on_shift',
+            status_updated: new Date(driver.last_active || driver.updated_at || driver.created_at)
           }));
           
           setDrivers(driversWithStatus);
@@ -53,7 +63,9 @@ const DriverStatusContainer = ({ onDataUpdate }) => {
             const driversWithStatus = (result.users || []).map(driver => ({
               ...driver,
               shift_status: 'off_shift', // Default to off_shift if no real data
-              last_active: driver.updated_at || driver.created_at
+              last_active: driver.updated_at || driver.created_at,
+              is_active: false,
+              status_updated: new Date(driver.updated_at || driver.created_at)
             }));
             
             setDrivers(driversWithStatus);
@@ -72,7 +84,9 @@ const DriverStatusContainer = ({ onDataUpdate }) => {
           const driversWithStatus = (result.users || []).map(driver => ({
             ...driver,
             shift_status: 'off_shift', // Default to off_shift if no real data
-            last_active: driver.updated_at || driver.created_at
+            last_active: driver.updated_at || driver.created_at,
+            is_active: false,
+            status_updated: new Date(driver.updated_at || driver.created_at)
           }));
           
           setDrivers(driversWithStatus);
@@ -96,8 +110,14 @@ const DriverStatusContainer = ({ onDataUpdate }) => {
   const getStatusStats = () => {
     const active = drivers.filter(d => d.shift_status === 'on_shift').length;
     const offline = drivers.filter(d => d.shift_status === 'off_shift').length;
+    const recentlyActive = drivers.filter(d => {
+      if (!d.status_updated) return false;
+      const now = new Date();
+      const diffMinutes = (now - d.status_updated) / (1000 * 60);
+      return diffMinutes <= 5; // Active in last 5 minutes
+    }).length;
     
-    return { active, offline, total: drivers.length };
+    return { active, offline, recentlyActive, total: drivers.length };
   };
 
   const DriverCard = ({ driver }) => (
@@ -136,8 +156,17 @@ const DriverStatusContainer = ({ onDataUpdate }) => {
 
             <small className="text-muted">
               <i className="bi bi-clock me-1"></i>
-              Last Active: {driver.last_active.toLocaleString()}
+              Last Active: {driver.status_updated ? driver.status_updated.toLocaleString() : 'Unknown'}
             </small>
+            
+            {driver.is_active && (
+              <div className="mt-2">
+                <Badge bg="success" className="pulse-animation">
+                  <i className="bi bi-circle-fill me-1"></i>
+                  Live
+                </Badge>
+              </div>
+            )}
           </Col>
 
           <Col md={4}>
@@ -199,27 +228,37 @@ const DriverStatusContainer = ({ onDataUpdate }) => {
     <div>
       {/* Status Statistics */}
       <Row className="mb-4">
-        <Col md={4}>
+        <Col md={3}>
           <Card className="border-0 bg-success text-white">
             <Card.Body className="text-center">
               <i className="bi bi-car-front-fill fs-1 mb-2 opacity-75"></i>
               <h3 className="mb-1">{stats.active}</h3>
-              <small className="text-uppercase fw-bold">Active Drivers</small>
+              <small className="text-uppercase fw-bold">On Shift</small>
             </Card.Body>
           </Card>
         </Col>
         
-        <Col md={4}>
+        <Col md={3}>
+          <Card className="border-0 bg-info text-white">
+            <Card.Body className="text-center">
+              <i className="bi bi-activity fs-1 mb-2 opacity-75"></i>
+              <h3 className="mb-1">{stats.recentlyActive}</h3>
+              <small className="text-uppercase fw-bold">Recently Active</small>
+            </Card.Body>
+          </Card>
+        </Col>
+        
+        <Col md={3}>
           <Card className="border-0 bg-secondary text-white">
             <Card.Body className="text-center">
               <i className="bi bi-pause-circle-fill fs-1 mb-2 opacity-75"></i>
               <h3 className="mb-1">{stats.offline}</h3>
-              <small className="text-uppercase fw-bold">Offline Drivers</small>
+              <small className="text-uppercase fw-bold">Offline</small>
             </Card.Body>
           </Card>
         </Col>
         
-        <Col md={4}>
+        <Col md={3}>
           <Card className="border-0 bg-primary text-white">
             <Card.Body className="text-center">
               <i className="bi bi-people-fill fs-1 mb-2 opacity-75"></i>
@@ -295,10 +334,28 @@ const DriverStatusContainer = ({ onDataUpdate }) => {
       {/* Information Alert */}
       <Alert variant="info" className="mt-4">
         <i className="bi bi-info-circle me-2"></i>
-        <strong>Note:</strong> Driver shift status is managed through the mobile application. 
-        This view shows the current status based on driver check-ins. To implement real-time 
-        status tracking, additional database fields and API endpoints would be needed.
+        <strong>Real-time Status:</strong> Driver status updates automatically every 30 seconds. 
+        Drivers marked as "Live" are currently on shift and actively scanning checkpoints. 
+        Status changes are reflected immediately when drivers start or end their shifts.
       </Alert>
+      
+      <style jsx>{`
+        .pulse-animation {
+          animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+          0% {
+            opacity: 1;
+          }
+          50% {
+            opacity: 0.5;
+          }
+          100% {
+            opacity: 1;
+          }
+        }
+      `}</style>
     </div>
   );
 };
