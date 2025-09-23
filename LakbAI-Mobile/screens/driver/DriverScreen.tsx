@@ -10,7 +10,6 @@ import { QRGenerator } from './components/QRGenerator';
 import { Header } from '../../components/common/Header';
 import { Footer } from '../../components/common/Footer';
 import { COLORS } from '../../shared/themes/colors';
-import { FARE_MATRIX } from '../../constants/fareMatrix';
 import { driverStyles } from './styles';
 
 export const DriverScreen: React.FC = () => {
@@ -73,7 +72,6 @@ export const DriverScreen: React.FC = () => {
         return (
           <FareView
             driverProfile={driverProfile}
-            fareMatrix={FARE_MATRIX}
           />
         );
       case 'profile':

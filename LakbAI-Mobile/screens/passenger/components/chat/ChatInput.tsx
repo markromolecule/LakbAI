@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
-import React from 'react';
-import { StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
+import React, { useRef } from 'react';
+import { StyleSheet, TextInput, TouchableOpacity, View, Keyboard } from 'react-native';
 import { COLORS, SPACING } from '../../../../shared/styles';
 
 interface ChatInputProps {
@@ -16,16 +16,35 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   onSend,
   placeholder = "Type your message..."
 }) => {
+  const textInputRef = useRef<TextInput>(null);
+
+  const handleSend = () => {
+    if (value.trim()) {
+      onSend();
+      // Dismiss keyboard after sending
+      Keyboard.dismiss();
+    }
+  };
+
   return (
     <View style={styles.container}>
       <TextInput
+        ref={textInputRef}
         style={styles.input}
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
         multiline
+        returnKeyType="send"
+        onSubmitEditing={handleSend}
+        blurOnSubmit={false}
+        textAlignVertical="top"
       />
-      <TouchableOpacity style={styles.sendButton} onPress={onSend}>
+      <TouchableOpacity 
+        style={[styles.sendButton, !value.trim() && styles.sendButtonDisabled]} 
+        onPress={handleSend}
+        disabled={!value.trim()}
+      >
         <Ionicons name="send" size={20} color={COLORS.white} />
       </TouchableOpacity>
     </View>
@@ -46,10 +65,20 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.sm,
     marginRight: SPACING.sm,
     maxHeight: 100,
+    minHeight: 40,
+    fontSize: 16,
   },
   sendButton: {
     backgroundColor: COLORS.primary,
     padding: SPACING.md,
     borderRadius: SPACING.md,
+    minWidth: 44,
+    minHeight: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  sendButtonDisabled: {
+    backgroundColor: COLORS.gray300,
+    opacity: 0.6,
   },
 });

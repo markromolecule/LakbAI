@@ -1,20 +1,22 @@
 import { useCallback, useState } from 'react';
 import { ChatMessage } from '../../../shared/types';
+import { biyaBotService, BotResponse } from '../../../shared/services/biyaBotService';
 
 const INITIAL_MESSAGE: ChatMessage = {
   type: 'bot',
-  message: "Hi! I’m Biya, your LakbAI assistant. Need help with routes, fares, or something else?",
+  message: "Hello! I'm Biya, your LakbAI assistant! 😊 I can help you with fares, routes, and schedules in English or Tagalog! Just ask me anything! 🤗",
   timestamp: new Date()
 };
 
 export const useChat = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([INITIAL_MESSAGE]);
+  const [isLoading, setIsLoading] = useState(false);
 
   const addMessage = useCallback((message: ChatMessage) => {
     setMessages(prev => [...prev, { ...message, timestamp: new Date() }]);
   }, []);
 
-  const sendMessage = useCallback((text: string) => {
+  const sendMessage = useCallback(async (text: string) => {
     if (!text.trim()) return;
 
     const userMessage: ChatMessage = {
@@ -24,37 +26,55 @@ export const useChat = () => {
     };
 
     addMessage(userMessage);
+    setIsLoading(true);
 
-    // Simulate bot response
-    setTimeout(() => {
-      let botResponse = '';
-      const lowerText = text.toLowerCase();
-
-      if (lowerText.includes('fare')) {
-        botResponse = 'To calculate your fare, please tell me your pickup and destination points.';
-      } else if (lowerText.includes('time') || lowerText.includes('arrive')) {
-        botResponse = 'Based on current traffic, the estimated arrival time is 5-7 minutes.';
-      } else if (lowerText.includes('route')) {
-        botResponse = 'This jeepney follows the Tejero - Pala-pala route';
-      } else if (lowerText.includes('emergency')) {
-        botResponse = 'Emergency contacts: Police 117, Fire 116, Medical 911. Jeepney dispatch: (046) 123-4567';
-      } else {
-        botResponse = "I'm here to help with fare calculations, route information, and arrival times. What would you like to know?";
-      }
+    try {
+      console.log('🤖 Processing user message:', text);
+      
+      // Process message with smart bot service
+      const botResponse: BotResponse = await biyaBotService.processMessage(text);
+      
+      console.log('🤖 Bot response:', botResponse);
 
       const botMessage: ChatMessage = {
         type: 'bot',
-        message: botResponse,
+        message: botResponse.message,
         timestamp: new Date()
       };
 
       addMessage(botMessage);
-    }, 1000);
+
+      // Add suggestions if available
+      if (botResponse.suggestions && botResponse.suggestions.length > 0) {
+        setTimeout(() => {
+          const suggestionMessage: ChatMessage = {
+            type: 'bot',
+            message: `💡 Quick suggestions:\n${botResponse.suggestions.map(s => `• ${s}`).join('\n')}`,
+            timestamp: new Date()
+          };
+          addMessage(suggestionMessage);
+        }, 500);
+      }
+
+    } catch (error) {
+      console.error('❌ Chat error:', error);
+      
+      const errorMessage: ChatMessage = {
+        type: 'bot',
+        message: 'Sorry, I encountered an error. Please try again or ask me something else!',
+        timestamp: new Date()
+      };
+
+      addMessage(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
   }, [addMessage]);
 
   return {
     messages,
     sendMessage,
-    addMessage
+    addMessage,
+    isLoading
   };
 };
