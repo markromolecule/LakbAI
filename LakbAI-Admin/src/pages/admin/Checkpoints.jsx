@@ -11,8 +11,8 @@ const Checkpoints = () => {
       title="Checkpoint Management System"
       subtitle="Generate QR codes for checkpoints, monitor real-time driver locations, and manage passenger notifications."
     >
-      <Row>
-        <Col lg={4} md={6} className="mb-4">
+      <Row className="justify-content-center">
+        <Col lg={5} md={6} className="mb-4">
           <Card className="h-100 border-0 shadow-sm">
             <Card.Body className="text-center p-4">
               <div className="mb-3">
@@ -33,7 +33,7 @@ const Checkpoints = () => {
           </Card>
         </Col>
 
-        <Col lg={4} md={6} className="mb-4">
+        <Col lg={5} md={6} className="mb-4">
           <Card className="h-100 border-0 shadow-sm">
             <Card.Body className="text-center p-4">
               <div className="mb-3">
@@ -55,8 +55,8 @@ const Checkpoints = () => {
         </Col>
       </Row>
 
-      <Row className="mt-4">
-        <Col>
+      <Row className="mt-4 justify-content-center">
+        <Col lg={10}>
           <Card className="border-0 shadow-sm">
             <Card.Header className="bg-light">
               <h5 className="mb-0">System Features</h5>
