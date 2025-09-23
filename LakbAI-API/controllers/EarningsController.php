@@ -5,10 +5,14 @@ require_once __DIR__ . '/../config/db.php';
 class EarningsController {
     private $db;
 
-    public function __construct() {
-        // Get PDO connection directly
-        $this->db = new PDO('mysql:host=127.0.0.1;dbname=lakbai_db', 'root', '');
-        $this->db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    public function __construct($db = null) {
+        if ($db) {
+            $this->db = $db;
+        } else {
+            // Fallback to direct PDO connection
+            $this->db = new PDO('mysql:host=127.0.0.1;dbname=lakbai_db', 'root', '');
+            $this->db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        }
     }
 
     /**

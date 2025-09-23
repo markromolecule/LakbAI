@@ -107,7 +107,7 @@ class AuthService {
       console.log('📤 Registration data:', JSON.stringify(registrationData, null, 2));
       
       // Call the backend registration endpoint
-      const response = await fetch(`${buildAuth0Url().replace('/routes/auth0.php', '/routes/auth_routes.php')}`, {
+      const response = await fetch(`${buildAuth0Url()}/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -240,13 +240,12 @@ class AuthService {
       console.log('🔐 Attempting traditional login for user:', credentials.username);
       
       // Call the backend traditional login endpoint
-      const response = await fetch(`${buildAuth0Url().replace('/routes/auth0.php', '/routes/auth_routes.php')}`, {
+      const response = await fetch(`${buildAuth0Url()}/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          action: 'login',
           username: credentials.username,
           password: credentials.password,
         }),

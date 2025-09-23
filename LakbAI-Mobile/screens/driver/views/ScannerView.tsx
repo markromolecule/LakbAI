@@ -155,7 +155,14 @@ export const ScannerView: React.FC<ScannerViewProps> = ({
           timestamp: parsed.generated_at || parsed.timestamp || new Date().toISOString(),
           adminId: parsed.admin_id || parsed.adminId || '',
           purpose: parsed.purpose || 'checkpoint_scan',
-          metadata: parsed
+          metadata: {
+            ...parsed,
+            route_id: parsed.route_id || parsed.routeId,
+            sequence_order: parsed.sequence_order || parsed.sequenceOrder,
+            fare_from_origin: parsed.fare_from_origin || parsed.fareFromOrigin,
+            is_origin: parsed.is_origin,
+            is_destination: parsed.is_destination
+          }
         };
         
         console.log('🔍 Mapped QR data:', mappedData);
@@ -168,6 +175,98 @@ export const ScannerView: React.FC<ScannerViewProps> = ({
     } catch (error) {
       console.log('❌ QR parsing error:', error);
       return null;
+    }
+  };
+
+  const updateBackendLocation = async (qrData: RouteCheckpointQRData) => {
+    try {
+      const { getBaseUrl } = await import('../../../config/apiConfig');
+      const baseUrl = getBaseUrl();
+      
+      // Get dynamic route information from QR data or driver's assigned route
+      // Priority: QR metadata > Driver's assigned route > Default fallback
+      let routeId = 1; // Default fallback
+      let sequenceOrder = 1; // Default fallback
+      
+      // Try to get route_id from QR data metadata
+      if (qrData.metadata?.route_id) {
+        routeId = parseInt(qrData.metadata.route_id);
+      } else {
+        // Fallback: Get driver's assigned route from jeepney data
+        try {
+          const jeepneyResponse = await fetch(`${baseUrl}/jeepneys`);
+          if (jeepneyResponse.ok) {
+            const jeepneyData = await jeepneyResponse.json();
+            const jeepney = jeepneyData.jeepneys?.find((j: any) => j.driver_id == driverInfo.id);
+            if (jeepney?.route_id) {
+              routeId = jeepney.route_id;
+            }
+          }
+        } catch (error) {
+          console.warn('⚠️ Failed to fetch jeepney route, using default route_id:', error);
+        }
+      }
+      
+      // Try to get sequence_order from QR data metadata
+      if (qrData.metadata?.sequence_order) {
+        sequenceOrder = parseInt(qrData.metadata.sequence_order);
+      } else {
+        // Fallback: Try to get sequence from checkpoint data
+        try {
+          const checkpointResponse = await fetch(`${baseUrl}/routes/${routeId}/checkpoints`);
+          if (checkpointResponse.ok) {
+            const checkpointData = await checkpointResponse.json();
+            const checkpoint = checkpointData.checkpoints?.find((c: any) => c.id == qrData.checkpointId);
+            if (checkpoint?.sequence_order) {
+              sequenceOrder = checkpoint.sequence_order;
+            }
+          }
+        } catch (error) {
+          console.warn('⚠️ Failed to fetch checkpoint sequence, using default sequence_order:', error);
+        }
+      }
+      
+      const payload = {
+        driver_id: parseInt(driverInfo.id),
+        qr_data: {
+          checkpoint_id: parseInt(qrData.checkpointId),
+          route_id: routeId,
+          checkpoint_name: qrData.checkpointName,
+          sequence_order: sequenceOrder
+        },
+        scan_timestamp: new Date().toISOString()
+      };
+      
+      console.log('📡 Updating backend location with dynamic values:', {
+        url: `${baseUrl}/mobile/driver/scan/checkpoint`,
+        routeId: routeId,
+        sequenceOrder: sequenceOrder,
+        checkpointId: qrData.checkpointId,
+        checkpointName: qrData.checkpointName,
+        payload
+      });
+      
+      const response = await fetch(`${baseUrl}/mobile/driver/scan/checkpoint`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const result = await response.json();
+      console.log('📡 Backend location update response:', result);
+      
+      if (result.status === 'success') {
+        console.log('✅ Backend location updated successfully');
+        return result;
+      } else {
+        console.error('❌ Backend location update failed:', result.message);
+        throw new Error(result.message || 'Failed to update backend location');
+      }
+    } catch (error) {
+      console.error('❌ Failed to update backend location:', error);
+      throw error;
     }
   };
 
@@ -209,6 +308,18 @@ export const ScannerView: React.FC<ScannerViewProps> = ({
     setProcessing(true);
     
     try {
+      console.log('🔍 Starting route checkpoint scan for:', qrData.checkpointName);
+      console.log('🔍 QR Data:', qrData);
+      
+      // First, update the backend with the location scan
+      console.log('📡 Calling updateBackendLocation...');
+      const backendResult = await updateBackendLocation(qrData);
+      console.log('📡 Backend update result:', backendResult);
+      
+      // Update local location immediately after successful backend update
+      console.log('📍 Calling onLocationUpdate with:', qrData.checkpointName);
+      onLocationUpdate(qrData.checkpointName);
+      
       const checkpoint: Omit<TripCheckpoint, 'scannedAt'> = {
         id: qrData.checkpointId,
         name: qrData.checkpointName,
@@ -258,7 +369,6 @@ export const ScannerView: React.FC<ScannerViewProps> = ({
 
         if (result.success) {
           setActiveTrip(result.activeTrip || null);
-          onLocationUpdate(qrData.checkpointName);
           
           Alert.alert(
             '🚍 Trip Started!',
@@ -283,7 +393,6 @@ export const ScannerView: React.FC<ScannerViewProps> = ({
 
         if (result.success) {
           setActiveTrip(null);
-          onLocationUpdate(qrData.checkpointName);
           
           // Trip count is now incremented on START point scan, not END point
           // Just refresh the UI to show trip completion
@@ -325,7 +434,6 @@ export const ScannerView: React.FC<ScannerViewProps> = ({
 
         if (result.success) {
           setActiveTrip(result.activeTrip || null);
-          onLocationUpdate(qrData.checkpointName);
           
           Alert.alert(
             '📍 Checkpoint Updated',
@@ -338,8 +446,20 @@ export const ScannerView: React.FC<ScannerViewProps> = ({
       }
       
     } catch (error) {
-      console.error('Error processing route checkpoint scan:', error);
-      Alert.alert('Error', 'Failed to process checkpoint scan. Please try again.');
+      console.error('❌ Error processing route checkpoint scan:', error);
+      
+      // Check if it's a backend update error
+      if (error instanceof Error && error.message.includes('backend')) {
+        Alert.alert(
+          'Backend Update Failed', 
+          `Failed to update location in backend: ${error.message}. The scan was processed locally but may not sync with admin panel. Please try again.`
+        );
+      } else {
+        Alert.alert(
+          'Error', 
+          `Failed to process checkpoint scan: ${error instanceof Error ? error.message : 'Unknown error'}. Please try again.`
+        );
+      }
     } finally {
       setProcessing(false);
     }

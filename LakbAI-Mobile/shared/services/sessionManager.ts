@@ -302,7 +302,7 @@ class SessionManager {
         auth0_user: {
           sub: userProfile.sub,
           email: userProfile.email,
-          email_verified: userProfile.email_verified,
+          email_verified: userProfile.email_verified ? 1 : 0, // Convert boolean to integer
           name: userProfile.name,
           first_name: userProfile.name?.split(' ')[0],
           last_name: userProfile.name?.split(' ').slice(1).join(' '),
@@ -316,8 +316,9 @@ class SessionManager {
       
       // Try primary endpoint first
       try {
-        console.log('🔗 Attempting primary endpoint:', primaryUrl);
-        const response = await fetch(primaryUrl, {
+        const auth0Endpoint = `${primaryUrl}/auth0`;
+        console.log('🔗 Attempting primary endpoint:', auth0Endpoint);
+        const response = await fetch(auth0Endpoint, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -346,8 +347,8 @@ class SessionManager {
         
         // Try alternative endpoints if primary fails
         const alternativeEndpoints = [
-          `http://${ip}/LakbAI/LakbAI-API/routes/auth0.php`,
-          `http://${ip}/LakbAI/LakbAI-API/routes/auth0_routes.php`,
+          `http://${ip}/LakbAI/LakbAI-API/routes/api.php/auth0`,
+          `http://${ip}/LakbAI/LakbAI-API/routes/api.php/auth0_sync`,
           `http://${ip}/LakbAI/LakbAI-API/api/auth0/sync-user`,
         ];
         
@@ -432,7 +433,8 @@ class SessionManager {
       
       // Try primary endpoint first
       try {
-        const response = await fetch(primaryUrl, {
+        const auth0Endpoint = `${primaryUrl}/auth0`;
+        const response = await fetch(auth0Endpoint, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -457,8 +459,8 @@ class SessionManager {
       } catch (primaryError) {
         // Try alternative endpoints if primary fails
         const alternativeEndpoints = [
-          `http://${ip}/LakbAI/LakbAI-API/routes/auth0.php`,
-          `http://${ip}/LakbAI/LakbAI-API/routes/auth0_routes.php`,
+          `http://${ip}/LakbAI/LakbAI-API/routes/api.php/auth0`,
+          `http://${ip}/LakbAI/LakbAI-API/routes/api.php/auth0_sync`,
           `http://${ip}/LakbAI/LakbAI-API/api/auth0/complete-profile`,
         ];
         

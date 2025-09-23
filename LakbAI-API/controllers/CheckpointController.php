@@ -739,19 +739,16 @@ class CheckpointController {
                     $location['status'] = 'inactive';
                     $location['status_message'] = 'Driver is off shift';
                 } elseif ($shiftStatus === 'on_shift') {
-                    // Driver is on shift - check location update recency
+                    // Driver is on shift - they are considered active
+                    $location['status'] = 'active';
                     if ($minutesSinceUpdate === null) {
-                        $location['status'] = 'no_data';
-                        $location['status_message'] = 'No location data available';
+                        $location['status_message'] = 'On shift - no recent location updates';
                     } elseif ($minutesSinceUpdate <= 5) {
-                        $location['status'] = 'active';
                         $location['status_message'] = 'Recently updated';
                     } elseif ($minutesSinceUpdate <= 15) {
-                        $location['status'] = 'stale';
                         $location['status_message'] = 'Location may be outdated';
                     } else {
-                        $location['status'] = 'inactive';
-                        $location['status_message'] = 'Driver may be offline';
+                        $location['status_message'] = 'On shift - location data is old';
                     }
                 } else {
                     // Default case - driver not on shift

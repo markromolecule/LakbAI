@@ -1,6 +1,6 @@
 import React from 'react';
-import { View, Text } from 'react-native';
-import { LucideIcon } from 'lucide-react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
+import { LucideIcon, RefreshCw } from 'lucide-react-native';
 import { homeStyles } from '../styles';
 
 interface StatusRowProps {
@@ -14,6 +14,8 @@ interface StatusCardProps {
   icon: LucideIcon;
   iconColor: string;
   rows: StatusRowProps[];
+  onRefresh?: () => void;
+  showRefreshButton?: boolean;
 }
 
 const StatusRow: React.FC<StatusRowProps> = ({ label, value, valueColor }) => (
@@ -29,13 +31,23 @@ export const StatusCard: React.FC<StatusCardProps> = ({
   title,
   icon: Icon,
   iconColor,
-  rows
+  rows,
+  onRefresh,
+  showRefreshButton = false
 }) => {
   return (
     <View style={homeStyles.statusCard}>
       <View style={homeStyles.sectionHeader}>
         <Icon size={20} color={iconColor} />
         <Text style={homeStyles.sectionTitle}>{title}</Text>
+        {showRefreshButton && onRefresh && (
+          <TouchableOpacity 
+            onPress={onRefresh}
+            style={homeStyles.refreshButton}
+          >
+            <RefreshCw size={16} color={iconColor} />
+          </TouchableOpacity>
+        )}
       </View>
       <View style={homeStyles.statusInfo}>
         {rows.map((row, index) => (

@@ -17,6 +17,7 @@ export const useDriverState = () => {
   // Load real driver data from session
   useEffect(() => {
     loadDriverProfile();
+    loadDriverLocation(); // Load current location from API
     
     // Listen for earnings changes and refresh profile
     const unsubscribe = earningsService.addListener((driverId) => {
@@ -74,7 +75,7 @@ export const useDriverState = () => {
         }
         
         // Fallback to session data transformation
-        const profile = transformDatabaseUserToDriverProfile(session.dbUserData);
+        const profile = await transformDatabaseUserToDriverProfile(session.dbUserData);
         setDriverProfile(profile);
         console.log('✅ Driver profile loaded from session:', profile.name);
       } else {
@@ -89,6 +90,44 @@ export const useDriverState = () => {
     } catch (error) {
       console.error('❌ Failed to load driver profile:', error);
       setDriverProfile(getMockDriverProfile());
+    }
+  };
+
+  const loadDriverLocation = async () => {
+    try {
+      const session = await sessionManager.getUserSession();
+      if (session && session.userType === 'driver' && session.dbUserData) {
+        console.log('📍 Loading driver location for driver ID:', session.dbUserData.id);
+        
+        // Get the driver's route from jeepney assignment
+        const jeepneyResponse = await fetch(`${getBaseUrl()}/jeepneys`);
+        if (jeepneyResponse.ok) {
+          const jeepneyData = await jeepneyResponse.json();
+          const jeepney = jeepneyData.jeepneys?.find((j: any) => j.driver_id === session.dbUserData.id);
+          
+          if (jeepney?.route_id) {
+            // Fetch current location from the driver's route with cache busting
+            const timestamp = new Date().getTime();
+            const locationResponse = await fetch(`${getBaseUrl()}/mobile/locations/route/${jeepney.route_id}?t=${timestamp}`);
+            if (locationResponse.ok) {
+              const locationData = await locationResponse.json();
+              const driverLocation = locationData.driver_locations?.find((d: any) => d.driver_id == session.dbUserData.id);
+              
+              if (driverLocation?.last_scanned_checkpoint) {
+                console.log('📍 API returned location:', driverLocation.last_scanned_checkpoint);
+                console.log('📍 Current state location:', driverLocation); // This will show the current state
+                setDriverLocation(driverLocation.last_scanned_checkpoint);
+                setLastScanTime(driverLocation.last_update || new Date().toLocaleTimeString());
+                console.log('✅ Loaded driver location from API:', driverLocation.last_scanned_checkpoint);
+              } else {
+                console.log('⚠️ No location data found for driver');
+              }
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error('❌ Failed to load driver location:', error);
     }
   };
 
@@ -121,7 +160,7 @@ export const useDriverState = () => {
     };
   };
 
-  const transformDatabaseUserToDriverProfile = (dbUser: any): DriverProfile => {
+  const transformDatabaseUserToDriverProfile = async (dbUser: any): Promise<DriverProfile> => {
     const fullName = `${dbUser.first_name} ${dbUser.last_name}`;
     
     // Calculate years of experience based on account creation date
@@ -137,16 +176,34 @@ export const useDriverState = () => {
       totalTrips: currentEarnings.totalTrips
     });
     
-    // Generate fallback jeepney details (this should only be used if API fails)
-    const jeepneyNumber = `LKB-${String(dbUser.id).padStart(3, '0')}`;
-    const routes = [
-      'Robinson Tejero - Robinson Pala-pala',
-      'Ayala Center - Lahug',
-      'SM City Cebu - IT Park',
-      'Colon Street - USC Main',
-      'Fuente Circle - Capitol Site'
-    ];
-    const route = routes[dbUser.id % routes.length];
+    // Fetch real jeepney data from API
+    let jeepneyNumber = `LKB-${String(dbUser.id).padStart(3, '0')}`; // Default fallback
+    let route = 'SM Epza → SM Dasmariñas'; // Default fallback
+    
+    try {
+      const response = await fetch(`${getBaseUrl()}/jeepneys`);
+      if (response.ok) {
+        const data = await response.json();
+        const jeepney = data.jeepneys?.find((j: any) => j.driver_id === dbUser.id);
+        if (jeepney) {
+          jeepneyNumber = jeepney.jeepney_number;
+          route = jeepney.route_name;
+          console.log('✅ Fetched real jeepney data:', { jeepneyNumber, route });
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to fetch jeepney data from API, using fallback:', error);
+      // Fallback to hardcoded routes if API fails
+      const routes = [
+        'SM Epza → SM Dasmariñas',
+        'SM Dasmariñas → SM Epza',
+        'Ayala Center - Lahug',
+        'SM City Cebu - IT Park',
+        'Colon Street - USC Main',
+        'Fuente Circle - Capitol Site'
+      ];
+      route = routes[dbUser.id % routes.length];
+    }
 
     return {
       id: dbUser.id, // Include the actual database ID
@@ -178,7 +235,7 @@ export const useDriverState = () => {
       todayTrips: currentEarnings.todayTrips, // Get from earnings service
       todayEarnings: currentEarnings.todayEarnings, // Get real earnings from service
       totalEarnings: currentEarnings.totalEarnings, // Get total lifetime earnings
-      route: 'Robinson Tejero - Robinson Pala-pala'
+      route: 'SM Epza → SM Dasmariñas'
     };
   };
 
@@ -261,13 +318,37 @@ export const useDriverState = () => {
   };
 
   const updateLocation = (location: string) => {
+    console.log('📍 updateLocation called with:', location);
     setDriverLocation(location);
     setLastScanTime(new Date().toLocaleTimeString());
+    console.log('📍 Location updated to:', location);
+    
+    // Refresh location from API to ensure sync with admin panel
+    // Use multiple attempts with increasing delays to ensure we get the latest data
+    setTimeout(() => {
+      console.log('📍 Refreshing location from API (attempt 1)...');
+      loadDriverLocation();
+    }, 500); // First attempt after 500ms
+    
+    setTimeout(() => {
+      console.log('📍 Refreshing location from API (attempt 2)...');
+      loadDriverLocation();
+    }, 2000); // Second attempt after 2 seconds
+    
+    setTimeout(() => {
+      console.log('📍 Refreshing location from API (attempt 3)...');
+      loadDriverLocation();
+    }, 5000); // Third attempt after 5 seconds
   };
 
   const refreshDriverProfile = async () => {
     console.log('🔄 Manually refreshing driver profile...');
     await loadDriverProfile();
+  };
+
+  const refreshDriverLocation = async () => {
+    console.log('🔄 Manually refreshing driver location...');
+    await loadDriverLocation();
   };
 
   return {
@@ -282,6 +363,7 @@ export const useDriverState = () => {
     simulateQRScan,
     toggleDuty,
     updateLocation,
-    refreshDriverProfile
+    refreshDriverProfile,
+    refreshDriverLocation
   };
 };
