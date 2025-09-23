@@ -62,6 +62,7 @@ export interface QRCodeData {
   driverId: string;
   jeepneyId: string;
   route: string;
+  currentLocation?: string; // Driver's current location for auto-fill
   timestamp: string;
   // For legacy payment QR codes
   amount?: number;

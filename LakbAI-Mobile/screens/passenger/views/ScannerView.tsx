@@ -93,9 +93,9 @@ export const ScannerScreen: React.FC = () => {
 
       const result = await response.json();
       
-      if (result.status === 'success' && result.driverInfo) {
-        console.log('✅ Driver info fetched successfully:', result.driverInfo);
-        return result.driverInfo;
+      if (result.status === 'success' && result.data) {
+        console.log('✅ Driver info fetched successfully:', result.data);
+        return result.data;
       } else {
         console.error('❌ API returned error:', result);
         throw new Error(result.message || 'Failed to fetch driver info');

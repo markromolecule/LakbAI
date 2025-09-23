@@ -1,6 +1,6 @@
 // LakbAI-Mobile/app/passenger/route.tsx
 import React from 'react';
-import { SafeAreaView, StyleSheet, View } from 'react-native';
+import { StyleSheet, View, SafeAreaView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Header } from '../../components/common/Header';
 import { Footer } from '../../components/common/Footer';

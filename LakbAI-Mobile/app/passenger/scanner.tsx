@@ -1,6 +1,6 @@
 // LakbAI-Mobile/app/passenger/scanner.tsx
 import React, { useEffect, useState } from 'react';
-import { Alert, SafeAreaView, StyleSheet, View } from 'react-native';
+import { Alert, StyleSheet, View, SafeAreaView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Header } from '../../components/common/Header';
 import { Footer } from '../../components/common/Footer';

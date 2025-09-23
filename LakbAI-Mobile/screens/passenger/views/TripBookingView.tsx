@@ -15,7 +15,7 @@ import { Button } from '../../../components/common/Button';
 import { LocationSelector } from '../../../components/common/LocationSelector';
 import { usePassengerState } from '../hooks/usePassengerState';
 import { QRDriverInfo, TripBookingData, QRCodeData } from '../../../shared/types';
-import { calculateFare, getFareInfo } from '../../../shared/utils/fareCalculator';
+import { calculateFare, getFareInfo, getFareCalculationSummary, formatFareAmount } from '../../../shared/utils/fareCalculator';
 import { COLORS, SPACING } from '../../../shared/styles';
 import { globalStyles } from '../../../shared/styles/globalStyles';
 
@@ -38,43 +38,171 @@ export const TripBookingView: React.FC<TripBookingViewProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [fare, setFare] = useState<number | null>(null);
   const [discountedFare, setDiscountedFare] = useState<number | null>(null);
+  const [fareCalculationSummary, setFareCalculationSummary] = useState<any>(null);
+  const [isCalculatingFare, setIsCalculatingFare] = useState(false);
+  const [isAutoFilledLocation, setIsAutoFilledLocation] = useState(false);
+  const [realTimeDriverLocation, setRealTimeDriverLocation] = useState<string>('');
+  const [isLoadingDriverLocation, setIsLoadingDriverLocation] = useState(false);
+  const [locationLastUpdated, setLocationLastUpdated] = useState<string>('');
+  const [realDriverData, setRealDriverData] = useState<any>(null);
+  const [isLoadingDriverData, setIsLoadingDriverData] = useState(false);
 
-  // Calculate fare when locations change
+  // Auto-fill pickup location from QR code when component mounts
   useEffect(() => {
-    if (pickupLocation && destination && pickupLocation !== destination) {
-      const calculatedFare = calculateFare(pickupLocation, destination);
-      setFare(calculatedFare);
-
-      // Apply discount if passenger has approved discount
-      if (calculatedFare && passengerProfile.fareDiscount.status === 'approved') {
-        const discount = passengerProfile.fareDiscount.percentage;
-        const discounted = calculatedFare * (1 - discount / 100);
-        setDiscountedFare(Math.round(discounted));
-      } else {
-        setDiscountedFare(null);
+    const autoFillPickupLocation = async () => {
+      if (qrData?.currentLocation) {
+        console.log('🎯 Auto-filling pickup location from QR code:', qrData.currentLocation);
+        setPickupLocation(qrData.currentLocation);
+        setRealTimeDriverLocation(qrData.currentLocation);
+        setLocationLastUpdated(new Date().toLocaleTimeString());
+        setIsAutoFilledLocation(true);
+      } else if (driverInfo?.currentLocation && driverInfo.currentLocation !== 'Unknown') {
+        console.log('🎯 Auto-filling pickup location from driver info:', driverInfo.currentLocation);
+        setPickupLocation(driverInfo.currentLocation);
+        setRealTimeDriverLocation(driverInfo.currentLocation);
+        setLocationLastUpdated(new Date().toLocaleTimeString());
+        setIsAutoFilledLocation(true);
+      } else if (driverInfo?.id) {
+        // Fetch real-time driver location from API
+        try {
+          setIsLoadingDriverLocation(true);
+          console.log('🔄 Fetching real-time driver location for driver ID:', driverInfo.id);
+          const realTimeLocation = await fetchDriverRealTimeLocation(driverInfo.id);
+          if (realTimeLocation) {
+            console.log('✅ Got real-time driver location:', realTimeLocation);
+            setPickupLocation(realTimeLocation);
+            setRealTimeDriverLocation(realTimeLocation);
+            setLocationLastUpdated(new Date().toLocaleTimeString());
+            setIsAutoFilledLocation(true);
+          }
+        } catch (error) {
+          console.error('❌ Error fetching real-time driver location:', error);
+        } finally {
+          setIsLoadingDriverLocation(false);
+        }
       }
-    } else {
-      setFare(null);
-      setDiscountedFare(null);
-    }
-  }, [pickupLocation, destination, passengerProfile.fareDiscount]);
+    };
+
+    autoFillPickupLocation();
+  }, [qrData, driverInfo]);
+
+  // Fetch real driver data from database
+  useEffect(() => {
+    const loadDriverData = async () => {
+      if (driverInfo?.id) {
+        try {
+          setIsLoadingDriverData(true);
+          console.log('🔄 Fetching real driver data for driver ID:', driverInfo.id);
+          const driverData = await fetchDriverData(driverInfo.id);
+          if (driverData) {
+            console.log('✅ Got real driver data:', driverData);
+            setRealDriverData(driverData);
+          }
+        } catch (error) {
+          console.error('❌ Error fetching driver data:', error);
+        } finally {
+          setIsLoadingDriverData(false);
+        }
+      }
+    };
+
+    loadDriverData();
+  }, [driverInfo?.id]);
+
+  // Calculate fare when locations change using dynamic fare matrix
+  useEffect(() => {
+    const calculateFareAsync = async () => {
+      if (pickupLocation && destination && pickupLocation !== destination) {
+        setIsCalculatingFare(true);
+        
+        try {
+          // Get route ID from driver info if available
+          const routeId = driverInfo.route ? getRouteIdFromRouteName(driverInfo.route) : undefined;
+          
+          // Use dynamic fare calculation
+          const calculatedFare = await calculateFare(pickupLocation, destination, routeId);
+          setFare(calculatedFare);
+
+          // Get comprehensive fare calculation summary
+          const summary = await getFareCalculationSummary(
+            pickupLocation,
+            destination,
+            routeId,
+            passengerProfile.fareDiscount.status === 'approved' ? passengerProfile.fareDiscount.type : undefined,
+            passengerProfile.fareDiscount.status === 'approved' ? passengerProfile.fareDiscount.percentage : undefined
+          );
+
+          if (summary) {
+            setFareCalculationSummary(summary);
+            setDiscountedFare(summary.finalFare);
+          } else {
+            // Fallback to old calculation method
+            if (calculatedFare && passengerProfile.fareDiscount.status === 'approved') {
+              const discount = passengerProfile.fareDiscount.percentage;
+              const discounted = calculatedFare * (1 - discount / 100);
+              setDiscountedFare(Math.round(discounted * 100) / 100); // Round to 2 decimal places
+            } else {
+              setDiscountedFare(null);
+            }
+          }
+        } catch (error) {
+          console.error('Error calculating fare:', error);
+          // Fallback to legacy calculation
+          try {
+            const calculatedFare = await calculateFare(pickupLocation, destination);
+            setFare(calculatedFare);
+            
+            if (calculatedFare && passengerProfile.fareDiscount.status === 'approved') {
+              const discount = passengerProfile.fareDiscount.percentage;
+              const discounted = calculatedFare * (1 - discount / 100);
+              setDiscountedFare(Math.round(discounted * 100) / 100); // Round to 2 decimal places
+            } else {
+              setDiscountedFare(null);
+            }
+          } catch (fallbackError) {
+            console.error('Fallback fare calculation failed:', fallbackError);
+            setFare(null);
+            setDiscountedFare(null);
+          }
+        } finally {
+          setIsCalculatingFare(false);
+        }
+      } else {
+        setFare(null);
+        setDiscountedFare(null);
+        setFareCalculationSummary(null);
+      }
+    };
+
+    calculateFareAsync();
+  }, [pickupLocation, destination, passengerProfile.fareDiscount, driverInfo.route]);
+
+  // Helper function to get route ID from route name
+  const getRouteIdFromRouteName = (routeName: string): number | undefined => {
+    // This is a simplified mapping - in a real implementation, 
+    // you would fetch this from the API
+    const routeMap: { [key: string]: number } = {
+      'SM Epza → SM Dasmariñas': 1,
+      'SM Dasmariñas → SM Epza': 2,
+    };
+    return routeMap[routeName];
+  };
 
   const estimateDistance = (from: string, to: string): string => {
-    // Simple estimation based on checkpoint order
-    // In a real app, this would use actual distance calculation
-    const fareInfo = getFareInfo(from, to);
-    if (fareInfo) {
-      const km = Math.round(fareInfo.fare / 10); // Rough estimate: ₱10 per km
+    // Use dynamic fare to estimate distance
+    if (fare && fare > 0) {
+      // Rough estimate: ₱10 per km for jeepney rides
+      const km = Math.round(fare / 10);
       return `${km}km`;
     }
     return 'Unknown';
   };
 
   const estimateTime = (from: string, to: string): string => {
-    // Simple estimation based on distance
-    const fareInfo = getFareInfo(from, to);
-    if (fareInfo) {
-      const minutes = Math.round(fareInfo.fare / 8); // Rough estimate: ₱8 per minute
+    // Use dynamic fare to estimate time
+    if (fare && fare > 0) {
+      // Rough estimate: ₱8 per minute for jeepney rides
+      const minutes = Math.round(fare / 8);
       return `${minutes} mins`;
     }
     return 'Unknown';
@@ -218,8 +346,74 @@ export const TripBookingView: React.FC<TripBookingViewProps> = ({
     }
   };
 
+  // Function to fetch driver's real-time location
+  const fetchDriverRealTimeLocation = async (driverId: string): Promise<string | null> => {
+    try {
+      const response = await fetch(`http://192.168.254.110/LakbAI/LakbAI-API/routes/api.php/mobile/driver/info/${driverId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('📡 Driver real-time location response:', data);
+
+      if (data.status === 'success' && data.data?.current_location) {
+        return data.data.current_location;
+      }
+      
+      return null;
+    } catch (error) {
+      console.error('❌ Error fetching driver real-time location:', error);
+      return null;
+    }
+  };
+
+  // Function to fetch complete driver data from database
+  const fetchDriverData = async (driverId: string): Promise<any | null> => {
+    try {
+      const response = await fetch(`http://192.168.254.110/LakbAI/LakbAI-API/routes/api.php/mobile/driver/info/${driverId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('📡 Driver data response:', data);
+
+      if (data.status === 'success' && data.data) {
+        return data.data;
+      }
+      
+      return null;
+    } catch (error) {
+      console.error('❌ Error fetching driver data:', error);
+      return null;
+    }
+  };
+
   const finalFareAmount = discountedFare || fare;
   const hasDiscount = discountedFare && passengerProfile.fareDiscount.status === 'approved';
+  
+  // Debug profile and discount information
+  console.log('🎯 TripBookingView Profile Debug:', {
+    passengerProfile: passengerProfile?.fareDiscount,
+    fare: fare,
+    discountedFare: discountedFare,
+    finalFareAmount: finalFareAmount,
+    hasDiscount: hasDiscount,
+    fareCalculationSummary: fareCalculationSummary
+  });
 
   return (
     <ScrollView style={globalStyles.container}>
@@ -240,13 +434,32 @@ export const TripBookingView: React.FC<TripBookingViewProps> = ({
           </View>
           <View style={styles.driverInfo}>
             <Text style={styles.driverName}>{driverInfo.name}</Text>
-            <Text style={styles.driverDetails}>
-              License: {driverInfo.license}
-            </Text>
-            <View style={styles.ratingContainer}>
-              <Ionicons name="star" size={16} color="#FFD700" />
-              <Text style={styles.rating}>{driverInfo.rating}</Text>
-              <Text style={styles.trips}>• {driverInfo.totalTrips} trips</Text>
+            <View style={styles.licenseRow}>
+              <Text style={styles.driverDetails}>
+                License: 
+              </Text>
+              <Text style={[
+                styles.driverDetails,
+                realDriverData?.license_status === 'approved' && styles.approvedStatus
+              ]}>
+                {
+                  isLoadingDriverData 
+                    ? 'Loading...' 
+                    : realDriverData?.license || driverInfo.license || 'N/A'
+                }
+              </Text>
+              {isLoadingDriverData && (
+                <ActivityIndicator size="small" color={COLORS.primary} style={styles.licenseLoader} />
+              )}
+            </View>
+            <View style={styles.tripContainer}>
+              <Ionicons name="car" size={16} color={COLORS.primary} />
+              <Text style={styles.tripCount}>
+                {isLoadingDriverData 
+                  ? 'Loading...' 
+                  : `${realDriverData?.totalTrips || driverInfo.totalTrips || 0} trips`
+                }
+              </Text>
             </View>
           </View>
         </View>
@@ -264,21 +477,77 @@ export const TripBookingView: React.FC<TripBookingViewProps> = ({
             <Text style={styles.jeepneyDetail}>Model: {driverInfo.jeepneyModel}</Text>
           )}
           <Text style={styles.jeepneyDetail}>Route: {driverInfo.route}</Text>
-          <Text style={styles.jeepneyDetail}>Current Location: {driverInfo.currentLocation}</Text>
+          <View style={styles.locationRow}>
+            <Text style={styles.jeepneyDetail}>
+              Current Location: {
+                isLoadingDriverLocation 
+                  ? 'Loading...' 
+                  : realTimeDriverLocation || 
+                    (driverInfo.currentLocation && driverInfo.currentLocation !== 'Unknown' ? driverInfo.currentLocation : 'Not available')
+              }
+            </Text>
+            {isLoadingDriverLocation && (
+              <ActivityIndicator size="small" color={COLORS.primary} style={styles.locationLoader} />
+            )}
+          </View>
+          {locationLastUpdated && !isLoadingDriverLocation && (
+            <Text style={styles.locationTimestamp}>
+              Last updated: {locationLastUpdated}
+            </Text>
+          )}
         </View>
       </View>
 
       {/* Location Selection */}
       <View style={styles.locationSection}>
-        <Text style={styles.sectionTitle}>Ride Details</Text>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Ride Details</Text>
+          {driverInfo?.id && (
+            <TouchableOpacity 
+              style={styles.refreshButton}
+              onPress={async () => {
+                try {
+                  setIsLoadingDriverLocation(true);
+                  console.log('🔄 Refreshing driver location...');
+                  const realTimeLocation = await fetchDriverRealTimeLocation(driverInfo.id);
+                  if (realTimeLocation) {
+                    setPickupLocation(realTimeLocation);
+                    setRealTimeDriverLocation(realTimeLocation);
+                    setLocationLastUpdated(new Date().toLocaleTimeString());
+                    setIsAutoFilledLocation(true);
+                    console.log('✅ Updated pickup location:', realTimeLocation);
+                  }
+                } catch (error) {
+                  console.error('❌ Error refreshing location:', error);
+                } finally {
+                  setIsLoadingDriverLocation(false);
+                }
+              }}
+            >
+              <Ionicons name="refresh" size={16} color={COLORS.primary} />
+              <Text style={styles.refreshText}>Refresh Location</Text>
+            </TouchableOpacity>
+          )}
+        </View>
         
-        <LocationSelector
-          label="Pickup Location:"
-          selectedLocation={pickupLocation}
-          onLocationSelect={setPickupLocation}
-          placeholder="Select your pickup point"
-          excludeLocation={destination}
-        />
+        <View style={styles.locationRow}>
+          <LocationSelector
+            label="Pickup Location:"
+            selectedLocation={pickupLocation}
+            onLocationSelect={(location) => {
+              setPickupLocation(location);
+              setIsAutoFilledLocation(false); // Clear auto-fill flag when manually changed
+            }}
+            placeholder="Select your pickup point"
+            excludeLocation={destination}
+          />
+          {isAutoFilledLocation && (
+            <View style={styles.autoFillBadge}>
+              <Ionicons name="checkmark-circle" size={16} color={COLORS.success} />
+              <Text style={styles.autoFillText}>Auto-filled</Text>
+            </View>
+          )}
+        </View>
 
         <LocationSelector
           label="Destination:"
@@ -298,34 +567,55 @@ export const TripBookingView: React.FC<TripBookingViewProps> = ({
           </View>
           
           <View style={styles.fareDetails}>
-            <View style={styles.fareRow}>
-              <Text style={styles.fareLabel}>Distance:</Text>
-              <Text style={styles.fareValue}>{estimateDistance(pickupLocation, destination)}</Text>
-            </View>
-            <View style={styles.fareRow}>
-              <Text style={styles.fareLabel}>Estimated Time:</Text>
-              <Text style={styles.fareValue}>{estimateTime(pickupLocation, destination)}</Text>
-            </View>
-            
-            {hasDiscount && (
+            {isCalculatingFare ? (
+              <View style={styles.calculatingContainer}>
+                <ActivityIndicator size="small" color={COLORS.primary} />
+                <Text style={styles.calculatingText}>Calculating fare...</Text>
+              </View>
+            ) : (
               <>
                 <View style={styles.fareRow}>
-                  <Text style={styles.fareLabel}>Original Fare:</Text>
-                  <Text style={[styles.fareValue, styles.crossedOut]}>₱{fare}</Text>
+                  <Text style={styles.fareLabel}>Distance:</Text>
+                  <Text style={styles.fareValue}>{estimateDistance(pickupLocation, destination)}</Text>
                 </View>
                 <View style={styles.fareRow}>
-                  <Text style={styles.fareLabel}>
-                    Discount ({passengerProfile.fareDiscount.type} - {passengerProfile.fareDiscount.percentage}%):
-                  </Text>
-                  <Text style={styles.discountValue}>-₱{fare - discountedFare!}</Text>
+                  <Text style={styles.fareLabel}>Estimated Time:</Text>
+                  <Text style={styles.fareValue}>{estimateTime(pickupLocation, destination)}</Text>
+                </View>
+                
+                {/* Dynamic Fare Matrix Information */}
+                {fareCalculationSummary && (
+                  <View style={styles.fareRow}>
+                    <Text style={styles.fareLabel}>Base Fare:</Text>
+                    <Text style={styles.fareValue}>{formatFareAmount(fareCalculationSummary.baseFare)}</Text>
+                  </View>
+                )}
+                
+                {hasDiscount && (
+                  <>
+                    <View style={styles.fareRow}>
+                      <Text style={styles.fareLabel}>Original Fare:</Text>
+                      <Text style={[styles.fareValue, styles.crossedOut]}>
+                        {formatFareAmount(fareCalculationSummary?.baseFare || fare || 0)}
+                      </Text>
+                    </View>
+                    <View style={styles.fareRow}>
+                      <Text style={styles.fareLabel}>
+                        Discount ({passengerProfile.fareDiscount.type}):
+                      </Text>
+                      <Text style={styles.discountValue}>
+                        -{formatFareAmount(fareCalculationSummary?.savings || (fare! - discountedFare!))}
+                      </Text>
+                    </View>
+                  </>
+                )}
+                
+                <View style={styles.totalFareRow}>
+                  <Text style={styles.totalFareLabel}>Total Fare:</Text>
+                  <Text style={styles.totalFareValue}>{formatFareAmount(finalFareAmount || 0)}</Text>
                 </View>
               </>
             )}
-            
-            <View style={styles.totalFareRow}>
-              <Text style={styles.totalFareLabel}>Total Fare:</Text>
-              <Text style={styles.totalFareValue}>₱{finalFareAmount}</Text>
-            </View>
           </View>
         </View>
       )}
@@ -406,11 +696,23 @@ const styles = StyleSheet.create({
     color: COLORS.gray500,
     marginBottom: 6,
   },
-  ratingContainer: {
+  licenseRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  licenseLoader: {
+    marginLeft: SPACING.xs,
+  },
+  approvedStatus: {
+    color: COLORS.success,
+    fontWeight: '600',
+  },
+  tripContainer: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  rating: {
+  tripCount: {
     fontSize: 14,
     fontWeight: '600',
     color: COLORS.gray800,
@@ -445,11 +747,60 @@ const styles = StyleSheet.create({
   locationSection: {
     marginBottom: SPACING.lg,
   },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: SPACING.md,
+  },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
     color: COLORS.gray800,
-    marginBottom: SPACING.md,
+  },
+  refreshButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.primaryLight,
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.xs,
+    borderRadius: 8,
+  },
+  refreshText: {
+    fontSize: 12,
+    color: COLORS.primary,
+    fontWeight: '500',
+    marginLeft: 4,
+  },
+  locationRow: {
+    position: 'relative',
+  },
+  autoFillBadge: {
+    position: 'absolute',
+    top: -8,
+    right: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.successLight,
+    paddingHorizontal: SPACING.xs,
+    paddingVertical: 2,
+    borderRadius: 12,
+    zIndex: 1,
+  },
+  autoFillText: {
+    fontSize: 10,
+    color: COLORS.success,
+    fontWeight: '600',
+    marginLeft: 2,
+  },
+  locationLoader: {
+    marginLeft: SPACING.xs,
+  },
+  locationTimestamp: {
+    fontSize: 12,
+    color: COLORS.gray500,
+    fontStyle: 'italic',
+    marginTop: 2,
   },
   fareCard: {
     backgroundColor: COLORS.white,
@@ -532,5 +883,17 @@ const styles = StyleSheet.create({
     marginLeft: SPACING.sm,
     fontSize: 14,
     color: COLORS.gray500,
+  },
+  calculatingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: SPACING.md,
+  },
+  calculatingText: {
+    marginLeft: SPACING.sm,
+    fontSize: 14,
+    color: COLORS.gray500,
+    fontStyle: 'italic',
   },
 });

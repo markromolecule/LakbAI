@@ -163,6 +163,7 @@ class DriverController {
      */
     public function getDriverWithJeepney($id) {
         try {
+            // Get driver basic info with license status
             $stmt = $this->db->prepare("
                 SELECT 
                     u.id,
@@ -170,6 +171,8 @@ class DriverController {
                     u.last_name,
                     u.phone_number,
                     u.email,
+                    u.drivers_license_verified,
+                    u.drivers_license_name,
                     j.id as jeepney_id,
                     j.jeepney_number,
                     j.plate_number,
@@ -189,23 +192,50 @@ class DriverController {
             $result = $stmt->fetch(PDO::FETCH_ASSOC);
 
             if ($result) {
+                // Get real trip count from driver_earnings table
+                $tripStmt = $this->db->prepare("
+                    SELECT COUNT(*) as total_trips 
+                    FROM driver_earnings 
+                    WHERE driver_id = ? AND counts_as_trip = 1
+                ");
+                $tripStmt->execute([$id]);
+                $tripCount = $tripStmt->fetch(PDO::FETCH_ASSOC)['total_trips'] ?? 0;
+
+                // Determine license status display
+                $licenseStatus = 'N/A';
+                if ($result['drivers_license_verified']) {
+                    $licenseStatus = 'Approved';
+                } elseif ($result['drivers_license_name']) {
+                    $licenseStatus = 'Pending';
+                }
+
+                // Determine a meaningful default location based on route
+                $defaultLocation = 'Unknown';
+                if ($result['route_name']) {
+                    // Extract origin from route name (e.g., "SM Epza → SM Dasmariñas" -> "SM Epza")
+                    $routeParts = explode(' → ', $result['route_name']);
+                    if (count($routeParts) >= 2) {
+                        $defaultLocation = $routeParts[0]; // Use origin as default location
+                    }
+                }
+
                 $driverInfo = [
                     'id' => $result['id'],
                     'name' => $result['first_name'] . ' ' . $result['last_name'],
-                    'license' => 'N/A', // TODO: Add license table
+                    'license' => $licenseStatus,
+                    'license_status' => $result['drivers_license_verified'] ? 'approved' : 'pending',
                     'jeepneyNumber' => $result['jeepney_number'] ?: 'N/A',
                     'jeepneyModel' => $result['model'] ?: 'N/A',
                     'plateNumber' => $result['plate_number'] ?: 'N/A',
                     'route' => $result['route_name'] ?: 'No Route Assigned',
                     'contactNumber' => $result['phone_number'],
-                    'currentLocation' => 'Unknown', // This would be updated from real-time tracking
-                    'rating' => 4.8, // Mock data - would come from ratings table
-                    'totalTrips' => 1247 // Mock data - would come from trips table
+                    'currentLocation' => $defaultLocation, // Use route origin as default location
+                    'totalTrips' => (int)$tripCount
                 ];
 
                 return [
                     "status" => "success",
-                    "driverInfo" => $driverInfo
+                    "data" => $driverInfo
                 ];
             }
 

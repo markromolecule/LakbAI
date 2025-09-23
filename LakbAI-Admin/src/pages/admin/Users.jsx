@@ -5,7 +5,6 @@ import UserService from '../../services/userService';
 import PendingUsersContainer from '../../components/users/PendingUsersContainer';
 import AllUsersContainer from '../../components/users/AllUsersContainer';
 import UserStatsCards from '../../components/users/UserStatsCards';
-import DriverStatusContainer from '../../components/users/DriverStatusContainer';
 import ApiTestComponent from '../../components/debug/ApiTestComponent';
 
 const Users = () => {
@@ -155,19 +154,6 @@ const Users = () => {
                 </div>
               </Tab>
 
-              <Tab 
-                eventKey="driver-status" 
-                title={
-                  <span>
-                    <i className="bi bi-speedometer me-2"></i>
-                    Driver Status
-                  </span>
-                }
-              >
-                <div className="p-3">
-                  <DriverStatusContainer onDataUpdate={handleDataUpdate} />
-                </div>
-              </Tab>
             </Tabs>
           </Card.Body>
         </Card>

@@ -28,7 +28,7 @@ const getCurrentDeveloper = (): string => {
   // Method 3: Manual environment variable (simplest)
   // Set this in each developer's environment
   
-  // For now, default to the first developer (Joseph)
+  // For now, default to localhost for testing
   return 'joseph';
 };
 

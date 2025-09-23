@@ -1,6 +1,6 @@
 // LakbAI-Mobile/app/passenger/home.tsx
 import React from 'react';
-import { SafeAreaView, StyleSheet, View } from 'react-native';
+import { StyleSheet, View, SafeAreaView } from 'react-native';
 import { Header } from '../../components/common/Header';
 import { Footer } from '../../components/common/Footer';
 import { HomeScreen } from '../../screens/passenger/views/HomeView';

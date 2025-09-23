@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text } from 'react-native';
+import { Alert, ScrollView, StyleSheet, Text, ActivityIndicator } from 'react-native';
 import { Button } from '../../../components/common/Button';
 import { LocationPicker } from '../../../components/common/LocationPicker';
 import { FareResult } from '../components/fare/FareResult';
@@ -12,8 +12,9 @@ export const FareCalculatorScreen: React.FC = () => {
   const [fromLocation, setFromLocation] = useState<string>('');
   const [toLocation, setToLocation] = useState<string>('');
   const [calculatedFare, setCalculatedFare] = useState<number | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
-  const handleCalculateFare = () => {
+  const handleCalculateFare = async () => {
     if (!fromLocation || !toLocation) {
       Alert.alert('Error', 'Please select both pickup and destination points.');
       return;
@@ -24,15 +25,27 @@ export const FareCalculatorScreen: React.FC = () => {
       return;
     }
 
-    const fare = calculateFare(fromLocation, toLocation);
-    if (fare) {
-      setCalculatedFare(fare);
-    } else {
+    setIsLoading(true);
+    try {
+      const fare = await calculateFare(fromLocation, toLocation);
+      if (fare) {
+        setCalculatedFare(fare);
+      } else {
+        Alert.alert(
+          'Route Not Found',
+          'Sorry, we couldn\'t find the fare for that route. Please check the fare matrix or contact the driver.'
+        );
+        setCalculatedFare(null);
+      }
+    } catch (error) {
+      console.error('Error calculating fare:', error);
       Alert.alert(
-        'Route Not Found',
-        'Sorry, we couldn\'t find the fare for that route. Please check the fare matrix or contact the driver.'
+        'Error',
+        'Failed to calculate fare. Please try again or check your connection.'
       );
       setCalculatedFare(null);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -59,11 +72,19 @@ export const FareCalculatorScreen: React.FC = () => {
       />
 
       <Button
-        title="Calculate Fare"
+        title={isLoading ? "Calculating..." : "Calculate Fare"}
         onPress={handleCalculateFare}
-        disabled={isCalculateDisabled}
+        disabled={isCalculateDisabled || isLoading}
         style={styles.calculateButton}
       />
+      
+      {isLoading && (
+        <ActivityIndicator 
+          size="small" 
+          color="#3B82F6" 
+          style={styles.loadingIndicator}
+        />
+      )}
 
       {calculatedFare && (
         <FareResult
@@ -80,5 +101,9 @@ const styles = StyleSheet.create({
   calculateButton: {
     marginTop: SPACING.xl,
     marginBottom: SPACING.lg,
+  },
+  loadingIndicator: {
+    marginTop: SPACING.sm,
+    alignSelf: 'center',
   },
 });

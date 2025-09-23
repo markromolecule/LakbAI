@@ -39,12 +39,13 @@ export const QRGenerator: React.FC<QRGeneratorProps> = ({ driverInfo }) => {
   }, [driverInfo]);
 
   const generateQRCode = () => {
-    // Create QR data with real driver information
+    // Create QR data with real driver information including current location
     const qrData = {
       type: 'driver_pickup',
       driverId: driverInfo.id.toString(), // Use actual database ID
       jeepneyId: driverInfo.jeepneyNumber,
       route: driverInfo.route,
+      currentLocation: driverInfo.currentLocation, // Include driver's current location
       timestamp: new Date().toISOString(),
     };
     
@@ -161,7 +162,7 @@ export const QRGenerator: React.FC<QRGeneratorProps> = ({ driverInfo }) => {
       <View style={styles.instructionsCard}>
         <Text style={styles.instructionsTitle}>How passengers use this QR code:</Text>
         <Text style={styles.instructionText}>1. Open LakbAI passenger app</Text>
-        <Text style={styles.instructionText}>2. Go to Scanner screen</Text>
+        <Text style={styles.instructionText}>2. Go to Scanner</Text>
         <Text style={styles.instructionText}>3. Scan your QR code</Text>
         <Text style={styles.instructionText}>4. Select pickup and destination</Text>
         <Text style={styles.instructionText}>5. Pay fare through Xendit</Text>
@@ -195,8 +196,7 @@ export const QRGenerator: React.FC<QRGeneratorProps> = ({ driverInfo }) => {
         <Text style={styles.qrInfoTitle}>📱 About Your QR Code</Text>
         <Text style={styles.qrInfoText}>
           Your QR code contains your driver information, current location, and route details. 
-          When passengers scan it, they can instantly book a ride with you and see your 
-          current location and route information.
+          When passengers scan it, they can instantly pay the fare with you and see your route information.
         </Text>
         <Text style={styles.qrInfoText}>
           The QR code updates automatically when you change your location or route, 

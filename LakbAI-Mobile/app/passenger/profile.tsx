@@ -1,6 +1,6 @@
 // LakbAI-Mobile/app/passenger/profile.tsx
 import React, { useEffect, useMemo, useState } from 'react';
-import { SafeAreaView, StyleSheet, View, Alert } from 'react-native';
+import { StyleSheet, View, Alert, SafeAreaView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Header } from '../../components/common/Header';
 import { Footer } from '../../components/common/Footer';
