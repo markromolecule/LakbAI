@@ -375,14 +375,83 @@ const CheckpointManagement = ({ visible, onClose }) => {
   };
 
   return (
-    <Modal show={visible} onHide={onClose} size="xl" centered>
+    <>
+      <style>
+        {`
+          .checkpoint-modal .modal-dialog {
+            margin: 1.75rem auto !important;
+            max-width: 80vw !important;
+            width: 80vw !important;
+          }
+          .checkpoint-modal .modal-body {
+            padding: 1rem !important;
+            width: 100% !important;
+            max-width: 100% !important;
+          }
+          .checkpoint-modal .card {
+            margin: 0 !important;
+            width: 100% !important;
+            max-width: 100% !important;
+          }
+          .checkpoint-modal .card-body {
+            padding: 0 !important;
+            width: 100% !important;
+            max-width: 100% !important;
+          }
+          .checkpoint-table-container {
+            width: 100% !important;
+            max-width: 100% !important;
+            overflow: visible !important;
+            display: flex !important;
+            flex-direction: column !important;
+          }
+          .checkpoint-table-container .table {
+            width: 100% !important;
+            min-width: 100% !important;
+            max-width: 100% !important;
+            table-layout: fixed !important;
+            margin: 0 !important;
+            border-spacing: 0 !important;
+            border-collapse: collapse !important;
+            flex: 1 !important;
+            display: table !important;
+          }
+          .checkpoint-table-container .table th,
+          .checkpoint-table-container .table td {
+            border: 1px solid #dee2e6 !important;
+            width: auto !important;
+            padding: 0.5rem !important;
+          }
+          .checkpoint-table-container .table th:nth-child(1),
+          .checkpoint-table-container .table td:nth-child(1) {
+            width: 10% !important;
+          }
+          .checkpoint-table-container .table th:nth-child(2),
+          .checkpoint-table-container .table td:nth-child(2) {
+            width: 50% !important;
+          }
+          .checkpoint-table-container .table th:nth-child(3),
+          .checkpoint-table-container .table td:nth-child(3) {
+            width: 15% !important;
+          }
+          .checkpoint-table-container .table th:nth-child(4),
+          .checkpoint-table-container .table td:nth-child(4) {
+            width: 15% !important;
+          }
+          .checkpoint-table-container .table th:nth-child(5),
+          .checkpoint-table-container .table td:nth-child(5) {
+            width: 10% !important;
+          }
+        `}
+      </style>
+      <Modal show={visible} onHide={onClose} size="xl" centered className="checkpoint-modal">
       <Modal.Header closeButton>
         <Modal.Title>
           <i className="bi bi-qr-code me-2"></i>
           Checkpoint Management
         </Modal.Title>
       </Modal.Header>
-      <Modal.Body>
+      <Modal.Body style={{ width: '100%', padding: '1rem', maxWidth: '100%' }}>
         {error && (
           <Alert variant="danger" dismissible onClose={() => setError('')}>
             {error}
@@ -450,39 +519,50 @@ const CheckpointManagement = ({ visible, onClose }) => {
             )}
 
             {checkpoints.length > 0 && (
-              <Card className="mb-3">
-                <Card.Header>
-                  <Card.Title className="mb-0">Route Checkpoints</Card.Title>
+              <Card className="w-100" style={{ width: '100%', maxWidth: '100%' }}>
+                <Card.Header className="py-2">
+                  <Card.Title className="mb-0 fs-6">Route Checkpoints</Card.Title>
                 </Card.Header>
-                <Card.Body>
-                  <Table responsive striped>
+                <Card.Body className="p-0" style={{ width: '100%', padding: '0' }}>
+                  <div className="checkpoint-table-container" style={{ width: '100%', display: 'flex', flexDirection: 'column' }}>
+                    <Table striped className="mb-0 w-100" style={{ 
+                      fontSize: '0.875rem', 
+                      tableLayout: 'fixed', 
+                      width: '100%', 
+                      minWidth: '100%',
+                      maxWidth: '100%',
+                      margin: '0',
+                      borderCollapse: 'collapse',
+                      borderSpacing: '0'
+                    }}>
                     <thead>
                       <tr>
-                        <th>Sequence</th>
-                        <th>Checkpoint Name</th>
-                        <th>Type</th>
-                        <th>Fare</th>
-                        <th>Actions</th>
+                        <th className="py-2 px-2" style={{ fontSize: '0.8rem', fontWeight: '600', width: '10%' }}>Sequence</th>
+                        <th className="py-2 px-2" style={{ fontSize: '0.8rem', fontWeight: '600', width: '50%' }}>Checkpoint Name</th>
+                        <th className="py-2 px-2" style={{ fontSize: '0.8rem', fontWeight: '600', width: '15%' }}>Type</th>
+                        <th className="py-2 px-2" style={{ fontSize: '0.8rem', fontWeight: '600', width: '15%' }}>Fare</th>
+                        <th className="py-2 px-2" style={{ fontSize: '0.8rem', fontWeight: '600', width: '10%' }}>Actions</th>
                       </tr>
                     </thead>
                     <tbody>
                       {checkpoints.map(checkpoint => (
                         <tr key={checkpoint.id}>
-                          <td>{checkpoint.sequence_order}</td>
-                          <td>{checkpoint.checkpoint_name}</td>
-                          <td>
-                            {checkpoint.is_origin == 1 && <Badge bg="success" className="me-1">Origin</Badge>}
-                            {checkpoint.is_destination == 1 && <Badge bg="danger" className="me-1">Destination</Badge>}
-                            {checkpoint.is_origin != 1 && checkpoint.is_destination != 1 && <Badge bg="secondary">Stop</Badge>}
+                          <td className="py-2 px-2 align-middle" style={{ width: '10%' }}>{checkpoint.sequence_order}</td>
+                          <td className="py-2 px-2 align-middle" style={{ width: '50%' }}>{checkpoint.checkpoint_name}</td>
+                          <td className="py-2 px-2 align-middle" style={{ width: '15%' }}>
+                            {checkpoint.is_origin == 1 && <Badge bg="success" className="me-1" style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }}>Origin</Badge>}
+                            {checkpoint.is_destination == 1 && <Badge bg="danger" className="me-1" style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }}>Destination</Badge>}
+                            {checkpoint.is_origin != 1 && checkpoint.is_destination != 1 && <Badge bg="secondary" style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }}>Stop</Badge>}
                           </td>
-                          <td>₱{checkpoint.fare_from_origin}</td>
-                          <td>
+                          <td className="py-2 px-2 align-middle" style={{ width: '15%' }}>₱{checkpoint.fare_from_origin}</td>
+                          <td className="py-2 px-2 align-middle" style={{ width: '10%' }}>
                             <Button
                               size="sm"
                               variant="outline-primary"
                               onClick={() => generateSingleQR(checkpoint.id)}
                               disabled={loading}
                               title="Generate QR Code"
+                              style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem' }}
                             >
                               <i className="bi bi-qr-code"></i>
                             </Button>
@@ -491,6 +571,7 @@ const CheckpointManagement = ({ visible, onClose }) => {
                       ))}
                     </tbody>
                   </Table>
+                  </div>
                 </Card.Body>
               </Card>
             )}
@@ -591,17 +672,21 @@ const CheckpointManagement = ({ visible, onClose }) => {
                 </Form.Group>
               </Col>
               <Col md={6}>
-                <div className="d-flex align-items-end">
-                  <Button 
-                    variant="primary" 
-                    onClick={forceRefresh}
-                    disabled={!selectedRoute || loading}
-                  >
-                    {loading ? <Spinner animation="border" size="sm" className="me-2" /> : null}
-                    <i className="bi bi-arrow-clockwise me-2"></i>
-                    Refresh Locations
-                  </Button>
-                </div>
+                <Form.Group>
+                  <Form.Label style={{ visibility: 'hidden' }}>Spacer</Form.Label>
+                  <div className="d-flex justify-content-start">
+                    <Button 
+                      variant="primary" 
+                      onClick={forceRefresh}
+                      disabled={!selectedRoute || loading}
+                      style={{ width: '200px' }}
+                    >
+                      {loading ? <Spinner animation="border" size="sm" className="me-2" /> : null}
+                      <i className="bi bi-arrow-clockwise me-2"></i>
+                      Refresh Locations
+                    </Button>
+                  </div>
+                </Form.Group>
               </Col>
             </Row>
 
@@ -627,7 +712,7 @@ const CheckpointManagement = ({ visible, onClose }) => {
               </small>
             )}
           </div>
-        </Card.Header>
+                </Card.Header>
                 <Card.Body>
                   <Row>
                     {driverLocations.map((driver, index) => (
@@ -640,7 +725,7 @@ const CheckpointManagement = ({ visible, onClose }) => {
                                 {driver.jeepney_number}
                               </h6>
                               <div className="d-flex flex-column align-items-end">
-                                {getStatusBadge(driver.status)}
+                              {getStatusBadge(driver.status)}
                                 <Badge bg="success" className="mt-1 pulse-animation">
                                   <i className="bi bi-circle-fill me-1"></i>
                                   On Shift
@@ -765,6 +850,7 @@ const CheckpointManagement = ({ visible, onClose }) => {
         }
       `}</style>
     </Modal>
+    </>
   );
 };
 
