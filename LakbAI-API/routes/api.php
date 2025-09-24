@@ -73,10 +73,6 @@ if (isset($rawParts[0]) && $rawParts[0] === 'api') {
 // Use normalized parts
 $pathParts = $rawParts;
 
-// Debug logging (remove in production)
-// error_log("API Request - Method: $method, Path: $path");
-// error_log("RawParts: " . json_encode($rawParts));
-// error_log("PathParts: " . json_encode($pathParts));
 
 // Get request data
 $input = [];
@@ -135,6 +131,9 @@ function transformMobileRegistrationData($mobileData) {
     // Handle discount information
     if (isset($mobileData['fareDiscount']) && $mobileData['fareDiscount']['type']) {
         $transformed['discount_type'] = $mobileData['fareDiscount']['type'];
+        $transformed['discount_applied'] = 1; // Mark as applied
+        $transformed['discount_status'] = 'pending'; // Set status to pending for admin review
+        $transformed['discount_verified'] = 0; // Not verified yet
         
         // Handle document upload (for now, just store the name)
         if (isset($mobileData['fareDiscount']['document'])) {
@@ -142,6 +141,11 @@ function transformMobileRegistrationData($mobileData) {
             // Note: File upload handling would need additional implementation
             $transformed['discount_document_path'] = null; // Will be handled separately
         }
+    } else {
+        // No discount applied
+        $transformed['discount_applied'] = 0;
+        $transformed['discount_status'] = null;
+        $transformed['discount_verified'] = 0;
     }
     
     return $transformed;
@@ -766,6 +770,19 @@ try {
         exit;
     }
     
+    // PUT /routes/fare - Update base fare for all routes
+    if ($pathParts[0] === 'routes' && $pathParts[1] === 'fare' && $method === 'PUT' && count($pathParts) === 2) {
+        $newFare = $input['fare'] ?? null;
+        if (!$newFare) {
+            http_response_code(400);
+            echo json_encode(['status' => 'error', 'message' => 'Fare amount required']);
+            exit;
+        }
+        $result = $routeController->updateBaseFare($newFare);
+        echo json_encode($result);
+        exit;
+    }
+    
     // GET /jeepneys - Public access to jeepneys (direct path)
     if ($pathParts[0] === 'jeepneys' && $method === 'GET' && count($pathParts) === 1) {
         $result = $jeepneyController->getAllJeepneys();
@@ -1145,6 +1162,13 @@ try {
         echo json_encode($result);
         exit;
     }
+    
+    // Profile picture upload routes
+    if (end($pathParts) === 'upload-profile-picture' && $method === 'POST') {
+        $result = $fileUploadController->uploadProfilePicture();
+        echo json_encode($result);
+        exit;
+    }
 
     // Serve discount document file
     if (isset($pathParts[0]) && $pathParts[0] === 'discount-document' && $method === 'GET') {
@@ -1163,6 +1187,18 @@ try {
         $filePath = isset($_GET['path']) ? $_GET['path'] : '';
         if ($filePath) {
             $fileUploadController->serveDriverLicense($filePath);
+        } else {
+            http_response_code(400);
+            echo json_encode(['error' => 'File path parameter is required']);
+        }
+        exit;
+    }
+    
+    // Serve profile picture file
+    if (isset($pathParts[0]) && $pathParts[0] === 'profile-picture' && ($method === 'GET' || $method === 'HEAD')) {
+        $filePath = isset($_GET['path']) ? $_GET['path'] : '';
+        if ($filePath) {
+            $fileUploadController->serveProfilePicture($filePath);
         } else {
             http_response_code(400);
             echo json_encode(['error' => 'File path parameter is required']);

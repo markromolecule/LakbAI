@@ -126,62 +126,40 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
         <View style={profileStyles.profileDetails}>
           <View style={profileStyles.profileSection}>
             <Text style={profileStyles.profileSectionTitle}>Driver Information</Text>
+        
             <View style={profileStyles.profileRow}>
               <Text style={profileStyles.profileLabel}>License:</Text>
-              <Text style={profileStyles.profileValue}>{driverProfile.license}</Text>
+              <Text style={[
+                profileStyles.profileValue, 
+                { color: driverProfile.drivers_license_verified ? '#16A34A' : '#DC2626', fontWeight: 'bold' }
+              ]}>
+                {driverProfile.drivers_license_verified ? 'Approved' : 'Not Approved'}
+              </Text>
             </View>
             <View style={profileStyles.profileRow}>
               <Text style={profileStyles.profileLabel}>Jeepney #:</Text>
               <Text style={profileStyles.profileValue}>{driverProfile.jeepneyNumber}</Text>
             </View>
             <View style={profileStyles.profileRow}>
-              <Text style={profileStyles.profileLabel}>Route:</Text>
-              <Text style={profileStyles.profileValue}>{driverProfile.route}</Text>
-            </View>
-            <View style={profileStyles.profileRow}>
               <Text style={profileStyles.profileLabel}>Experience:</Text>
               <Text style={profileStyles.profileValue}>{driverProfile.yearsExperience} years</Text>
             </View>
-            <View style={profileStyles.profileRow}>
-              <Text style={profileStyles.profileLabel}>Account Status:</Text>
-              <Text style={[
-                profileStyles.profileValue, 
-                { color: driverProfile.is_verified ? '#16A34A' : '#DC2626', fontWeight: 'bold' }
-              ]}>
-                {driverProfile.is_verified ? 'Verified' : 'Unverified'}
-              </Text>
-            </View>
-            {driverProfile.license_status && (
-              <View style={profileStyles.profileRow}>
-                <Text style={profileStyles.profileLabel}>License Status:</Text>
-                <Text style={[
-                  profileStyles.profileValue, 
-                  { 
-                    color: driverProfile.license_status === 'approved' ? '#16A34A' : 
-                           driverProfile.license_status === 'pending' ? '#F59E0B' : '#DC2626',
-                    fontWeight: 'bold'
-                  }
-                ]}>
-                  {driverProfile.license_status.charAt(0).toUpperCase() + driverProfile.license_status.slice(1)}
-                </Text>
-              </View>
-            )}
           </View>
 
           <View style={profileStyles.profileSection}>
             <Text style={profileStyles.profileSectionTitle}>Performance Stats</Text>
+            {/* <View style={profileStyles.profileRow}>
+              <Text style={profileStyles.profileLabel}>Today's Trips:</Text>
+              <Text style={[profileStyles.profileValue, { color: '#16A34A', fontWeight: 'bold' }]}>{driverProfile.todayTrips}</Text>
+            </View>
             <View style={profileStyles.profileRow}>
               <Text style={profileStyles.profileLabel}>Total Trips:</Text>
               <Text style={[profileStyles.profileValue, { color: '#8B5CF6', fontWeight: 'bold' }]}>{driverProfile.totalTrips.toLocaleString()}</Text>
             </View>
             <View style={profileStyles.profileRow}>
-              <Text style={profileStyles.profileLabel}>Today's Trips:</Text>
-              <Text style={[profileStyles.profileValue, { color: '#16A34A', fontWeight: 'bold' }]}>{driverProfile.todayTrips}</Text>
-            </View>
-            <View style={profileStyles.profileRow}>
               <Text style={profileStyles.profileLabel}>Today's Earnings:</Text>
               <Text style={[profileStyles.profileValue, { color: '#16A34A', fontWeight: 'bold' }]}>₱{driverProfile.todayEarnings.toFixed(2)}</Text>
-            </View>
+            </View> */}
             <View style={profileStyles.profileRow}>
               <Text style={profileStyles.profileLabel}>Total Earnings:</Text>
               <Text style={[profileStyles.profileValue, { color: '#1D4ED8', fontWeight: 'bold' }]}>₱{driverProfile.totalEarnings.toFixed(2)}</Text>
@@ -192,18 +170,23 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 <Text style={[profileStyles.profileValue, { color: '#F59E0B' }]}>₱{(driverProfile.totalEarnings / driverProfile.totalTrips).toFixed(2)}</Text>
               </View>
             )}
-            {lastUpdate && (
-              <View style={profileStyles.profileRow}>
-                <Text style={profileStyles.profileLabel}>Last Updated:</Text>
-                <Text style={[profileStyles.profileValue, { color: '#6B7280', fontSize: 12 }]}>{lastUpdate}</Text>
-              </View>
-            )}
+            
             <View style={profileStyles.profileRow}>
               <Text style={profileStyles.profileLabel}>Status:</Text>
               <Text style={[profileStyles.profileValue, { color: isOnDuty ? '#16A34A' : '#DC2626', fontWeight: 'bold' }]}>
                 {isOnDuty ? 'On Duty' : 'Off Duty'}
               </Text>
             </View>
+            {lastUpdate && (
+              <View style={profileStyles.profileRow}>
+                <Text style={profileStyles.profileLabel}>Last Updated:</Text>
+                <Text style={[profileStyles.profileValue, { 
+                  color: '#6B7280', 
+                  fontSize: 11 }
+                  ]
+                  }>{lastUpdate}</Text>
+              </View>
+            )}
           </View>
         </View>
       </View>
@@ -230,7 +213,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           <View style={profileStyles.quickStatDivider} />
           <View style={profileStyles.quickStatItem}>
             <Text style={[profileStyles.quickStatValue, { color: '#1D4ED8' }]}>₱{driverProfile.todayEarnings.toFixed(0)}</Text>
-            <Text style={profileStyles.quickStatLabel}>Today's Earnings</Text>
+            <Text style={profileStyles.quickStatLabel}>Earnings</Text>
           </View>
         </View>
       </View>

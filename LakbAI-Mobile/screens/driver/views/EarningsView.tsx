@@ -11,6 +11,7 @@ import {
 import { DriverProfile } from '../../../shared/types/driver';
 import { driverStyles } from '../styles';
 import { earningsService } from '../../../shared/services/earningsService';
+import { EarningsNotificationDisplay } from '../../../components/driver/EarningsNotificationDisplay';
 
 interface EarningsViewProps {
   driverProfile: DriverProfile;
@@ -39,8 +40,9 @@ export const EarningsView: React.FC<EarningsViewProps> = ({
   // Load earnings data
   const loadEarningsData = async () => {
     try {
-      console.log('💰 Loading earnings data for driver:', driverProfile.id);
-      const earnings = await earningsService.getEarningsAsync(driverProfile.id.toString());
+      console.log('💰 Driver app loading earnings data for driver:', driverProfile.id);
+      // Use refreshDriverEarnings to trigger notifications when driver app loads data
+      const earnings = await earningsService.refreshDriverEarnings(driverProfile.id.toString());
       
       setEarningsData({
         todayEarnings: earnings.todayEarnings,
@@ -127,13 +129,17 @@ export const EarningsView: React.FC<EarningsViewProps> = ({
   }
 
   return (
-    <ScrollView 
-      style={driverStyles.container} 
-      contentContainerStyle={driverStyles.contentContainer}
-      refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-      }
-    >
+    <View style={driverStyles.container}>
+      {/* Earnings Notification Display */}
+      <EarningsNotificationDisplay driverId={driverProfile.id.toString()} />
+      
+      <ScrollView 
+        style={driverStyles.container} 
+        contentContainerStyle={driverStyles.contentContainer}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+        }
+      >
       {/* Header */}
       <View style={earningsStyles.header}>
         <View style={earningsStyles.placeholder} />
@@ -244,6 +250,7 @@ export const EarningsView: React.FC<EarningsViewProps> = ({
         </Text>
       </View>
     </ScrollView>
+    </View>
   );
 };
 

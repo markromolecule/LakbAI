@@ -7,7 +7,7 @@ export interface DriverLocationNotification {
   driverName: string;
   jeepneyNumber: string;
   route: string;
-  location: string;
+  currentLocation: string;
   timestamp: string;
   coordinates?: {
     latitude: number;
@@ -38,6 +38,7 @@ export interface ConflictResolutionData {
 
 class NotificationService {
   private initialized = false;
+  private driverLocationNotifications: DriverLocationNotification[] = [];
 
   async initialize() {
     if (this.initialized) return;
@@ -48,6 +49,8 @@ class NotificationService {
         shouldShowAlert: true,
         shouldPlaySound: true,
         shouldSetBadge: false,
+        shouldShowBanner: true,
+        shouldShowList: true,
       }),
     });
 
@@ -56,35 +59,42 @@ class NotificationService {
 
   /**
    * Send notification to passengers about driver location update
+   * This is called when driver scans QR and updates location, so it should always show the notification
    */
   async notifyPassengerDriverLocation(notification: DriverLocationNotification) {
     try {
       await this.initialize();
 
-      // For development, we'll show a mock notification
-      // In production, this would send push notifications to registered passengers
-      console.log('📍 Driver Location Notification:', notification);
+      console.log('📍 Driver Location Notification (Location Updated):', notification);
 
-      // Simulate sending to nearby passengers
-      const mockPassengerNotification = {
-        title: `🚍 Jeepney ${notification.jeepneyNumber} Arrived!`,
-        body: `${notification.driverName} is now at ${notification.location}`,
+      // Store the notification for passengers to view
+      this.storeDriverLocationNotification(notification);
+
+      // Since this is called when driver location is updated, always show the notification
+      const passengerNotification = {
+        title: `🚍 Jeepney ${notification.jeepneyNumber} Location Update!`,
+        body: `${notification.driverName} is now at ${notification.currentLocation}`,
         data: {
-          type: 'driver_location',
+          type: 'driver_location_update',
           driverId: notification.driverId,
-          location: notification.location,
+          driverName: notification.driverName,
           jeepneyNumber: notification.jeepneyNumber,
+          route: notification.route,
+          currentLocation: notification.currentLocation,
+          timestamp: notification.timestamp,
+          source: 'location_update',
+          target: 'passenger', // Specify this notification is for passenger
         },
       };
 
-      // In a real app, this would be sent via backend API to all subscribed passengers
-      // For demo purposes, we'll show a local notification
-      await this.scheduleLocalNotification(mockPassengerNotification);
+      await this.scheduleLocalNotification(passengerNotification);
+      console.log('📱 Location notification sent - driver location updated:', notification.currentLocation);
+      console.log('📱 NOTE: This notification should appear on the PASSENGER device');
 
       return {
         success: true,
-        notificationsSent: this.getMockPassengerCount(notification.location),
-        message: `Notified passengers about driver arrival at ${notification.location}`,
+        notificationsSent: 1,
+        message: `Passengers notified about driver location: ${notification.currentLocation}`,
       };
     } catch (error) {
       console.error('Failed to send driver location notification:', error);
@@ -97,13 +107,15 @@ class NotificationService {
 
   /**
    * Send payment confirmation to driver
+   * This is called when earnings are updated, so it should always show the notification
    */
   async notifyDriverPaymentReceived(notification: PaymentNotification) {
     try {
       await this.initialize();
 
-      console.log('💰 Payment Notification:', notification);
+      console.log('💰 Payment Notification (Earnings Updated):', notification);
 
+      // Since this is called when earnings are updated, always show the notification
       const paymentNotification = {
         title: '💰 Payment Received!',
         body: `You received ₱${notification.amount} from a passenger`,
@@ -111,10 +123,15 @@ class NotificationService {
           type: 'payment_received',
           amount: notification.amount,
           tripId: notification.tripId,
+          driverId: notification.driverId,
+          source: 'earnings_update',
+          target: 'driver', // Specify this notification is for driver
         },
       };
 
       await this.scheduleLocalNotification(paymentNotification);
+      console.log('📱 Payment notification sent - earnings updated for driver:', notification.driverId);
+      console.log('📱 NOTE: This notification should appear on the DRIVER device');
 
       return {
         success: true,
@@ -186,7 +203,7 @@ class NotificationService {
           body: notification.body,
           data: notification.data || {},
         },
-        trigger: { seconds: 1 },
+        trigger: null,
       });
     } catch (error) {
       console.error('Failed to schedule local notification:', error);
@@ -271,6 +288,49 @@ class NotificationService {
   async unsubscribeFromDriverUpdates(subscriptionId: string) {
     console.log(`Unsubscribed from driver updates: ${subscriptionId}`);
     return { success: true };
+  }
+
+  /**
+   * Store driver location notification for passengers to view
+   */
+  private storeDriverLocationNotification(notification: DriverLocationNotification) {
+    try {
+      // Add new notification
+      this.driverLocationNotifications.push(notification);
+      
+      // Keep only last 20 notifications to prevent memory issues
+      if (this.driverLocationNotifications.length > 20) {
+        this.driverLocationNotifications = this.driverLocationNotifications.slice(-20);
+      }
+      
+      console.log('📱 Stored driver location notification for passengers:', notification.currentLocation);
+    } catch (error) {
+      console.error('❌ Failed to store driver location notification:', error);
+    }
+  }
+
+  /**
+   * Get stored driver location notifications
+   */
+  getStoredDriverLocationNotifications(): DriverLocationNotification[] {
+    try {
+      return this.driverLocationNotifications || [];
+    } catch (error) {
+      console.error('❌ Failed to get stored notifications:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Clear all stored driver location notifications
+   */
+  clearDriverLocationNotifications(): void {
+    try {
+      this.driverLocationNotifications = [];
+      console.log('🧹 Cleared all driver location notifications');
+    } catch (error) {
+      console.error('❌ Failed to clear notifications:', error);
+    }
   }
 }
 

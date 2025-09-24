@@ -1,6 +1,6 @@
 // screens/passenger/views/HomeScreen.tsx
-import React, { useCallback } from 'react';
-import { ScrollView, View, Text, TouchableOpacity, Alert } from 'react-native';
+import React, { useCallback, useState, useEffect } from 'react';
+import { ScrollView, View, Text, TouchableOpacity, Alert, Modal } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
@@ -9,6 +9,8 @@ import { COLORS } from '../../../shared/styles';
 import { globalStyles } from '../../../shared/styles/globalStyles';
 import { useAuthContext } from '../../../shared/providers/AuthProvider';
 import styles from '../styles/HomeScreen.styles';
+import DriverLocationCard from '../components/DriverLocationCard';
+import { getBaseUrl } from '../../../config/apiConfig';
 import type { Href } from 'expo-router';
 
 const GridItem: React.FC<{
@@ -26,9 +28,85 @@ const GridItem: React.FC<{
   </TouchableOpacity>
 );
 
+interface Route {
+  id: number;
+  route_name: string;
+  origin: string;
+  destination: string;
+  description?: string;
+  fare_base?: string;
+  checkpoints?: Array<{
+    checkpoint_name: string;
+    sequence_order: number;
+    fare_from_origin: string;
+    is_origin: number;
+    is_destination: number;
+  }>;
+}
+
 export const HomeScreen: React.FC = () => {
   const router = useRouter();
   const { isAuthenticated, isLoading } = useAuthContext();
+  const [selectedRoute, setSelectedRoute] = useState<Route | null>(null);
+  const [routes, setRoutes] = useState<Route[]>([]);
+  const [showRouteModal, setShowRouteModal] = useState(false);
+  const [loadingRoutes, setLoadingRoutes] = useState(false);
+
+  // Load available routes
+  const loadRoutes = async () => {
+    try {
+      setLoadingRoutes(true);
+      console.log('🛣️ Loading routes from API...');
+      
+      // Get base URL and construct the correct routes endpoint
+      const baseUrl = getBaseUrl();
+      const routesUrl = `${baseUrl}/routes`;
+      console.log('🛣️ Routes URL:', routesUrl);
+      
+      const response = await fetch(routesUrl);
+      console.log('🛣️ Routes response status:', response.status);
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('🛣️ Routes data:', data);
+        
+        if (data.status === 'success' && data.routes) {
+          // All routes from API are active (no status filtering needed)
+          console.log('🛣️ Available routes:', data.routes);
+          
+          setRoutes(data.routes);
+          
+          // Set default route to first one if none selected
+          if (!selectedRoute && data.routes.length > 0) {
+            setSelectedRoute(data.routes[0]);
+            console.log('🛣️ Default route set:', data.routes[0]);
+          }
+        } else {
+          console.warn('🛣️ No routes found in response');
+        }
+      } else {
+        console.error('🛣️ Failed to fetch routes:', response.status, response.statusText);
+      }
+    } catch (error) {
+      console.error('🛣️ Error loading routes:', error);
+    } finally {
+      setLoadingRoutes(false);
+    }
+  };
+
+  useEffect(() => {
+    loadRoutes();
+  }, []);
+
+  // Auto-refresh routes every 30 seconds to get updated fare information
+  useEffect(() => {
+    const interval = setInterval(() => {
+      console.log('🔄 Auto-refreshing routes...');
+      loadRoutes();
+    }, 30000); // 30 seconds
+
+    return () => clearInterval(interval);
+  }, []);
 
   useFocusEffect(
     useCallback(() => {
@@ -147,16 +225,42 @@ export const HomeScreen: React.FC = () => {
         ))}
       </View>
 
-      {/* For notification : Receiver/Print */}
-      <View style={styles.arrivalCard}>
-        <View style={styles.arrivalContent}>
-          <Ionicons name="time" size={20} color={COLORS.warning} />
-          <View style={styles.arrivalText}>
-            <Text style={styles.arrivalTitle}>Next Jeep Arrival</Text>
-            <Text style={styles.arrivalTime}>Estimated: 5-7 minutes</Text>
+      {/* Compact Route Selector */}
+      {isAuthenticated && selectedRoute && (
+        <View style={styles.compactRouteSelector}>
+          <View style={styles.compactRouteInfo}>
+            <View style={styles.compactRouteText}>
+              <Text style={styles.compactRouteName} numberOfLines={1}>
+                {selectedRoute.route_name}
+              </Text>
+              <Text style={styles.compactRouteDetails} numberOfLines={1}>
+                {selectedRoute.origin} → {selectedRoute.destination}
+              </Text>
+            </View>
+            <View style={styles.compactRouteActions}>
+              <Text style={styles.compactRouteFare}>
+                ₱{selectedRoute.fare_base || '13.00'}
+              </Text>
+              <TouchableOpacity 
+                style={styles.compactRouteButton}
+                onPress={() => {
+                  console.log('🛣️ Opening route modal, current routes:', routes);
+                  setShowRouteModal(true);
+                }}
+              >
+                <Ionicons name="swap-horizontal" size={16} color={COLORS.primary} />
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
-      </View>
+      )}
+
+      {/* Driver Location Tracking */}
+      {isAuthenticated && selectedRoute && (
+        <View style={styles.driverLocationSection}>
+          <DriverLocationCard routeId={selectedRoute.id.toString()} />
+        </View>
+      )}
 
       {/* Info section */}
       <View style={styles.infoSection}>
@@ -165,6 +269,70 @@ export const HomeScreen: React.FC = () => {
           <Text key={index} style={styles.infoItem}>{item}</Text>
         ))}
       </View>
+
+      {/* Route Selection Modal */}
+      <Modal
+        visible={showRouteModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowRouteModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Select Route</Text>
+              <TouchableOpacity 
+                style={styles.modalCloseButton}
+                onPress={() => setShowRouteModal(false)}
+              >
+                <Ionicons name="close" size={24} color={COLORS.gray600} />
+              </TouchableOpacity>
+            </View>
+            
+            <ScrollView style={styles.routesList}>
+              {loadingRoutes ? (
+                <Text style={styles.loadingText}>Loading routes...</Text>
+              ) : routes.length === 0 ? (
+                <View style={styles.emptyState}>
+                  <Text style={styles.emptyStateText}>No routes available</Text>
+                  <TouchableOpacity 
+                    style={styles.retryButton}
+                    onPress={loadRoutes}
+                  >
+                    <Text style={styles.retryButtonText}>Retry</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                routes.map((route) => (
+                  <TouchableOpacity
+                    key={route.id}
+                    style={[
+                      styles.routeItem,
+                      selectedRoute?.id === route.id && styles.selectedRouteItem
+                    ]}
+                    onPress={() => {
+                      console.log('🛣️ Route selected:', route);
+                      setSelectedRoute(route);
+                      setShowRouteModal(false);
+                    }}
+                  >
+                    <View style={styles.routeItemContent}>
+                      <Text style={styles.routeItemName}>{route.route_name}</Text>
+                      <Text style={styles.routeItemDetails}>
+                        {route.origin} → {route.destination}
+                      </Text>
+                      <Text style={styles.routeItemFare}>₱{route.fare_base || '8.00'}</Text>
+                    </View>
+                    {selectedRoute?.id === route.id && (
+                      <Ionicons name="checkmark-circle" size={24} color={COLORS.success} />
+                    )}
+                  </TouchableOpacity>
+                ))
+              )}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 };

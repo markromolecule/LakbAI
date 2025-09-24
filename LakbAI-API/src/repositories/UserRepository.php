@@ -88,15 +88,21 @@ class UserRepository extends BaseRepository {
         $params = [];
         $types = "";
 
+        // Debug: Log the update data
+        error_log("🔍 UserRepository update: ID = " . $id);
+        error_log("🔍 UserRepository update: User data = " . json_encode($userData));
+
         foreach ($userData as $field => $value) {
             if ($field !== 'id' && $value !== null) {
                 $setParts[] = "{$field} = ?";
                 $params[] = $value;
                 $types .= "s";
+                error_log("🔍 UserRepository update: Adding field '{$field}' = '{$value}'");
             }
         }
 
         if (empty($setParts)) {
+            error_log("❌ UserRepository update: No fields to update");
             return false;
         }
 
@@ -105,10 +111,20 @@ class UserRepository extends BaseRepository {
         $types .= "i";
 
         $query = "UPDATE {$this->table_name} SET " . implode(", ", $setParts) . " WHERE id = ?";
+        error_log("🔍 UserRepository update: Query = " . $query);
+        error_log("🔍 UserRepository update: Params = " . json_encode($params));
+        
         $stmt = $this->conn->prepare($query);
         $stmt->bind_param($types, ...$params);
 
-        return $stmt->execute();
+        $result = $stmt->execute();
+        error_log("🔍 UserRepository update: Execute result = " . ($result ? 'true' : 'false'));
+        
+        if (!$result) {
+            error_log("❌ UserRepository update: MySQL error = " . $stmt->error);
+        }
+
+        return $result;
     }
 
     /**
@@ -327,7 +343,8 @@ class UserRepository extends BaseRepository {
      */
     public function findUsersWithPendingApprovals() {
         $query = "SELECT * FROM {$this->table_name} WHERE 
-                    (discount_type IS NOT NULL AND discount_verified = 0 AND discount_document_path IS NOT NULL AND discount_document_path != '') OR 
+                    (discount_type IS NOT NULL AND discount_verified = 0 AND discount_status = 'pending') OR 
+                    (discount_type IS NOT NULL AND discount_verified = -1 AND discount_status = 'rejected') OR 
                     (user_type = 'driver' AND drivers_license_path IS NOT NULL AND drivers_license_path != '' AND drivers_license_verified = 0)
                   ORDER BY created_at DESC";
         $stmt = $this->conn->prepare($query);

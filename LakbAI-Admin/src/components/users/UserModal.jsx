@@ -44,7 +44,7 @@ const UserModal = ({ show, onHide, user, mode, onSave }) => {
           discount_type: user.discount_type || '', discount_applied: user.discount_applied || 0,
           discount_file_path: user.discount_file_path || '', discount_status: user.discount_status || 'pending',
           discount_verified: user.discount_verified || 0, is_verified: user.is_verified || 0, 
-          drivers_license_verified: user.drivers_license_verified || 0,
+          drivers_license_verified: user.drivers_license_verified === 1 ? 1 : 0,
           drivers_license_name: user.drivers_license_name || '',
           drivers_license_path: user.drivers_license_path || ''
         });
