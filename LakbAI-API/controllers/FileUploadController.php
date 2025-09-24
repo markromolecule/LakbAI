@@ -16,7 +16,7 @@ class FileUploadController {
         $this->allowedTypes = ['pdf', 'jpg', 'jpeg', 'png'];
         $this->maxFileSize = 5 * 1024 * 1024; // 5MB in bytes
         
-        // Create upload directories if they don't exist
+        // Create upload directories if they don't exist (silently fail if no permission)
         $this->createUploadDirectory();
         $this->createLicenseUploadDirectory();
         $this->createProfilePicturesUploadDirectory();
@@ -27,8 +27,12 @@ class FileUploadController {
      */
     private function createUploadDirectory() {
         if (!file_exists($this->uploadPath)) {
-            mkdir($this->uploadPath, 0755, true);
+            if (!@mkdir($this->uploadPath, 0755, true)) {
+                // Silently fail if we can't create directory
+                return false;
+            }
         }
+        return true;
     }
 
     /**
@@ -37,8 +41,12 @@ class FileUploadController {
     private function createLicenseUploadDirectory() {
         $licensePath = __DIR__ . '/../uploads/licenses/';
         if (!file_exists($licensePath)) {
-            mkdir($licensePath, 0755, true);
+            if (!@mkdir($licensePath, 0755, true)) {
+                // Silently fail if we can't create directory
+                return false;
+            }
         }
+        return true;
     }
 
     /**
@@ -47,7 +55,7 @@ class FileUploadController {
     private function createProfilePicturesUploadDirectory() {
         $profilePath = __DIR__ . '/../uploads/profile_pictures/';
         if (!file_exists($profilePath)) {
-            mkdir($profilePath, 0755, true);
+            @mkdir($profilePath, 0755, true);
         }
     }
 

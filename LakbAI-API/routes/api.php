@@ -73,6 +73,11 @@ if (isset($rawParts[0]) && $rawParts[0] === 'api') {
 // Use normalized parts
 $pathParts = $rawParts;
 
+// Ensure pathParts is not empty to avoid undefined array key warnings
+if (empty($pathParts)) {
+    $pathParts = [''];
+}
+
 
 // Get request data
 $input = [];
