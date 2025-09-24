@@ -4,6 +4,7 @@ import { User, Mail, Phone, MapPin, Edit, FileText, LogOut, CreditCard, Plus, Ch
 import { PassengerProfile } from '../../../shared/types/authentication';
 import { passengerStyles, profileStyles, homeStyles } from '../styles/ProfileScreen.styles';
 import { useAuthContext } from '../../../shared/providers/AuthProvider';
+import { getBaseUrl } from '../../../config/apiConfig';
 
 interface ProfileViewProps {
   passengerProfile: PassengerProfile;
@@ -17,6 +18,38 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   onApplyForDiscount
 }) => {
   const { logout } = useAuthContext();
+  
+  console.log('🔍 ProfileView rendered with profile:', {
+    firstName: passengerProfile.firstName,
+    lastName: passengerProfile.lastName,
+    picture: passengerProfile.picture,
+    hasPicture: !!passengerProfile.picture
+  });
+
+  const getProfilePictureUrl = (picturePath: string | null) => {
+    console.log('🔍 getProfilePictureUrl called with:', picturePath);
+    
+    if (!picturePath) {
+      console.log('❌ No picture path provided');
+      return null;
+    }
+    
+    // If it's already a full URL, return as is
+    if (picturePath.startsWith('http')) {
+      console.log('✅ Using full URL:', picturePath);
+      return picturePath;
+    }
+    
+    // If it's a relative path, construct the full URL
+    if (picturePath.startsWith('uploads/')) {
+      const fullUrl = `${getBaseUrl()}/profile-picture?path=${encodeURIComponent(picturePath)}`;
+      console.log('✅ Constructed full URL:', fullUrl);
+      return fullUrl;
+    }
+    
+    console.log('⚠️ Unknown picture path format:', picturePath);
+    return picturePath;
+  };
 
   const getDiscountTypeDisplay = (type: string) => {
     switch (type) {
@@ -78,9 +111,11 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           <View style={profileStyles.avatar}>
             {passengerProfile.picture ? (
               <Image
-                source={{ uri: passengerProfile.picture }}
+                source={{ uri: getProfilePictureUrl(passengerProfile.picture) || passengerProfile.picture }}
                 style={profileStyles.avatarImage}
                 resizeMode="cover"
+                onError={(error) => console.log('❌ Image load error:', error)}
+                onLoad={() => console.log('✅ Image loaded successfully')}
               />
             ) : (
               <User size={40} color="white" />

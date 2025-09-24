@@ -6,6 +6,7 @@ import { useRouter } from 'expo-router';
 import sessionManager from '../../../shared/services/sessionManager';
 
 const CleanAuthScreen: React.FC = () => {
+  
   const { login: auth0Login, isLoading, error } = useAuthContext();
   const router = useRouter();
 
@@ -89,8 +90,8 @@ const CleanAuthScreen: React.FC = () => {
           >
             <View style={styles.buttonContent}>
               <Ionicons name="person-outline" size={32} color="#007AFF" />
-              <Text style={styles.traditionalButtonText}>Traditional Sign-In</Text>
-              <Text style={styles.choiceButtonSubtext}>Use username & password</Text>
+              <Text style={styles.traditionalButtonText}>Sign-In</Text>
+              <Text style={styles.traditionalButtonSubtext}>Continue with Traditional Login</Text>
             </View>
           </TouchableOpacity>
         </View>
@@ -197,6 +198,12 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '700',
     letterSpacing: 0.3,
+  },
+  traditionalButtonSubtext: {
+    color: '#666666',
+    fontSize: 14,
+    fontWeight: '400',
+    opacity: 0.9,
   },
   choiceButtonSubtext: {
     color: '#FFFFFF',

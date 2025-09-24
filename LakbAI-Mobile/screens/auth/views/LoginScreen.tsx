@@ -19,7 +19,7 @@ import authService from '../../../shared/services/authService';
 interface LoginData {
   username: string;
   password: string;
-  user?: any; // User data from successful authentication
+  user?: any;
 }
 
 interface LoginScreenProps {

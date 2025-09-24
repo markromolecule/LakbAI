@@ -1,5 +1,6 @@
 import { Alert } from 'react-native';
-import { notificationService, PaymentNotification } from './notificationService';
+// Removed old notificationService - using only localNotificationService for driver app notifications
+import { localNotificationService } from './localNotificationService';
 
 export interface EarningsUpdate {
   driverId: string;
@@ -33,6 +34,7 @@ export interface DriverEarnings {
 
 class EarningsService {
   private earnings: Map<string, DriverEarnings> = new Map();
+  private previousEarnings: Map<string, DriverEarnings> = new Map(); // Track previous earnings for comparison
   private listeners = new Set<(driverId: string) => void>();
   private lastResetDate: string = new Date().toDateString(); // Track last reset date
 
@@ -257,17 +259,11 @@ class EarningsService {
       // Update stored earnings
       this.earnings.set(update.driverId, newEarnings);
 
-      // Send notification to driver
-      const paymentNotification: PaymentNotification = {
-        type: 'payment_received',
-        driverId: update.driverId,
-        amount: update.finalFare,
-        passengerId: update.passengerId,
-        tripId: update.tripId,
-        timestamp: update.timestamp,
-      };
+      // Note: Local notification will be triggered when driver app refreshes earnings data
+      // This prevents passenger app from triggering notifications meant for drivers
 
-      await notificationService.notifyDriverPaymentReceived(paymentNotification);
+      // Removed direct payment notification - driver will be notified when their app refreshes earnings
+      console.log('💰 Payment processed - driver will be notified when their app refreshes earnings data');
       
       // Save to database API
       await this.saveEarningsToAPI(update);
@@ -305,6 +301,48 @@ class EarningsService {
   }
 
   /**
+   * Check for earnings changes and trigger notification if driver earnings increased
+   * This should only be called from the driver app
+   */
+  private async checkAndNotifyEarningsChange(driverId: string, newEarnings: DriverEarnings): Promise<void> {
+    const previousEarnings = this.previousEarnings.get(driverId);
+    
+    if (previousEarnings && newEarnings.todayEarnings > previousEarnings.todayEarnings) {
+      const earningsIncrease = newEarnings.todayEarnings - previousEarnings.todayEarnings;
+      
+      console.log('💰 Earnings increase detected for driver:', {
+        driverId,
+        previousEarnings: previousEarnings.todayEarnings,
+        newEarnings: newEarnings.todayEarnings,
+        increase: earningsIncrease
+      });
+
+      // Trigger local notification for the driver
+      await localNotificationService.notifyEarningsUpdate({
+        type: 'earnings_update',
+        driverId: driverId,
+        amount: earningsIncrease,
+        tripId: `earnings_${Date.now()}`,
+        paymentMethod: 'passenger_payment',
+        previousEarnings: previousEarnings.todayEarnings,
+        newEarnings: newEarnings.todayEarnings,
+        title: '💰 Earnings Updated!',
+        body: `You received ₱${earningsIncrease.toFixed(2)}. Today's earnings: ₱${newEarnings.todayEarnings.toFixed(2)}`,
+        data: {
+          driverId: driverId,
+          amount: earningsIncrease,
+          newTotal: newEarnings.todayEarnings,
+          previousTotal: previousEarnings.todayEarnings,
+          paymentMethod: 'passenger_payment'
+        }
+      });
+    }
+    
+    // Update previous earnings for next comparison
+    this.previousEarnings.set(driverId, { ...newEarnings });
+  }
+
+  /**
    * Get current earnings for a driver (async version - tries API first)
    */
   async getEarningsAsync(driverId: string): Promise<DriverEarnings> {
@@ -312,6 +350,9 @@ class EarningsService {
     const apiEarnings = await this.getDriverEarningsFromAPI(driverId);
     
     if (apiEarnings) {
+      // Check for earnings changes and notify driver if increased
+      await this.checkAndNotifyEarningsChange(driverId, apiEarnings);
+      
       // Update local cache with API data
       this.earnings.set(driverId, apiEarnings);
       console.log('💰 Updated local earnings cache from API for driver:', driverId);
@@ -320,7 +361,21 @@ class EarningsService {
     
     // Fallback to local cache
     console.log('💰 Using fallback local earnings for driver:', driverId);
-    return this.getDriverEarnings(driverId);
+    const localEarnings = this.getDriverEarnings(driverId);
+    
+    // Check for earnings changes even with local data
+    await this.checkAndNotifyEarningsChange(driverId, localEarnings);
+    
+    return localEarnings;
+  }
+
+  /**
+   * Refresh earnings for driver and check for updates (should be called by driver app)
+   * This will trigger notifications if earnings have increased
+   */
+  async refreshDriverEarnings(driverId: string): Promise<DriverEarnings> {
+    console.log('🔄 Driver app refreshing earnings for:', driverId);
+    return await this.getEarningsAsync(driverId);
   }
 
   /**
@@ -551,7 +606,7 @@ class EarningsService {
   }
 
   /**
-   * End shift - reset today's earnings but KEEP today's trip count (only reset after 24 hours)
+   * End shift - KEEP today's earnings and trips (only reset at 5:00 AM daily)
    */
   async endShift(driverId: string): Promise<{ success: boolean; message: string; totalEarnings?: number }> {
     try {
@@ -559,21 +614,20 @@ class EarningsService {
       
       const currentEarnings = this.getDriverEarnings(driverId);
       
-      // Add today's earnings to total earnings before resetting
+      // Add today's earnings to total earnings but KEEP today's earnings for accumulation
       const newTotalEarnings = currentEarnings.totalEarnings + currentEarnings.todayEarnings;
       
-      // Reset today's earnings but KEEP today's trips (as requested)
-      // Trip count should only reset after 24 hours or logout
+      // KEEP today's earnings and trips - they should only reset at 5:00 AM daily
       const updatedEarnings: DriverEarnings = {
         ...currentEarnings,
-        todayEarnings: 0, // Reset earnings
+        todayEarnings: currentEarnings.todayEarnings, // KEEP earnings for daily accumulation
         todayTrips: currentEarnings.todayTrips, // KEEP trip count
         totalEarnings: newTotalEarnings,
         lastUpdate: new Date().toISOString(),
       };
       
-      console.log('🔄 Shift end - Earnings reset, trips preserved:', {
-        todayEarningsReset: 0,
+      console.log('🔄 Shift end - Earnings and trips preserved for daily accumulation:', {
+        todayEarningsPreserved: currentEarnings.todayEarnings,
         todayTripsPreserved: currentEarnings.todayTrips,
         newTotalEarnings
       });
@@ -587,11 +641,11 @@ class EarningsService {
       // Notify listeners
       this.notifyListeners(driverId);
       
-      console.log('✅ Shift ended successfully. Today earnings:', currentEarnings.todayEarnings, 'added to total:', newTotalEarnings);
+      console.log('✅ Shift ended successfully. Today earnings preserved:', currentEarnings.todayEarnings, 'Total earnings:', newTotalEarnings);
       
       return {
         success: true,
-        message: `Shift ended. Today's earnings ₱${currentEarnings.todayEarnings} added to total earnings. Trip count preserved.`,
+        message: `Shift ended. Today's earnings ₱${currentEarnings.todayEarnings} preserved for daily accumulation. Trip count preserved.`,
         totalEarnings: newTotalEarnings
       };
     } catch (error) {
@@ -604,7 +658,7 @@ class EarningsService {
   }
 
   /**
-   * Start shift - driver can start earning again
+   * Start shift - driver can start earning again (preserve daily data)
    */
   async startShift(driverId: string): Promise<{ success: boolean; message: string }> {
     try {
@@ -612,16 +666,17 @@ class EarningsService {
       
       const currentEarnings = this.getDriverEarnings(driverId);
       
-      // Ensure today's earnings are reset (in case they weren't properly reset)
-      const updatedEarnings: DriverEarnings = {
-        ...currentEarnings,
-        todayEarnings: 0,
-        todayTrips: 0,
-        lastUpdate: new Date().toISOString(),
-      };
+      // Check for daily reset first (5:00 AM reset)
+      this.checkAndResetDailyTrips(driverId);
       
-      // Update stored earnings
-      this.earnings.set(driverId, updatedEarnings);
+      // Get updated earnings after potential reset
+      const updatedEarnings = this.getDriverEarnings(driverId);
+      
+      // Update stored earnings (preserve today's data unless reset by 5:00 AM logic)
+      this.earnings.set(driverId, {
+        ...updatedEarnings,
+        lastUpdate: new Date().toISOString(),
+      });
       
       // Save to database API
       await this.saveShiftStartToAPI(driverId);
@@ -629,11 +684,11 @@ class EarningsService {
       // Notify listeners
       this.notifyListeners(driverId);
       
-      console.log('✅ Shift started successfully');
+      console.log('✅ Shift started successfully. Today earnings preserved:', updatedEarnings.todayEarnings);
       
       return {
         success: true,
-        message: 'Shift started. You can now start earning!'
+        message: `Shift started. Today's earnings: ₱${updatedEarnings.todayEarnings}, Trips: ${updatedEarnings.todayTrips}`
       };
     } catch (error) {
       console.error('❌ Failed to start shift:', error);
