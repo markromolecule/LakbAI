@@ -4,7 +4,7 @@ import { QrCode, Camera, MapPin, AlertCircle, Scan } from 'lucide-react-native';
 import { CameraView } from 'expo-camera';
 import { Ionicons } from '@expo/vector-icons';
 import { useCameraPermissions } from '../../../shared/helpers/useCameraPermission';
-import { notificationService, DriverLocationNotification, ConflictResolutionData } from '../../../shared/services/notificationService';
+import { ConflictResolutionData } from '../../../shared/services/notificationService';
 
 import { tripTrackingService, ActiveTrip, TripCheckpoint } from '../../../shared/services/tripTrackingService';
 
@@ -279,15 +279,20 @@ export const ScannerView: React.FC<ScannerViewProps> = ({
       
       console.log(`📢 Notifying passengers of driver location: ${locationName} (Driver: ${realDriverName})`);
       
-      // Use simple notification system
-      console.log('🔔 Would notify passengers about driver location:', {
-        driver: realDriverName,
+      // Send location notification to passengers
+      const locationNotification: DriverLocationNotification = {
+        type: 'driver_location_update',
+        driverId: driverInfo.id,
+        driverName: realDriverName,
         jeepneyNumber: realJeepneyNumber,
-        location: locationName,
-        route: realRoute
-      });
-      
-      console.log(`✅ Simple notification sent: ${realDriverName} at ${locationName}`);
+        route: realRoute,
+        currentLocation: locationName,
+        coordinates: coordinates,
+        timestamp: new Date().toISOString(),
+      };
+
+      // Location update stored in database - passenger apps will detect via API polling
+      console.log(`📍 Location update stored in database: ${realDriverName} at ${locationName}`);
       
       return {
         success: true,
@@ -435,11 +440,12 @@ export const ScannerView: React.FC<ScannerViewProps> = ({
         if (result.success) {
           setActiveTrip(result.activeTrip || null);
           
-          Alert.alert(
-            '📍 Checkpoint Updated',
-            `${result.message}\n\nActive Trip: ${activeTrip?.startCheckpoint.name} → ${qrData.checkpointName}\nCheckpoints passed: ${result.activeTrip?.intermediateCheckpoints.length || 0}`,
-            [{ text: 'Continue' }]
-          );
+          // Checkpoint updated - no alert needed (console log only)
+          console.log('📍 Checkpoint updated:', {
+            message: result.message,
+            activeTrip: `${activeTrip?.startCheckpoint.name} → ${qrData.checkpointName}`,
+            checkpointsPassed: result.activeTrip?.intermediateCheckpoints.length || 0
+          });
         } else {
           Alert.alert('Cannot Update Location', result.message);
         }

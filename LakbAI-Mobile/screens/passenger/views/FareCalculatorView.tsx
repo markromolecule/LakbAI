@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, ActivityIndicator } from 'react-native';
 import { Button } from '../../../components/common/Button';
-import { LocationPicker } from '../../../components/common/LocationPicker';
+import { ModernLocationSelector } from '../../../components/common/ModernLocationSelector';
 import { FareResult } from '../components/fare/FareResult';
 import { CHECKPOINTS } from '../../../constants/checkpoints';
 import { SPACING } from '../../../shared/styles';
@@ -55,20 +55,23 @@ export const FareCalculatorScreen: React.FC = () => {
     <ScrollView style={globalStyles.container}>
       <Text style={globalStyles.pageTitle}>Fare Calculator</Text>
       
-      <LocationPicker
-        label="From:"
+      <ModernLocationSelector
+        label="From"
         selectedLocation={fromLocation}
         onLocationSelect={setFromLocation}
-        locations={CHECKPOINTS} 
         placeholder="Select pickup point"
+        excludeLocation={toLocation}
+        isDestination={false}
       />
 
-      <LocationPicker
-        label="To:"
+      <ModernLocationSelector
+        label="To"
         selectedLocation={toLocation}
         onLocationSelect={setToLocation}
-        locations={CHECKPOINTS}
         placeholder="Select destination"
+        excludeLocation={fromLocation}
+        pickupLocation={fromLocation}
+        isDestination={true}
       />
 
       <Button

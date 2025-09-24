@@ -265,7 +265,9 @@ class DriverController {
                     u.email,
                     u.user_type,
                     u.created_at,
-                    d.drivers_license_verified,
+                    u.is_verified,
+                    u.drivers_license_verified,
+                    d.drivers_license_verified as driver_license_verified,
                     d.license_status,
                     j.id as jeepney_id,
                     j.jeepney_number,
@@ -296,9 +298,9 @@ class DriverController {
                     'email' => $result['email'],
                     'license_number' => 'N/A', // TODO: Add license table
                     'created_at' => $result['created_at'],
-                    'drivers_license_verified' => (bool)$result['drivers_license_verified'],
+                    'drivers_license_verified' => (bool)($result['driver_license_verified'] ?? $result['drivers_license_verified']),
                     'license_status' => $result['license_status'],
-                    'is_verified' => (bool)$result['drivers_license_verified'] && $result['license_status'] === 'approved',
+                    'is_verified' => (bool)$result['is_verified'],
                     'assignedJeepney' => null
                 ];
 

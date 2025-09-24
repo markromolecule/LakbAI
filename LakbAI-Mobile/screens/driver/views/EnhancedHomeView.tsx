@@ -101,13 +101,12 @@ export const EnhancedHomeView: React.FC<EnhancedHomeViewProps> = ({
       
       setRecentScans(prev => [newScan, ...prev.slice(0, 4)]); // Keep last 5 scans
       
-      // Show success feedback
-      Alert.alert(
-        '🎉 Great Job!',
-        `Location updated: ${result.data.checkpoint?.name || result.data.activeTrip?.startCheckpoint?.name || 'Unknown'}\n` +
-        `Passengers notified with ETA: ${result.data.arrival_estimate?.next_checkpoint_eta || 'Unknown'}`,
-        [{ text: 'Continue' }]
-      );
+      // Location updated - no alert needed (console log only)
+      console.log('🎉 Location updated successfully:', {
+        location: result.data.checkpoint?.name || result.data.activeTrip?.startCheckpoint?.name || 'Unknown',
+        eta: result.data.arrival_estimate?.next_checkpoint_eta || 'Unknown',
+        message: 'Passengers will receive location update via Expo notifications'
+      });
     }
   };
 

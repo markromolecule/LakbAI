@@ -259,22 +259,13 @@ export const ScannerScreen: React.FC = () => {
       
       if (earningsResult.success) {
         console.log('✅ Driver earnings updated successfully');
-        
-        // Send real-time payment notification to driver
-        console.log('🔔 Would notify driver about payment:', {
-          fare: bookingData.discountedFare || bookingData.fare,
-          passenger: 'LakbAI Passenger',
-          route: `${bookingData.pickupLocation} → ${bookingData.destination}`
-        });
+        console.log('🔔 Driver notification will be sent automatically by earnings service');
       } else {
         console.error('❌ Failed to update driver earnings:', earningsResult.error);
       }
 
-      Alert.alert(
-        'Payment Successful! 🎉',
-        `Your ride from ${bookingData.pickupLocation} to ${bookingData.destination} has been paid.\n\nDriver: ${bookingData.driver.name}\nJeepney: ${bookingData.driver.jeepneyNumber}\nFare: ₱${bookingData.discountedFare || bookingData.fare}\n\n💰 Driver earnings updated automatically!`,
-        [{ text: 'OK' }]
-      );
+      // Payment successful - no need for alert notification as it's handled by the booking flow
+      console.log('✅ Payment completed successfully - driver earnings updated');
     } catch (error) {
       console.error('Error processing payment completion:', error);
       

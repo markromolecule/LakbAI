@@ -163,8 +163,8 @@ export const useDriverState = () => {
     const now = new Date();
     const yearsExperience = Math.max(1, Math.floor((now.getTime() - createdDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000)));
     
-    // Get current earnings from earnings service (try API first)
-    const currentEarnings = await earningsService.getEarningsAsync(apiProfile.id.toString());
+    // Get current earnings from earnings service (driver app loading - may trigger notifications)
+    const currentEarnings = await earningsService.refreshDriverEarnings(apiProfile.id.toString());
     console.log('💰 Current earnings for driver', apiProfile.id, ':', currentEarnings);
     
     // Get actual completed trips count from trip tracking service
@@ -178,7 +178,7 @@ export const useDriverState = () => {
     return {
       id: apiProfile.id,
       name: apiProfile.name,
-      license: apiProfile.license_number || '', // Can be blank as requested
+      license: apiProfile.license_number || 'N/A', // Show N/A if no license number
       jeepneyNumber: apiProfile.assignedJeepney?.jeepneyNumber || 'No Jeepney Assigned',
       rating: 4.5 + (Math.random() * 0.8), // Mock data - would come from ratings
       totalTrips: currentEarnings.totalTrips, // Get real total trips from earnings service
@@ -241,7 +241,7 @@ export const useDriverState = () => {
     return {
       id: dbUser.id, // Include the actual database ID
       name: fullName,
-      license: dbUser.drivers_license_name || '', // Can be blank as requested
+      license: dbUser.drivers_license_name || 'N/A', // Show N/A if no license name
       jeepneyNumber,
       rating: 4.5 + (Math.random() * 0.8), // Random rating between 4.5-5.3
       totalTrips: currentEarnings.totalTrips, // Get real total trips from earnings service
@@ -287,10 +287,12 @@ export const useDriverState = () => {
     setDriverLocation(randomCheckpoint);
     setLastScanTime(new Date().toLocaleTimeString());
     
-    Alert.alert(
-      'Location Updated!',
-      `Checkpoint: ${randomCheckpoint}\nTime: ${new Date().toLocaleTimeString()}\n\nYour location has been updated for passengers.`
-    );
+    // Location updated - no notification needed (passengers will receive Expo notifications)
+    console.log('📍 Driver location updated:', {
+      checkpoint: randomCheckpoint,
+      time: new Date().toLocaleTimeString(),
+      message: 'Location stored in database for passenger tracking'
+    });
   };
 
   const toggleDuty = async () => {
@@ -337,7 +339,7 @@ export const useDriverState = () => {
         Alert.alert('Error', result.message);
       }
     } else {
-      // Starting shift - reset today's earnings to 0
+      // Starting shift - preserve daily earnings and trips (only reset at 5:00 AM)
       console.log('🚀 Starting shift for driver:', driverId);
       const result = await earningsService.startShift(driverId);
       
