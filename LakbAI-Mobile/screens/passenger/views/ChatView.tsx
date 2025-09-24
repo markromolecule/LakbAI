@@ -134,5 +134,5 @@ export const ChatScreen: React.FC = () => {
         />
       )}
     </KeyboardAvoidingView>
-  );
+  );      
 };
