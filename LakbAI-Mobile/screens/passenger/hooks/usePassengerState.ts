@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { PassengerProfile } from '../../../shared/types/authentication';
 import { useAuthContext } from '../../../shared/providers/AuthProvider';
 import sessionManager from '../../../shared/services/sessionManager';
@@ -9,37 +9,30 @@ export const usePassengerState = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Mock passenger profile data for development/fallback
-  const mockPassengerProfile: PassengerProfile = {
-    firstName: 'Biya',
-    lastName: 'Bot',
-    email: 'biyabot@email.com',
-    phoneNumber: '0912 345 6789',
-    username: 'biyabot',
+  // Default passenger profile for fallback (no hardcoded data)
+  const defaultPassengerProfile: PassengerProfile = {
+    firstName: 'User',
+    lastName: '',
+    email: '',
+    phoneNumber: '',
+    username: 'user',
     address: {
-      houseNumber: 'BLK1, LOT2',
-      streetName: 'Lancaster New City',
-      barangay: 'Pasong Camachile I',
-      cityMunicipality: 'General Trias',
-      province: 'Cavite',
-      postalCode: '4107',
+      houseNumber: '',
+      streetName: '',
+      barangay: '',
+      cityMunicipality: '',
+      province: '',
+      postalCode: '',
     },
     personalInfo: {
-      birthDate: '2004-03-25',
+      birthDate: '',
       gender: 'male',
     },
     fareDiscount: {
-      type: 'Student',
-      status: 'approved',
-      percentage: 20,
-      document: {
-        uri: 'https://example.com/student-id.jpg',
-        name: 'student_id_2024.jpg',
-        type: 'image/jpeg',
-      },
-      applicationDate: '2024-01-15T10:30:00Z',
-      verifiedBy: 'Admin User',
-      verifiedAt: '2024-01-16T14:20:00Z',
+      type: '',
+      status: 'none',
+      percentage: 0,
+      document: null,
     },
   };
 
@@ -60,14 +53,20 @@ export const usePassengerState = () => {
 
         // Check if this is an Auth0 user or traditional user
         const isAuth0User = user.sub && (user.sub.startsWith('google-oauth2|') || user.sub.startsWith('auth0|'));
-        const isTraditionalUser = !isAuth0User && 'id' in user; // Check if user has 'id' property
+        const isTraditionalUser = !isAuth0User && (user.provider === 'traditional' || user.connection === 'database' || user.connection === 'oauth'); // Check if user is traditional
 
         console.log('🔍 usePassengerState: User type detection:', { 
           isAuth0User, 
           isTraditionalUser, 
           userSub: user.sub, 
-          hasId: 'id' in user,
-          hasSessionData: !!session?.dbUserData
+          userProvider: user.provider,
+          userConnection: user.connection,
+          hasSessionData: !!session?.dbUserData,
+          sessionDataSample: session?.dbUserData ? {
+            first_name: session.dbUserData.first_name,
+            last_name: session.dbUserData.last_name,
+            email: session.dbUserData.email
+          } : null
         });
 
         // For Auth0 users, check if we need to refresh data from backend
@@ -154,6 +153,11 @@ export const usePassengerState = () => {
         // For traditional users or Auth0 users without valid session data
         if (isTraditionalUser || (session?.dbUserData && !session.dbUserData.auth0_id)) {
           console.log('✅ usePassengerState: Creating profile for traditional user');
+          console.log('🔍 Taking traditional user path because:', {
+            isTraditionalUser,
+            hasSessionData: !!session?.dbUserData,
+            sessionDataHasNoAuth0Id: session?.dbUserData && !session.dbUserData.auth0_id
+          });
           console.log('🔍 Traditional user data source:', { 
             hasSessionData: !!session?.dbUserData, 
             sessionAuth0Id: session?.dbUserData?.auth0_id,
@@ -234,8 +238,16 @@ export const usePassengerState = () => {
         }
       } catch (err) {
         console.error('❌ usePassengerState: Error creating profile:', err);
+        console.log('🔍 Profile creation failed, using default profile. User data was:', {
+          isAuthenticated,
+          userSub: user?.sub,
+          userProvider: user?.provider,
+          userConnection: user?.connection,
+          hasSession: !!session,
+          hasDbUserData: !!session?.dbUserData
+        });
         setError(err instanceof Error ? err.message : 'Failed to create profile');
-        setPassengerProfile(mockPassengerProfile);
+        setPassengerProfile(defaultPassengerProfile);
       } finally {
         setIsLoading(false);
       }
@@ -244,13 +256,12 @@ export const usePassengerState = () => {
     createPassengerProfile();
   }, [isAuthenticated, user, session]);
 
-  // Return the profile data, with fallback to mock data if not authenticated
+  // Return the profile data, with fallback to default data if not authenticated
   const profileToReturn = useMemo(() => {
     console.log('🎯 Profile Selection Debug:', {
       isAuthenticated,
       hasPassengerProfile: !!passengerProfile,
       passengerProfileDiscount: passengerProfile?.fareDiscount,
-      mockProfileDiscount: mockPassengerProfile.fareDiscount,
       userEmail: user?.email,
       sessionAuth0Id: session?.auth0Id
     });
@@ -259,22 +270,60 @@ export const usePassengerState = () => {
       console.log('✅ Using authenticated passenger profile');
       return passengerProfile;
     }
-    console.log('⚠️ Using mock passenger profile');
-    return mockPassengerProfile;
+    console.log('⚠️ Using default passenger profile');
+    return defaultPassengerProfile;
   }, [isAuthenticated, passengerProfile]);
 
-  const refreshProfile = async () => {
+  const refreshProfile = useCallback(async () => {
     if (!isAuthenticated || !user) return;
     
     try {
       setIsLoading(true);
       console.log('🔄 usePassengerState: Manually refreshing profile data...');
       
-      // Force refresh from backend
-      const syncResult = await sessionManager.syncUserWithDatabase(user);
-      if (syncResult.status === 'success' && syncResult.data?.user) {
-        const dbUser = syncResult.data.user;
-        console.log('✅ usePassengerState: Got fresh user data from backend');
+      // Check if this is a traditional user
+      const isAuth0User = user.sub && (user.sub.startsWith('google-oauth2|') || user.sub.startsWith('auth0|'));
+      const isTraditionalUser = !isAuth0User && (user.provider === 'traditional' || user.connection === 'database' || user.connection === 'oauth');
+      
+      let dbUser = null;
+      
+      if (isTraditionalUser) {
+        // For traditional users, call the profile endpoint directly
+        console.log('🔄 usePassengerState: Refreshing traditional user profile...');
+        const { getBaseUrl } = require('../../../config/apiConfig');
+        const profileResponse = await fetch(`${getBaseUrl()}/profile?user_id=${user.sub}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+        
+        if (profileResponse.ok) {
+          const profileResult = await profileResponse.json();
+          if (profileResult.status === 'success' && profileResult.user) {
+            dbUser = profileResult.user;
+            console.log('✅ usePassengerState: Got fresh traditional user data from backend');
+          }
+        }
+      } else {
+        // For Auth0 users, use the sync function
+        const syncResult = await sessionManager.syncUserWithDatabase(user);
+        if (syncResult.status === 'success' && syncResult.data?.user) {
+          dbUser = syncResult.data.user;
+          console.log('✅ usePassengerState: Got fresh Auth0 user data from backend');
+        }
+      }
+      
+      if (dbUser) {
+        // Update session data with fresh user data to prevent stale data override
+        if (isTraditionalUser && session) {
+          const updatedSession = {
+            ...session,
+            dbUserData: dbUser
+          };
+          await sessionManager.setTraditionalUserSession(updatedSession);
+          console.log('✅ usePassengerState: Session data updated with fresh user data');
+        }
         
         const profile: PassengerProfile = {
           firstName: dbUser.first_name || dbUser.name?.split(' ')[0] || '',
@@ -320,7 +369,7 @@ export const usePassengerState = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [isAuthenticated, user]);
 
   return {
     passengerProfile: profileToReturn,

@@ -156,7 +156,7 @@ const FareMatrixManagement = () => {
         route_id: selectedRoute?.id || formData.route_id,
         fare_matrix_id: editingEntry?.id || null,
         effective_date: new Date().toISOString().split('T')[0], // Set to today
-        expiry_date: null // Always null for simplicity
+        expiry_date: null 
       };
       
       const result = await FareMatrixService.createOrUpdateFareEntry(dataToSend);
@@ -236,14 +236,6 @@ const FareMatrixManagement = () => {
 
   return (
     <div>
-      {/* Header */}
-      <Row className="mb-4">
-        <Col>
-          <h4>Fare Matrix Management</h4>
-          <p className="text-muted">Configure and manage fare pricing for all routes</p>
-        </Col>
-      </Row>
-
       {/* Statistics Cards */}
       {stats && (
         <Row className="mb-4">

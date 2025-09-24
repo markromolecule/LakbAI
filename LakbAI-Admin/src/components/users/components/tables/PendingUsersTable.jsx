@@ -146,7 +146,7 @@ const PendingUsersTable = ({
 
     return (
       <>
-        {user.discount_verified === 0 && (
+        {(user.discount_verified === 0 || user.discount_verified === -1) && (
           <>
             <Button
               variant="outline-success"
@@ -154,7 +154,7 @@ const PendingUsersTable = ({
               className={`${styles.actionButton} ${styles.actionButtonApprove}`}
               onClick={() => onApprovalAction(user, true)}
               disabled={processing === user.id}
-              title="Approve passenger account"
+              title={user.discount_verified === -1 ? "Manually approve rejected discount" : "Approve passenger account"}
             >
               {processing === user.id ? (
                 <Spinner animation="border" size="sm" className={styles.loadingSpinner} />
@@ -169,7 +169,7 @@ const PendingUsersTable = ({
               className={`${styles.actionButton} ${styles.actionButtonReject}`}
               onClick={() => onApprovalAction(user, false)}
               disabled={processing === user.id}
-              title="Reject passenger account"
+              title={user.discount_verified === -1 ? "Keep discount rejected" : "Reject passenger account"}
             >
               <i className="bi bi-x-circle"></i>
             </Button>

@@ -24,7 +24,7 @@ export default function PassengerProfile() {
     if (isAuthenticated && user) {
       refreshProfile();
     }
-  }, [isAuthenticated, user, refreshProfile]);
+  }, [isAuthenticated, user]); // Removed refreshProfile from dependencies to prevent infinite loop
 
   // Clear error when modal is closed
   useEffect(() => {
@@ -34,7 +34,20 @@ export default function PassengerProfile() {
   }, [showDiscountModal, clearError]);
 
   const profileForDisplay = useMemo(() => {
-    if (isAuthenticated && user) return passengerProfile;
+    console.log('🔍 ProfileForDisplay calculation:', {
+      isAuthenticated,
+      hasUser: !!user,
+      hasPassengerProfile: !!passengerProfile,
+      passengerProfileFirstName: passengerProfile?.firstName,
+      passengerProfileLastName: passengerProfile?.lastName
+    });
+    
+    if (isAuthenticated && user && passengerProfile) {
+      console.log('✅ Using authenticated passenger profile');
+      return passengerProfile;
+    }
+    
+    console.log('⚠️ Using guest fallback profile');
     return {
       ...passengerProfile,
       firstName: 'Guest',
@@ -56,9 +69,7 @@ export default function PassengerProfile() {
   };
 
   const handleEditProfile = () => {
-    // Navigate to edit profile screen (to be implemented)
-    // router.push('/passenger/edit-profile');
-    console.log('Edit profile pressed');
+    router.push('/passenger/edit-profile');
   };
 
   const handleApplyForDiscount = () => {

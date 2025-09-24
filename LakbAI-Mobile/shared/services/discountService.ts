@@ -114,15 +114,23 @@ class DiscountService {
    */
   async getDiscountStatus(): Promise<DiscountStatus> {
     try {
-      const response = await fetch(this.baseUrl, {
-        method: 'POST',
+      // Get user ID first
+      const userId = await this.getUserId();
+      if (!userId) {
+        console.log('No user ID found, returning default discount status');
+        return {
+          status: 'none',
+          type: '',
+          percentage: 0,
+        };
+      }
+
+      // Use the correct API endpoint
+      const response = await fetch(`${this.apiUrl}/discount-status?user_id=${userId}`, {
+        method: 'GET',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          action: 'get_discount_status',
-          auth0_id: await this.getAuth0Id(),
-        }),
       });
 
       if (!response.ok) {
@@ -130,17 +138,17 @@ class DiscountService {
       }
 
       const data = await response.json();
-      if (data.status === 'success' && data.data?.user) {
-        const user = data.data.user;
+      if (data.status === 'success' && data.data) {
+        const discountData = data.data;
         return {
-          status: user.discount_applied ? (user.discount_status || (user.discount_verified ? 'approved' : 'pending')) : 'none',
-          type: user.discount_type || '',
-          percentage: user.discount_amount || (user.discount_type === 'Student' ? 20 : 
-                     user.discount_type === 'PWD' ? 20 :
-                     user.discount_type === 'Senior Citizen' ? 30 : 0),
-          document: user.discount_document_path ? {
-            uri: user.discount_document_path,
-            name: user.discount_document_name || 'document',
+          status: discountData.discount_status || 'none',
+          type: discountData.discount_type || '',
+          percentage: discountData.discount_type === 'Student' ? 20 : 
+                     discountData.discount_type === 'PWD' ? 20 :
+                     discountData.discount_type === 'Senior Citizen' ? 30 : 0,
+          document: discountData.discount_document_path ? {
+            uri: discountData.discount_document_path,
+            name: discountData.discount_document_name || 'document',
             type: 'image/jpeg',
           } : undefined,
         };

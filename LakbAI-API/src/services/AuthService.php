@@ -143,8 +143,18 @@ class AuthService {
                 $updateData['password'] = password_hash($updateData['password'], PASSWORD_DEFAULT);
             }
 
+            // Remove user_id from updateData as it's not a database column
+            unset($updateData['user_id']);
+            
+            // Debug: Log the update data
+            error_log("🔍 AuthService updateProfile: User ID = " . $userId);
+            error_log("🔍 AuthService updateProfile: Update data = " . json_encode($updateData));
+            
             // Update user
             $success = $this->userRepository->update($userId, $updateData);
+            
+            // Debug: Log the update result
+            error_log("🔍 AuthService updateProfile: Update success = " . ($success ? 'true' : 'false'));
 
             if ($success) {
                 return $this->successResponse('Profile updated successfully');
@@ -474,7 +484,7 @@ class AuthService {
                 
                 // Determine what type of approval is pending
                 $approvalTypes = [];
-                if ($user['discount_type'] && $user['discount_verified'] == 0) {
+                if ($user['discount_type'] && ($user['discount_verified'] == 0 || $user['discount_verified'] == -1)) {
                     $approvalTypes[] = 'discount';
                 }
                 if ($user['user_type'] === 'driver' && $user['drivers_license_path'] && $user['drivers_license_verified'] == 0) {

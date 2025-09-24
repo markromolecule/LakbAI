@@ -11,7 +11,8 @@ class RouteController {
      */
     public function getAllRoutes() {
         try {
-            $stmt = $this->db->prepare("SELECT * FROM routes ORDER BY route_name");
+            // Select only the fields that exist in the current database
+            $stmt = $this->db->prepare("SELECT id, route_name, origin, destination FROM routes ORDER BY route_name");
             $stmt->execute();
             $routes = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -25,6 +26,15 @@ class RouteController {
                 ");
                 $checkpointStmt->execute([$route['id']]);
                 $route['checkpoints'] = $checkpointStmt->fetchAll(PDO::FETCH_ASSOC);
+                
+                // Always calculate fare_base from the first checkpoint (origin)
+                if (!empty($route['checkpoints'])) {
+                    // Get the fare from the first checkpoint (origin)
+                    $firstCheckpoint = $route['checkpoints'][0];
+                    $route['fare_base'] = $firstCheckpoint['fare_from_origin'] ?? '8.00';
+                } else {
+                    $route['fare_base'] = '8.00'; // Default fallback
+                }
             }
 
             return [
@@ -181,6 +191,30 @@ class RouteController {
             return [
                 "status" => "error",
                 "message" => "Failed to delete route: " . $e->getMessage()
+            ];
+        }
+    }
+
+    /**
+     * Update base fare for all routes
+     */
+    public function updateBaseFare($newFare) {
+        try {
+            // Update fare_from_origin for all origin checkpoints (is_origin = 1)
+            $stmt = $this->db->prepare("UPDATE checkpoints SET fare_from_origin = ? WHERE is_origin = 1");
+            $stmt->execute([$newFare]);
+            $updated = $stmt->rowCount();
+
+            return [
+                "status" => "success",
+                "message" => "Base fare updated successfully",
+                "updated_checkpoints" => $updated,
+                "new_fare" => $newFare
+            ];
+        } catch (Exception $e) {
+            return [
+                "status" => "error",
+                "message" => "Failed to update base fare: " . $e->getMessage()
             ];
         }
     }

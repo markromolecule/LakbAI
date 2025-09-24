@@ -9,6 +9,7 @@ import { globalStyles } from '../../../shared/styles/globalStyles';
 import { useAuthContext } from '../../../shared/providers/AuthProvider';
 import { ArrivalTracker } from '../../../components/passenger/ArrivalTracker';
 import { NotificationManager } from '../../../components/passenger/NotificationManager';
+import DriverLocationCard from '../components/DriverLocationCard';
 import styles from '../styles/HomeScreen.styles';
 import type { Href } from 'expo-router';
 
@@ -239,6 +240,14 @@ export const EnhancedHomeView: React.FC = () => {
           </View>
         ))}
       </View>
+
+      {/* Driver Location Tracking */}
+      {isAuthenticated && (
+        <View style={styles.driverLocationSection}>
+          <Text style={styles.sectionTitle}>🚍 Driver Location Updates</Text>
+          <DriverLocationCard />
+        </View>
+      )}
 
       {/* Enhanced features section */}
       <View style={styles.featuresSection}>

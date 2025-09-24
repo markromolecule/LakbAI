@@ -1,6 +1,6 @@
 import { Alert } from 'react-native';
 import { earningsService } from './earningsService';
-import { notificationService } from './notificationService';
+// Removed notificationService - using API polling approach instead
 
 
 export interface TripCheckpoint {
@@ -122,17 +122,7 @@ class TripTrackingService {
         startPoint: startCheckpoint.name
       });
 
-      // Send notification to passengers
-      await notificationService.notifyPassengerDriverLocation({
-        type: 'driver_location_update',
-        driverId,
-        driverName: driverInfo.name,
-        jeepneyNumber: driverInfo.jeepneyNumber,
-        route: driverInfo.route,
-        location: startCheckpoint.name,
-        timestamp: now,
-        coordinates: startCheckpoint.coordinates
-      });
+      // Location update stored in database - passenger apps will detect via API polling
 
       return {
         success: true,
@@ -188,17 +178,17 @@ class TripTrackingService {
         totalCheckpoints: activeTrip.intermediateCheckpoints.length
       });
 
-      // Send location update notification
-      await notificationService.notifyPassengerDriverLocation({
-        type: 'driver_location_update',
+      // Location update stored in database - passenger apps will detect via API polling
+      console.log('📍 Driver location updated in database:', {
         driverId,
         driverName: activeTrip.driverName,
         jeepneyNumber: activeTrip.jeepneyNumber,
+        currentLocation: checkpoint.name,
         route: activeTrip.route,
-        location: checkpoint.name,
-        timestamp: now,
-        coordinates: checkpoint.coordinates
+        timestamp: new Date().toISOString()
       });
+      
+      console.log('✅ Location update stored - passenger apps will detect via API polling');
 
       return {
         success: true,
@@ -315,29 +305,14 @@ class TripTrackingService {
         console.error('❌ Failed to update earnings on trip completion:', earningsUpdate.error);
       }
 
-      // Send final location update and trip completion notification
-      await Promise.all([
-        // Legacy notification system
-        notificationService.notifyPassengerDriverLocation({
-          type: 'driver_location_update',
-          driverId,
-          driverName: activeTrip.driverName,
-          jeepneyNumber: activeTrip.jeepneyNumber,
-          route: activeTrip.route,
-          location: endCheckpoint.name,
-          timestamp: now,
-          coordinates: endCheckpoint.coordinates
-        }),
-        
-        // Real-time trip completion notification
-        console.log('🔔 Would notify trip completion:', {
-          driver: activeTrip.driverName,
-          jeepneyNumber: activeTrip.jeepneyNumber,
-          start: activeTrip.startCheckpoint.name,
-          end: endCheckpoint.name,
-          duration
-        })
-      ]);
+      // Trip completed - location update stored in database for passenger apps to detect via API polling
+      console.log('🔔 Trip completed:', {
+        driver: activeTrip.driverName,
+        jeepneyNumber: activeTrip.jeepneyNumber,
+        start: activeTrip.startCheckpoint.name,
+        end: endCheckpoint.name,
+        duration
+      });
 
       const tripSummary = {
         duration,

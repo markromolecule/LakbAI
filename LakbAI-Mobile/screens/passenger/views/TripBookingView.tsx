@@ -12,12 +12,13 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
 import { Button } from '../../../components/common/Button';
-import { LocationSelector } from '../../../components/common/LocationSelector';
+import { ModernLocationSelector } from '../../../components/common/ModernLocationSelector';
 import { usePassengerState } from '../hooks/usePassengerState';
 import { QRDriverInfo, TripBookingData, QRCodeData } from '../../../shared/types';
 import { calculateFare, getFareInfo, getFareCalculationSummary, formatFareAmount } from '../../../shared/utils/fareCalculator';
 import { COLORS, SPACING } from '../../../shared/styles';
 import { globalStyles } from '../../../shared/styles/globalStyles';
+import { LocationNotificationDisplay } from '../../../components/passenger/LocationNotificationDisplay';
 
 interface TripBookingViewProps {
   qrData: QRCodeData;
@@ -244,17 +245,9 @@ export const TripBookingView: React.FC<TripBookingViewProps> = ({
         // In real implementation, this would be handled by webhooks
         if (result.type === 'cancel' || result.type === 'dismiss') {
           // User closed the browser - assume payment was successful for demo
-          Alert.alert(
-            'Payment Completed! 🎉',
-            `Thank you for using LakbAI!\n\nRide Details:\n• From: ${tripData.pickupLocation}\n• To: ${tripData.destination}\n• Driver: ${tripData.driver.name}\n• Jeepney: ${tripData.driver.jeepneyNumber}\n• Fare: ₱${tripData.discountedFare || tripData.fare}\n\n💰 Driver earnings have been updated!`,
-            [{ 
-              text: 'OK', 
-              onPress: () => {
-                // Only update earnings after payment completion
-                onBookingComplete(tripData);
-              }
-            }]
-          );
+          // Payment completed - just complete the booking without alert notification
+          console.log('✅ Payment gateway closed - completing booking');
+          onBookingComplete(tripData);
         }
       } else {
         throw new Error(paymentResponse.error || 'Failed to create payment');
@@ -531,8 +524,8 @@ export const TripBookingView: React.FC<TripBookingViewProps> = ({
         </View>
         
         <View style={styles.locationRow}>
-          <LocationSelector
-            label="Pickup Location:"
+          <ModernLocationSelector
+            label="Pickup Location"
             selectedLocation={pickupLocation}
             onLocationSelect={(location) => {
               setPickupLocation(location);
@@ -540,6 +533,7 @@ export const TripBookingView: React.FC<TripBookingViewProps> = ({
             }}
             placeholder="Select your pickup point"
             excludeLocation={destination}
+            isDestination={false}
           />
           {isAutoFilledLocation && (
             <View style={styles.autoFillBadge}>
@@ -549,12 +543,14 @@ export const TripBookingView: React.FC<TripBookingViewProps> = ({
           )}
         </View>
 
-        <LocationSelector
-          label="Destination:"
+        <ModernLocationSelector
+          label="Destination"
           selectedLocation={destination}
           onLocationSelect={setDestination}
           placeholder="Select your destination"
           excludeLocation={pickupLocation}
+          pickupLocation={pickupLocation}
+          isDestination={true}
         />
       </View>
 
