@@ -3,3 +3,5 @@ LakbAI-Mobile/.firebase/logs/
 # API uploads directory
 LakbAI-API/uploads/
 LakbAI-API/.env
+
+LakbAI-Admin/.vite/
