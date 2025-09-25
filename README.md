@@ -4,7 +4,7 @@
 
 **LakbAI** is a smart transportation management system designed specifically for modern jeepney operations in the Philippines. The system modernizes traditional jeepney services by providing digital solutions for passengers, drivers, and fleet administrators.
 
-### 🎯 Core Purpose
+### Core Purpose
 LakbAI digitizes and streamlines jeepney operations by offering:
 - **Real-time tracking** of jeepney locations and routes
 - **Digital fare management** with distance-based pricing
@@ -13,7 +13,7 @@ LakbAI digitizes and streamlines jeepney operations by offering:
 - **Passenger discount system** (PWD, Senior Citizen, Student)
 - **Fleet administration** and route management
 
-### 🏗️ System Architecture
+### System Architecture
 LakbAI consists of three integrated applications:
 
 | Component | Technology | Purpose |
@@ -22,7 +22,7 @@ LakbAI consists of three integrated applications:
 | **LakbAI-API** | PHP 8.0+ | Backend API and business logic |
 | **LakbAI-Admin** | React + Vite | Web dashboard for fleet administrators |
 
-### �� Key Features
+### Key Features
 
 #### For Passengers
 - **Quick Sign-In**: Auth0-powered authentication with Google/Facebook
@@ -46,7 +46,7 @@ LakbAI consists of three integrated applications:
 - **Earnings Oversight**: Monitor driver earnings and transactions
 - **Document Verification**: Approve discount documents and licenses
 
-## 📋 System Requirements
+## System Requirements
 
 #### Core Dependencies
 - **Node.js**: LTS version (18.x or higher)
@@ -78,9 +78,9 @@ LakbAI consists of three integrated applications:
 - **Web Server**: Apache 2.4+ or Nginx 1.18+
 - **Database**: MySQL 5.7+ or MariaDB 10.3+
 
-## �� Integrations & Third-Party Services
+## Integrations & Third-Party Services
 
-### 🔐 Authentication & Security
+### Authentication & Security
 - **Auth0**: Primary authentication provider
   - Google OAuth integration
   - Facebook OAuth integration
@@ -88,51 +88,7 @@ LakbAI consists of three integrated applications:
   - PKCE (Proof Key for Code Exchange) security
   - JWT token management
 
-### 📱 Mobile Services
-- **Expo SDK**: Cross-platform mobile development
-  - Camera access for QR code scanning
-  - Push notifications
-  - Device storage management
-  - Location services
-- **Firebase**: Mobile backend services
-  - Push notification delivery
-  - Analytics (optional)
-  - Cloud messaging
-
-### 💳 Payment & QR System
-- **QR Code Generation**: `react-native-qrcode-svg`
-- **Camera Integration**: `expo-camera` for QR scanning
-- **Custom Payment Logic**: Built-in fare calculation system
-
-### 📧 Communication
-- **PHPMailer**: Email functionality
-  - User verification emails
-  - Password reset notifications
-  - System alerts
-
-### 🗄️ Database & Storage
-- **MySQL**: Primary database
-  - User management
-  - Route and checkpoint data
-  - Transaction records
-  - Earnings tracking
-- **File Storage**: Local file system
-  - Document uploads (licenses, discount certificates)
-  - Image storage for profiles
-
-### �� Web Services
-- **Vite**: Modern build tool for React admin
-- **Bootstrap 5**: UI framework
-- **Tailwind CSS**: Utility-first CSS framework
-- **React Router**: Client-side routing
-
-### 📊 Development Tools
-- **TypeScript**: Type safety for mobile app
-- **ESLint**: Code linting and formatting
-- **Babel**: JavaScript transpilation
-- **PostCSS**: CSS processing
-
-## �� Quick Start
+## Quick Start
 
 ### 1. Clone Repository
 ```bash
