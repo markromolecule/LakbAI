@@ -1,4 +1,6 @@
-const DEFAULT_BASE = `${window.location.protocol}//localhost/LakbAI/LakbAI-API`;
+import { API_CONFIG } from '../config/apiConfig';
+
+const DEFAULT_BASE = API_CONFIG.BASE_URL.replace('/routes/api.php', '');
 const API_BASE = import.meta.env.VITE_API_BASE_URL || DEFAULT_BASE;
 
 // Fare Matrix management service for admin operations

@@ -11,6 +11,7 @@ import {
   Form
 } from 'react-bootstrap';
 import UserService from '../../services/userService';
+import { API_CONFIG } from '../../config/apiConfig';
 
 const DriverStatusContainer = ({ onDataUpdate }) => {
   const [drivers, setDrivers] = useState([]);
@@ -19,6 +20,8 @@ const DriverStatusContainer = ({ onDataUpdate }) => {
   const [statusFilter, setStatusFilter] = useState('all'); // 'all', 'active', 'offline'
 
   useEffect(() => {
+    // Log current API configuration for debugging
+    API_CONFIG.logCurrentConfig();
     loadDrivers();
     
     // Auto-refresh driver status every 30 seconds
@@ -35,7 +38,7 @@ const DriverStatusContainer = ({ onDataUpdate }) => {
       setError(null);
 
       // Fetch real driver status from the API
-      const response = await fetch('http://192.168.254.110/LakbAI/LakbAI-API/routes/api.php/admin/drivers');
+      const response = await fetch(`${API_CONFIG.BASE_URL}/admin/drivers`);
       
       if (response.ok) {
         const data = await response.json();

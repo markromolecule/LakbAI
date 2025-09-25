@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { Form, Row, Col, Card, Button, Alert } from 'react-bootstrap';
+import { API_CONFIG } from '../../../../config/apiConfig';
 
 const DriverLicenseForm = ({ formData, handleInputChange, isReadOnly }) => {
   const [uploading, setUploading] = useState(false);
@@ -200,7 +201,7 @@ const DriverLicenseForm = ({ formData, handleInputChange, isReadOnly }) => {
                       </div>
                       <div className="d-flex gap-2">
                         <a 
-                          href={`http://localhost/LakbAI/LakbAI-API/api/document/${formData.drivers_license_path}`}
+                          href={`${API_CONFIG.BASE_URL.replace('/routes/api.php', '')}/api/document/${formData.drivers_license_path}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="btn btn-outline-primary btn-sm"

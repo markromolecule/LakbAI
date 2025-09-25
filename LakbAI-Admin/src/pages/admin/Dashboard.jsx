@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Row, Col, Card, Badge } from 'react-bootstrap';
 import AdminLayout from '../../components/admin/layout/AdminLayout';
 import MetricCard from '../../components/admin/shared/MetricCard';
+import { API_CONFIG } from '../../config/apiConfig';
 
 const Dashboard = () => {
   const [recentActivities, setRecentActivities] = useState([]);
@@ -45,7 +46,7 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchDriverStats = async () => {
       try {
-        const response = await fetch('http://localhost:80/LakbAI/LakbAI-API/routes/api.php/admin/drivers');
+        const response = await fetch(`${API_CONFIG.BASE_URL}/admin/drivers`);
         
         if (response.ok) {
           const data = await response.json();

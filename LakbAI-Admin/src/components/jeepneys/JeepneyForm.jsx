@@ -4,6 +4,7 @@ import JeepneyService from "../../services/jeepneyService";
 import RouteService from "../../services/routeService";
 import DriverService from "../../services/driverService";
 import CheckpointService from "../../services/checkpointService";
+import { API_CONFIG } from "../../config/apiConfig";
 
 const JeepneyForm = ({ onDataUpdate }) => {
   const [formData, setFormData] = useState({
@@ -43,7 +44,8 @@ const JeepneyForm = ({ onDataUpdate }) => {
 
   const fetchDrivers = async () => {
     try {
-      const response = await fetch('/api/admin/users?user_type=driver');
+      const baseUrl = API_CONFIG.BASE_URL.replace('/routes/api.php', '');
+      const response = await fetch(`${baseUrl}/api/admin/users?user_type=driver`);
       const data = await response.json();
       if (data.status === 'success') {
         setDrivers(data.users || []);

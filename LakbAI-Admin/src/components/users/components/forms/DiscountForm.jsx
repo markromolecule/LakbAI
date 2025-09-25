@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { Form, Row, Col, Alert, Button, Card } from 'react-bootstrap';
+import { API_CONFIG } from '../../../../config/apiConfig';
 
 const DiscountForm = ({ formData, handleInputChange, isReadOnly, errors = {} }) => {
   const [uploading, setUploading] = useState(false);
@@ -37,7 +38,8 @@ const DiscountForm = ({ formData, handleInputChange, isReadOnly, errors = {} }) 
       const formData = new FormData();
       formData.append('discount_document', file);
 
-      const response = await fetch('/api/upload-discount-document', {
+      const baseUrl = API_CONFIG.BASE_URL.replace('/routes/api.php', '');
+      const response = await fetch(`${baseUrl}/api/upload-discount-document`, {
         method: 'POST',
         body: formData
       });
