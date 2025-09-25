@@ -1,5 +1,6 @@
 import { Alert } from 'react-native';
 import * as Notifications from 'expo-notifications';
+import sessionManager from './sessionManager';
 
 export interface LocalNotificationData {
   id: string;
@@ -17,6 +18,7 @@ export interface EarningsNotificationData extends LocalNotificationData {
   paymentMethod?: string;
   previousEarnings: number;
   newEarnings: number;
+  senderName?: string; // Name of the passenger who made the payment
 }
 
 export interface LocationNotificationData extends LocalNotificationData {
@@ -57,6 +59,52 @@ class LocalNotificationService {
     } catch (error) {
       console.error('❌ Failed to initialize LocalNotificationService:', error);
     }
+  }
+
+  /**
+   * Check if we're running in the driver app
+   */
+  private async isDriverApp(): Promise<boolean> {
+    try {
+      console.log('🔍 App type detection: checking for driver app context');
+      
+      // Get the current user session to determine app type
+      const session = await sessionManager.getUserSession();
+      
+      if (session && session.userType === 'driver') {
+        console.log('✅ Driver app detected via session: showing Expo notifications');
+        return true;
+      } else {
+        console.log('🚫 Passenger app detected via session: not showing system notifications');
+        return false;
+      }
+    } catch (error) {
+      // If we can't determine the app type, default to NOT showing notifications
+      // This prevents the passenger app from receiving unwanted notifications
+      console.log('⚠️ Could not determine app type, defaulting to NOT showing system notifications');
+      return false;
+    }
+  }
+
+  /**
+   * Create a passenger-friendly payment notification
+   */
+  private createPassengerPaymentNotification(earningsNotification: EarningsNotificationData): LocalNotificationData {
+    const senderName = earningsNotification.senderName || 'Unknown';
+    const amount = earningsNotification.amount;
+    
+    return {
+      id: `passenger_payment_${Date.now()}`,
+      title: 'Payment Successful!',
+      body: `Sent ₱${amount} to ${senderName}`,
+      data: {
+        type: 'payment_confirmation',
+        amount: amount,
+        driverName: senderName,
+        timestamp: new Date().toISOString()
+      },
+      timestamp: new Date().toISOString()
+    };
   }
 
   /**
@@ -106,7 +154,7 @@ class LocalNotificationService {
       difference: notification.newEarnings - notification.previousEarnings
     });
 
-    // Notify all listeners
+    // Notify all listeners (this will trigger the EarningsNotificationDisplay component)
     this.listeners.forEach(listener => {
       try {
         listener(notification);
@@ -115,21 +163,31 @@ class LocalNotificationService {
       }
     });
 
-    // Show Expo notification
-    try {
-      await Notifications.scheduleNotificationAsync({
-        content: {
-          title: notification.title,
-          body: notification.body,
-          data: notification.data || {},
-        },
-        trigger: null,
-      });
-      console.log(`📱 ${notification.type} Expo notification sent:`, notification.title);
-    } catch (error) {
-      console.error('❌ Failed to show Expo notification:', error);
-      // Fallback to alert
-      Alert.alert(notification.title, notification.body);
+    // Only show system notifications for driver app
+    // Passenger app will only show in-app notifications through LocationNotificationDisplay
+    const isDriverApp = await this.isDriverApp();
+    
+    if (isDriverApp) {
+      try {
+        // Driver app: Show earnings notification as system notification
+        await Notifications.scheduleNotificationAsync({
+          content: {
+            title: notification.title,
+            body: notification.body,
+            data: notification.data || {},
+          },
+          trigger: null,
+        });
+        console.log(`📱 ${notification.type} Expo notification sent to DRIVER app:`, notification.title);
+      } catch (error) {
+        console.error('❌ Failed to show Expo notification:', error);
+        // Fallback to alert
+        Alert.alert(notification.title, notification.body);
+      }
+    } else {
+      // Passenger app: Do NOT show system notifications
+      // The passenger app will handle notifications through LocationNotificationDisplay component
+      console.log(`🚫 Skipping system notification for PASSENGER app - using in-app notifications only`);
     }
   }
 

@@ -141,20 +141,11 @@ export const EnhancedHomeView: React.FC<EnhancedHomeViewProps> = ({
       onToggleDuty();
     }
     
-    Alert.alert(
-      '👋 Shift Ended',
-      'Your shift has ended after completing the trip.\n\nThank you for your service!',
-      [
-        {
-          text: 'OK',
-          onPress: () => {
-            // Navigate back to login or home screen
-            // This would typically involve navigation logic
-            console.log('Shift ended, navigating to login...');
-          }
-        }
-      ]
-    );
+    // Note: Alert removed as user has loading screen for trip completion
+    console.log('👋 Shift ended after trip completion');
+    // Navigate back to login or home screen
+    // This would typically involve navigation logic
+    console.log('Shift ended, navigating to login...');
   };
 
   const statusRows = [

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Tab, Tabs, Alert } from 'react-bootstrap';
+import { useLocation } from 'react-router-dom';
 import AdminLayout from '../../components/admin/layout/AdminLayout';
 import UserService from '../../services/userService';
 import PendingUsersContainer from '../../components/users/PendingUsersContainer';
@@ -8,6 +9,7 @@ import UserStatsCards from '../../components/users/UserStatsCards';
 import ApiTestComponent from '../../components/debug/ApiTestComponent';
 
 const Users = () => {
+  const location = useLocation();
   const [stats, setStats] = useState({
     totalUsers: 0,
     totalPassengers: 0,
@@ -16,10 +18,16 @@ const Users = () => {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [activeTab, setActiveTab] = useState("all");
 
   useEffect(() => {
     loadUserStats();
-  }, []);
+    
+    // Check if we should show a specific tab (from dashboard quick action)
+    if (location.state?.showAddModal && location.state?.userType === 'driver') {
+      setActiveTab("drivers");
+    }
+  }, [location.state]);
 
   const loadUserStats = async () => {
     try {
@@ -80,9 +88,12 @@ const Users = () => {
         <Card className="border-0 shadow-sm">
           <Card.Body className="p-0">
             <Tabs 
-              defaultActiveKey="pending" 
+              activeKey={activeTab}
+              onSelect={(key) => {
+                setActiveTab(key);
+                handleDataUpdate();
+              }}
               className="nav-tabs-custom px-3 pt-3"
-              onSelect={() => handleDataUpdate()}
             >
               <Tab 
                 eventKey="pending" 
@@ -159,7 +170,7 @@ const Users = () => {
         </Card>
       </Container>
 
-      <style jsx>{`
+      <style>{`
         .nav-tabs-custom {
           border-bottom: 1px solid #dee2e6;
         }

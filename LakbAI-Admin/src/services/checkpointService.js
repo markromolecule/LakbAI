@@ -1,4 +1,6 @@
-const API_BASE_URL = 'http://localhost/LakbAI/LakbAI-API/api';
+import { API_CONFIG } from '../config/apiConfig';
+
+const API_BASE_URL = API_CONFIG.BASE_URL;
 
 class CheckpointService {
     /**
@@ -25,7 +27,7 @@ class CheckpointService {
      */
     static async getCheckpointsByRoute(routeId) {
         try {
-            const response = await fetch(`${API_BASE_URL}/admin/checkpoints/route/${routeId}`);
+            const response = await fetch(`${API_BASE_URL}/routes/${routeId}/checkpoints`);
             const data = await response.json();
             
             if (data.status === 'success') {

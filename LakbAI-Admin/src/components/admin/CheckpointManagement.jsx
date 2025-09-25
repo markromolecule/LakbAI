@@ -16,12 +16,11 @@ import React, { useState, useEffect } from 'react';
   Image,
   ListGroup
 } from 'react-bootstrap';
+import { API_CONFIG } from '../../config/apiConfig';
 
 const CheckpointManagement = ({ visible, onClose }) => {
   const [routes, setRoutes] = useState([]);
-  const [jeepneys, setJeepneys] = useState([]);
   const [selectedRoute, setSelectedRoute] = useState('');
-  const [selectedJeepney, setSelectedJeepney] = useState('');
   const [checkpoints, setCheckpoints] = useState([]);
   const [generatedQRs, setGeneratedQRs] = useState([]);
   const [driverLocations, setDriverLocations] = useState([]);
@@ -53,26 +52,26 @@ const CheckpointManagement = ({ visible, onClose }) => {
 
   // Auto-refresh driver locations every 3 seconds when on monitoring tab
   useEffect(() => {
-    console.log('🔄 Auto-refresh effect triggered. activeTab:', activeTab, 'selectedRoute:', selectedRoute);
+    console.log('Auto-refresh effect triggered. activeTab:', activeTab, 'selectedRoute:', selectedRoute);
     let interval;
     if (activeTab === 'monitoring' && selectedRoute) {
       // Initial fetch
-      console.log('🔄 Initial fetch triggered for route:', selectedRoute);
+      console.log('Initial fetch triggered for route:', selectedRoute);
       fetchDriverLocations();
       
       // Set up auto-refresh
       interval = setInterval(() => {
-        console.log('🔄 Auto-refresh triggered at', new Date().toLocaleTimeString(), 'for route:', selectedRoute);
+        console.log('Auto-refresh triggered at', new Date().toLocaleTimeString(), 'for route:', selectedRoute);
         fetchDriverLocations();
       }, 3000); // Refresh every 3 seconds for faster updates
-      console.log('🔄 Auto-refresh interval set up successfully');
+      console.log('Auto-refresh interval set up successfully');
     } else {
-      console.log('🔄 Auto-refresh NOT set up. activeTab:', activeTab, 'selectedRoute:', selectedRoute);
+      console.log('Auto-refresh NOT set up. activeTab:', activeTab, 'selectedRoute:', selectedRoute);
     }
     
     return () => {
       if (interval) {
-        console.log('🔄 Clearing auto-refresh interval');
+        console.log('Clearing auto-refresh interval');
         clearInterval(interval);
       }
     };
@@ -81,7 +80,7 @@ const CheckpointManagement = ({ visible, onClose }) => {
   // Additional effect to ensure refresh happens when tab changes
   useEffect(() => {
     if (activeTab === 'monitoring' && selectedRoute) {
-      console.log('🔄 Tab changed to monitoring, triggering refresh');
+      console.log('Tab changed to monitoring, triggering refresh');
       fetchDriverLocations();
     }
   }, [activeTab]);
@@ -89,7 +88,7 @@ const CheckpointManagement = ({ visible, onClose }) => {
   // Force refresh when component becomes visible
   useEffect(() => {
     if (visible && activeTab === 'monitoring' && selectedRoute) {
-      console.log('🔄 Force refresh on visibility change');
+      console.log('Force refresh on visibility change');
       fetchDriverLocations();
     }
   }, [visible, activeTab, selectedRoute]);
@@ -97,14 +96,15 @@ const CheckpointManagement = ({ visible, onClose }) => {
   // Fetch routes when component mounts
   useEffect(() => {
     if (visible) {
+      // Log current API configuration for debugging
+      API_CONFIG.logCurrentConfig();
       fetchRoutes();
-      fetchJeepneys();
     }
   }, [visible]);
 
   const fetchRoutes = async () => {
     try {
-      const response = await fetch('http://192.168.254.110/LakbAI/LakbAI-API/routes/api.php/routes');
+      const response = await fetch(`${API_CONFIG.BASE_URL}/routes`);
       if (response.ok) {
         const data = await response.json();
         setRoutes(data.routes || []);
@@ -115,23 +115,11 @@ const CheckpointManagement = ({ visible, onClose }) => {
     }
   };
 
-  const fetchJeepneys = async () => {
-    try {
-      const response = await fetch('http://192.168.254.110/LakbAI/LakbAI-API/routes/api.php/jeepneys');
-      if (response.ok) {
-        const data = await response.json();
-        setJeepneys(data.jeepneys || []);
-      }
-    } catch (error) {
-      console.error('Error fetching jeepneys:', error);
-      setError('Failed to fetch jeepneys');
-    }
-  };
 
   const fetchCheckpoints = async (routeId) => {
     try {
       setLoading(true);
-      const response = await fetch(`http://192.168.254.110/LakbAI/LakbAI-API/routes/api.php/routes/${routeId}/checkpoints`);
+      const response = await fetch(`${API_CONFIG.BASE_URL}/routes/${routeId}/checkpoints`);
       if (response.ok) {
         const data = await response.json();
         setCheckpoints(data.checkpoints || []);
@@ -153,7 +141,7 @@ const CheckpointManagement = ({ visible, onClose }) => {
     try {
       setLoading(true);
       const response = await fetch(
-        `http://192.168.254.110/LakbAI/LakbAI-API/routes/api.php/admin/checkpoints/qr/generate/${checkpointId}/${selectedRoute}`,
+        `${API_CONFIG.BASE_URL}/admin/checkpoints/qr/generate/${checkpointId}/${selectedRoute}`,
         { method: 'POST' }
       );
       
@@ -188,7 +176,7 @@ const CheckpointManagement = ({ visible, onClose }) => {
     try {
       setLoading(true);
       const response = await fetch(
-        `http://192.168.254.110/LakbAI/LakbAI-API/routes/api.php/admin/checkpoints/qr/route/${selectedRoute}`,
+        `${API_CONFIG.BASE_URL}/admin/checkpoints/qr/route/${selectedRoute}`,
         { method: 'POST' }
       );
       
@@ -222,17 +210,17 @@ const CheckpointManagement = ({ visible, onClose }) => {
 
     try {
       setLoading(true);
-      console.log('🔄 Fetching driver locations for route:', selectedRoute);
+      console.log('Fetching driver locations for route:', selectedRoute);
       
       // Get driver locations for the specific route (this already filters by route)
       const timestamp = new Date().getTime();
       const locationsResponse = await fetch(
-        `http://192.168.254.110/LakbAI/LakbAI-API/routes/api.php/mobile/locations/route/${selectedRoute}?t=${timestamp}`
+        `${API_CONFIG.BASE_URL}/mobile/locations/route/${selectedRoute}?t=${timestamp}`
       );
       
       // Also get driver details for contact information
       const driversResponse = await fetch(
-        `http://192.168.254.110/LakbAI/LakbAI-API/routes/api.php/admin/drivers?t=${timestamp}`
+        `${API_CONFIG.BASE_URL}/admin/drivers?t=${timestamp}`
       );
       
       let driverLocations = [];
@@ -257,7 +245,7 @@ const CheckpointManagement = ({ visible, onClose }) => {
           driverDetails = driversResult.drivers;
         }
       } else {
-        console.error('❌ Failed to fetch driver details:', driversResponse.status, driversResponse.statusText);
+        console.error('Failed to fetch driver details:', driversResponse.status, driversResponse.statusText);
       }
       
       // Merge location data with driver details
@@ -266,7 +254,7 @@ const CheckpointManagement = ({ visible, onClose }) => {
         
         return {
           driver_id: driver.driver_id,
-          driver_name: driver.driver_name,
+          driver_name: driverInfo?.name || 'Unknown Driver',
           jeepney_number: driver.jeepney_number || 'N/A',
           current_location: driver.last_scanned_checkpoint || 'Unknown',
           last_update: driver.last_update || 'Never',
@@ -278,12 +266,12 @@ const CheckpointManagement = ({ visible, onClose }) => {
         };
       });
       
-      console.log('📍 Merged driver locations:', mergedDriverLocations);
-      console.log('🔄 Setting driver locations in state...');
+      console.log('Merged driver locations:', mergedDriverLocations);
+      console.log('Setting driver locations in state...');
       setDriverLocations(mergedDriverLocations);
       setLastUpdateTime(new Date());
       setSuccess(`Found ${mergedDriverLocations.length} active drivers on this route`);
-      console.log('✅ Driver locations updated successfully');
+      console.log('Driver locations updated successfully');
     } catch (error) {
       console.error('Error fetching driver locations:', error);
       setError('Failed to fetch driver locations');
@@ -476,19 +464,6 @@ const CheckpointManagement = ({ visible, onClose }) => {
                     {routes.map(route => (
                       <option key={route.id} value={route.id}>
                         {route.route_name} ({route.origin} → {route.destination})
-                      </option>
-                    ))}
-                  </Form.Select>
-                </Form.Group>
-              </Col>
-              <Col md={6}>
-                <Form.Group>
-                  <Form.Label>Select Jeepney (Optional)</Form.Label>
-                  <Form.Select value={selectedJeepney} onChange={(e) => setSelectedJeepney(e.target.value)}>
-                    <option value="">Choose a jeepney...</option>
-                    {jeepneys.filter(j => !selectedRoute || j.route_id == selectedRoute).map(jeepney => (
-                      <option key={jeepney.id} value={jeepney.id}>
-                        {jeepney.jeepney_number} - {jeepney.plate_number}
                       </option>
                     ))}
                   </Form.Select>
@@ -832,7 +807,7 @@ const CheckpointManagement = ({ visible, onClose }) => {
         </Modal.Body>
       </Modal>
       
-      <style jsx>{`
+      <style>{`
         .pulse-animation {
           animation: pulse 2s infinite;
         }

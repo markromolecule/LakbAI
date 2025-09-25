@@ -1,6 +1,8 @@
 // Jeepney management service for admin operations
+import { API_CONFIG } from '../config/apiConfig';
+
 class JeepneyService {
-  static API_BASE_URL = '/api';
+  static API_BASE_URL = API_CONFIG.BASE_URL;
 
   /**
    * Get all jeepneys with pagination

@@ -306,11 +306,33 @@ export const usePassengerState = () => {
           }
         }
       } else {
-        // For Auth0 users, use the sync function
-        const syncResult = await sessionManager.syncUserWithDatabase(user);
-        if (syncResult.status === 'success' && syncResult.data?.user) {
-          dbUser = syncResult.data.user;
-          console.log('✅ usePassengerState: Got fresh Auth0 user data from backend');
+        // For Auth0 users, check if session data is more recent than backend data
+        if (session?.dbUserData?.updated_at) {
+          console.log('🔍 usePassengerState: Checking if session data is more recent than backend...');
+          const sessionUpdateTime = new Date(session.dbUserData.updated_at).getTime();
+          const now = Date.now();
+          const timeDiff = now - sessionUpdateTime;
+          
+          // If session data was updated within the last 30 seconds, use it instead of backend sync
+          if (timeDiff < 30000) {
+            console.log('✅ usePassengerState: Using recent session data (updated', Math.round(timeDiff / 1000), 'seconds ago)');
+            dbUser = session.dbUserData;
+          } else {
+            console.log('🔄 usePassengerState: Session data is old, syncing with backend...');
+            const syncResult = await sessionManager.syncUserWithDatabase(user);
+            if (syncResult.status === 'success' && syncResult.data?.user) {
+              dbUser = syncResult.data.user;
+              console.log('✅ usePassengerState: Got fresh Auth0 user data from backend');
+            }
+          }
+        } else {
+          // No session data or no updated_at, sync with backend
+          console.log('🔄 usePassengerState: No session data or timestamp, syncing with backend...');
+          const syncResult = await sessionManager.syncUserWithDatabase(user);
+          if (syncResult.status === 'success' && syncResult.data?.user) {
+            dbUser = syncResult.data.user;
+            console.log('✅ usePassengerState: Got fresh Auth0 user data from backend');
+          }
         }
       }
       

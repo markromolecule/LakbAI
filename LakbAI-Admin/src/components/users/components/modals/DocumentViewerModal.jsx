@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Modal, Button, Row, Col, Badge, Alert, Form, ButtonGroup } from 'react-bootstrap';
+import { API_CONFIG } from '../../../../config/apiConfig';
 
 const DocumentViewerModal = ({ 
   show, 
@@ -37,7 +38,8 @@ const DocumentViewerModal = ({
   const getDocumentUrl = () => {
     if (!document.path) return null;
     // Use the API endpoint for document serving
-    return `http://localhost/LakbAI/LakbAI-API/api/document/${document.path}`;
+    const baseUrl = API_CONFIG.BASE_URL.replace('/routes/api.php', '');
+    return `${baseUrl}/api/document/${document.path}`;
   };
 
   const isImageDocument = (filename) => {

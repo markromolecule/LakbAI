@@ -35,11 +35,58 @@ export const RouteSelector: React.FC<RouteSelectorProps> = ({
   const [loading, setLoading] = useState(false);
   const [updating, setUpdating] = useState(false);
 
-  // Available routes for SM Epza and SM Dasma
-  const availableRoutes: Route[] = [
-    { id: 1, route_name: 'SM Epza → SM Dasmariñas', origin: 'SM Epza', destination: 'SM Dasmariñas' },
-    { id: 2, route_name: 'SM Dasmariñas → SM Epza', origin: 'SM Dasmariñas', destination: 'SM Epza' },
-  ];
+  // Load available routes from API
+  const loadAvailableRoutes = async () => {
+    try {
+      setLoading(true);
+      console.log('🛣️ Loading available routes from API...');
+      
+      const baseUrl = getBaseUrl().replace('/routes/api.php', '');
+      const routesUrl = `${baseUrl}/routes`;
+      console.log('🛣️ Routes URL:', routesUrl);
+      
+      const response = await fetch(routesUrl);
+      console.log('🛣️ Routes response status:', response.status);
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('🛣️ Routes data:', data);
+        
+        if (data.status === 'success' && data.routes) {
+          console.log('🛣️ Available routes loaded:', data.routes);
+          setRoutes(data.routes);
+        } else {
+          console.warn('⚠️ API returned unsuccessful response:', data);
+          // Fallback to hardcoded routes
+          setRoutes([
+            { id: 1, route_name: 'SM Epza → SM Dasmariñas', origin: 'SM Epza', destination: 'SM Dasmariñas' },
+            { id: 2, route_name: 'SM Dasmariñas → SM Epza', origin: 'SM Dasmariñas', destination: 'SM Epza' },
+          ]);
+        }
+      } else {
+        console.warn('⚠️ Failed to load routes from API:', response.status);
+        // Fallback to hardcoded routes
+        setRoutes([
+          { id: 1, route_name: 'SM Epza → SM Dasmariñas', origin: 'SM Epza', destination: 'SM Dasmariñas' },
+          { id: 2, route_name: 'SM Dasmariñas → SM Epza', origin: 'SM Dasmariñas', destination: 'SM Epza' },
+        ]);
+      }
+    } catch (error) {
+      console.error('❌ Error loading routes:', error);
+      // Fallback to hardcoded routes
+      setRoutes([
+        { id: 1, route_name: 'SM Epza → SM Dasmariñas', origin: 'SM Epza', destination: 'SM Dasmariñas' },
+        { id: 2, route_name: 'SM Dasmariñas → SM Epza', origin: 'SM Dasmariñas', destination: 'SM Epza' },
+      ]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Load routes when component mounts
+  useEffect(() => {
+    loadAvailableRoutes();
+  }, []);
 
   const handleRouteSelect = async (selectedRoute: Route) => {
     if (selectedRoute.route_name === currentRoute) {
@@ -193,13 +240,30 @@ export const RouteSelector: React.FC<RouteSelectorProps> = ({
             </View>
           )}
 
-          <FlatList
-            data={availableRoutes}
-            keyExtractor={(item) => item.id.toString()}
-            renderItem={renderRouteItem}
-            style={routeSelectorStyles.routeList}
-            showsVerticalScrollIndicator={false}
-          />
+          {loading ? (
+            <View style={routeSelectorStyles.routeLoadingContainer}>
+              <ActivityIndicator size="large" color="#3B82F6" />
+              <Text style={routeSelectorStyles.routeLoadingText}>Loading routes...</Text>
+            </View>
+          ) : routes.length === 0 ? (
+            <View style={routeSelectorStyles.routeEmptyContainer}>
+              <Text style={routeSelectorStyles.routeEmptyText}>No routes available</Text>
+              <TouchableOpacity 
+                style={routeSelectorStyles.routeRetryButton}
+                onPress={loadAvailableRoutes}
+              >
+                <Text style={routeSelectorStyles.routeRetryButtonText}>Retry</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <FlatList
+              data={routes}
+              keyExtractor={(item) => item.id.toString()}
+              renderItem={renderRouteItem}
+              style={routeSelectorStyles.routeList}
+              showsVerticalScrollIndicator={false}
+            />
+          )}
         </View>
       </Modal>
     </View>

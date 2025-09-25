@@ -98,6 +98,18 @@ export const useLogout = () => {
       try {
         console.log('🔄 Starting comprehensive logout...');
         
+        // Check if user is a driver and call driver auth service logout
+        const session = await getUserSession();
+        if (session.userType === 'driver') {
+          try {
+            const { driverAuthService } = await import('../services/driverAuthService');
+            await driverAuthService.logout();
+            console.log('✅ Driver auth service logout completed');
+          } catch (driverLogoutError) {
+            console.log('⚠️ Driver auth service logout failed:', driverLogoutError);
+          }
+        }
+        
         // Clear all session data
         await clearUserSession();
         console.log('✅ User session cleared');

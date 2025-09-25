@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Button, Spinner, Card, Badge, Row, Col, Form, InputGroup } from 'react-bootstrap';
 import UserService from '../../../services/userService';
+import { API_CONFIG } from '../../../config/apiConfig';
 import './UserModal.css';
 
 const DiscountReviewModal = ({ show, onHide, user, onStatusUpdate }) => {
@@ -19,7 +20,8 @@ const DiscountReviewModal = ({ show, onHide, user, onStatusUpdate }) => {
   const fetchUserDetails = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`http://localhost:8000/LakbAI/LakbAI-API/api/admin/users/${user.id}/review`);
+      const baseUrl = API_CONFIG.BASE_URL.replace('/routes/api.php', '');
+      const response = await fetch(`${baseUrl}/api/admin/users/${user.id}/review`);
       const data = await response.json();
       
       if (data.status === 'success') {
@@ -48,7 +50,7 @@ const DiscountReviewModal = ({ show, onHide, user, onStatusUpdate }) => {
     // Discount percentage is automatically determined by user type - no validation needed
     setActionLoading(true);
     try {
-      const response = await fetch(`http://localhost:8000/LakbAI/LakbAI-API/api/users/${user.id}/discount`, {
+      const response = await fetch(`${API_CONFIG.BASE_URL.replace('/routes/api.php', '')}/api/users/${user.id}/discount`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -84,7 +86,7 @@ const DiscountReviewModal = ({ show, onHide, user, onStatusUpdate }) => {
 
     setActionLoading(true);
     try {
-      const response = await fetch(`http://localhost:8000/LakbAI/LakbAI-API/api/users/${user.id}/discount`, {
+      const response = await fetch(`${API_CONFIG.BASE_URL.replace('/routes/api.php', '')}/api/users/${user.id}/discount`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

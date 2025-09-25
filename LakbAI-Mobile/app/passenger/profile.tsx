@@ -1,7 +1,7 @@
 // LakbAI-Mobile/app/passenger/profile.tsx
 import React, { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, View, Alert, SafeAreaView } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { Header } from '../../components/common/Header';
 import { Footer } from '../../components/common/Footer';
 import { ProfileView } from '../../screens/passenger/views/ProfileView';
@@ -26,6 +26,16 @@ export default function PassengerProfile() {
     }
   }, [isAuthenticated, user]); // Removed refreshProfile from dependencies to prevent infinite loop
 
+  // Refresh profile data when screen comes into focus (e.g., returning from edit profile)
+  useFocusEffect(
+    React.useCallback(() => {
+      console.log('🔄 Profile screen focused - refreshing profile data...');
+      if (isAuthenticated && user) {
+        refreshProfile();
+      }
+    }, [isAuthenticated, user, refreshProfile])
+  );
+
   // Clear error when modal is closed
   useEffect(() => {
     if (!showDiscountModal) {
@@ -33,13 +43,24 @@ export default function PassengerProfile() {
     }
   }, [showDiscountModal, clearError]);
 
+  // Debug: Log when passengerProfile changes
+  useEffect(() => {
+    console.log('🔄 PassengerProfile changed:', {
+      firstName: passengerProfile?.firstName,
+      lastName: passengerProfile?.lastName,
+      picture: passengerProfile?.picture,
+      hasPicture: !!passengerProfile?.picture
+    });
+  }, [passengerProfile]);
+
   const profileForDisplay = useMemo(() => {
     console.log('🔍 ProfileForDisplay calculation:', {
       isAuthenticated,
       hasUser: !!user,
       hasPassengerProfile: !!passengerProfile,
       passengerProfileFirstName: passengerProfile?.firstName,
-      passengerProfileLastName: passengerProfile?.lastName
+      passengerProfileLastName: passengerProfile?.lastName,
+      passengerProfilePicture: passengerProfile?.picture
     });
     
     if (isAuthenticated && user && passengerProfile) {

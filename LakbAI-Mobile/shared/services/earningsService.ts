@@ -1,6 +1,8 @@
 import { Alert } from 'react-native';
 // Removed old notificationService - using only localNotificationService for driver app notifications
 import { localNotificationService } from './localNotificationService';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getBaseUrl } from '../../config/apiConfig';
 
 export interface EarningsUpdate {
   driverId: string;
@@ -37,6 +39,74 @@ class EarningsService {
   private previousEarnings: Map<string, DriverEarnings> = new Map(); // Track previous earnings for comparison
   private listeners = new Set<(driverId: string) => void>();
   private lastResetDate: string = new Date().toDateString(); // Track last reset date
+  private lastPaymentSender: Map<string, string> = new Map(); // Track last payment sender for each driver
+
+  /**
+   * Store the last payment sender name for a driver
+   */
+  async setLastPaymentSender(driverId: string, senderName: string): Promise<void> {
+    try {
+      // Store in memory
+      this.lastPaymentSender.set(driverId, senderName);
+      
+      // Store in AsyncStorage for persistence
+      const key = `last_payment_sender_${driverId}`;
+      await AsyncStorage.setItem(key, senderName);
+      
+      console.log('💰 Stored payment sender for driver', driverId, ':', senderName);
+    } catch (error) {
+      console.error('❌ Error storing payment sender:', error);
+    }
+  }
+
+  /**
+   * Get the last payment sender name for a driver
+   */
+  async getLastPaymentSender(driverId: string): Promise<string | undefined> {
+    try {
+      // First check memory
+      const memorySender = this.lastPaymentSender.get(driverId);
+      if (memorySender) {
+        console.log('💰 Retrieved payment sender from memory for driver', driverId, ':', memorySender);
+        return memorySender;
+      }
+      
+      // Then check AsyncStorage
+      const key = `last_payment_sender_${driverId}`;
+      const storedSender = await AsyncStorage.getItem(key);
+      
+      if (storedSender) {
+        // Update memory cache
+        this.lastPaymentSender.set(driverId, storedSender);
+        console.log('💰 Retrieved payment sender from storage for driver', driverId, ':', storedSender);
+        return storedSender;
+      }
+      
+      console.log('💰 No payment sender found for driver', driverId);
+      return undefined;
+    } catch (error) {
+      console.error('❌ Error retrieving payment sender:', error);
+      return undefined;
+    }
+  }
+
+  /**
+   * Clear the last payment sender name for a driver (after notification is sent)
+   */
+  async clearLastPaymentSender(driverId: string): Promise<void> {
+    try {
+      // Clear from memory
+      this.lastPaymentSender.delete(driverId);
+      
+      // Clear from AsyncStorage
+      const key = `last_payment_sender_${driverId}`;
+      await AsyncStorage.removeItem(key);
+      
+      console.log('💰 Cleared payment sender for driver', driverId);
+    } catch (error) {
+      console.error('❌ Error clearing payment sender:', error);
+    }
+  }
 
   /**
    * Get driver earnings from database API
@@ -84,7 +154,7 @@ class EarningsService {
   /**
    * Save earnings to database API
    */
-  async saveEarningsToAPI(update: EarningsUpdate): Promise<boolean> {
+  async saveEarningsToAPI(update: EarningsUpdate): Promise<any> {
     try {
       const { getBaseUrl } = await import('../../config/apiConfig');
       const baseUrl = getBaseUrl().replace('/routes/api.php', '');
@@ -100,7 +170,7 @@ class EarningsService {
         paymentMethod: update.paymentMethod,
         pickupLocation: update.pickupLocation,
         destination: update.destination,
-        incrementTripCount: update.incrementTripCount // 🔥 CRITICAL FIX: Send incrementTripCount to API
+        incrementTripCount: update.incrementTripCount 
       };
       
       console.log('💾 Saving earnings to API:', apiUrl, payload);
@@ -113,20 +183,23 @@ class EarningsService {
         body: JSON.stringify(payload),
       });
       
+      console.log('📡 API Response status:', response.status);
+      console.log('📡 API Response ok:', response.ok);
+      
       if (response.ok) {
         const result = await response.json();
         console.log('✅ Earnings saved to database:', result);
-        return result.status === 'success';
+        return result;
       } else {
         console.error('❌ Failed to save earnings:', response.status, response.statusText);
         const errorText = await response.text();
         console.error('❌ Error response:', errorText);
+        return { status: 'error', message: errorText };
       }
     } catch (error) {
       console.error('❌ Error saving earnings to API:', error);
+      return { status: 'error', message: error instanceof Error ? error.message : 'Unknown error' };
     }
-    
-    return false;
   }
 
   /**
@@ -202,7 +275,7 @@ class EarningsService {
   /**
    * Update driver earnings when a passenger pays
    */
-  async updateDriverEarnings(update: EarningsUpdate): Promise<{
+  async updateDriverEarnings(update: EarningsUpdate, senderName?: string): Promise<{
     success: boolean;
     newEarnings?: DriverEarnings;
     error?: string;
@@ -219,7 +292,17 @@ class EarningsService {
       console.log('  - incrementTripCount false:', update.incrementTripCount === false);
       console.log('  - Payment context:', update.passengerId?.includes('passenger') ? 'PASSENGER_PAYMENT' : 'OTHER');
 
-      const currentEarnings = this.getDriverEarnings(update.driverId);
+      const existingEarnings = this.getDriverEarnings(update.driverId);
+
+      // Validate the update data
+      // Allow 0 fare only when incrementing trip count (trip completion)
+      // Otherwise, require positive fare for earnings updates
+      if (update.incrementTripCount && update.finalFare === 0) {
+        // Trip completion with no fare - this is valid
+        console.log('✅ Trip completion detected - allowing 0 fare for trip count increment only');
+      } else if (!update.finalFare || isNaN(update.finalFare) || update.finalFare <= 0) {
+        throw new Error(`Invalid finalFare: ${update.finalFare}`);
+      }
 
       // Calculate trip count increment (only when explicitly requested)
       // DEFAULT: Do NOT increment trip count unless explicitly set to true
@@ -227,46 +310,84 @@ class EarningsService {
       const tripIncrement = update.incrementTripCount === true ? 1 : 0;
       
       // Calculate new earnings
+      console.log('💰 Current earnings before update:', existingEarnings);
+      console.log('💰 Update details:', { finalFare: update.finalFare, tripIncrement });
+      
+      // For trip completion (incrementTripCount = true, finalFare = 0), only update trip counts
+      // For payment updates (finalFare > 0), update both earnings and trip counts
+      const fareIncrement = update.finalFare || 0;
+      
       const newEarnings: DriverEarnings = {
-        todayEarnings: currentEarnings.todayEarnings + update.finalFare,
-        weeklyEarnings: currentEarnings.weeklyEarnings + update.finalFare,
-        monthlyEarnings: currentEarnings.monthlyEarnings + update.finalFare,
-        yearlyEarnings: currentEarnings.yearlyEarnings + update.finalFare,
-        totalEarnings: currentEarnings.totalEarnings + update.finalFare,
-        totalTrips: currentEarnings.totalTrips + tripIncrement,
-        todayTrips: currentEarnings.todayTrips + tripIncrement,
-        weeklyTrips: currentEarnings.weeklyTrips + tripIncrement,
-        monthlyTrips: currentEarnings.monthlyTrips + tripIncrement,
-        yearlyTrips: currentEarnings.yearlyTrips + tripIncrement,
-        averageFarePerTrip: (currentEarnings.todayTrips + tripIncrement) > 0 
-          ? Math.round((currentEarnings.todayEarnings + update.finalFare) / (currentEarnings.todayTrips + tripIncrement))
+        todayEarnings: existingEarnings.todayEarnings + fareIncrement,
+        weeklyEarnings: existingEarnings.weeklyEarnings + fareIncrement,
+        monthlyEarnings: existingEarnings.monthlyEarnings + fareIncrement,
+        yearlyEarnings: existingEarnings.yearlyEarnings + fareIncrement,
+        totalEarnings: existingEarnings.totalEarnings + fareIncrement,
+        totalTrips: existingEarnings.totalTrips + tripIncrement,
+        todayTrips: existingEarnings.todayTrips + tripIncrement,
+        weeklyTrips: existingEarnings.weeklyTrips + tripIncrement,
+        monthlyTrips: existingEarnings.monthlyTrips + tripIncrement,
+        yearlyTrips: existingEarnings.yearlyTrips + tripIncrement,
+        averageFarePerTrip: (existingEarnings.todayTrips + tripIncrement) > 0 
+          ? Math.round((existingEarnings.todayEarnings + fareIncrement) / (existingEarnings.todayTrips + tripIncrement))
           : 0,
         lastUpdate: update.timestamp,
       };
+      
+      console.log('💰 New earnings calculated:', newEarnings);
 
       console.log('🔄 Trip count update:', {
         driverId: update.driverId,
         incrementTripCount: update.incrementTripCount,
         tripIncrement: tripIncrement,
-        previousTodayTrips: currentEarnings.todayTrips,
+        previousTodayTrips: existingEarnings.todayTrips,
         newTodayTrips: newEarnings.todayTrips,
-        previousTotalTrips: currentEarnings.totalTrips,
+        previousTotalTrips: existingEarnings.totalTrips,
         newTotalTrips: newEarnings.totalTrips,
         context: update.passengerId === 'trip_completion' ? 'TRIP_COMPLETION' : 'PASSENGER_PAYMENT',
         shouldIncrementTrips: tripIncrement > 0 ? 'YES - Trip completed' : 'NO - Payment only'
       });
 
+      // Get current earnings before updating (for notification calculation)
+      const currentEarnings = this.getDriverEarnings(update.driverId);
+      
       // Update stored earnings
       this.earnings.set(update.driverId, newEarnings);
 
-      // Note: Local notification will be triggered when driver app refreshes earnings data
-      // This prevents passenger app from triggering notifications meant for drivers
+      // Store the passenger name for the driver notification
+      if (senderName) {
+        await this.setLastPaymentSender(update.driverId, senderName);
+      }
 
-      // Removed direct payment notification - driver will be notified when their app refreshes earnings
-      console.log('💰 Payment processed - driver will be notified when their app refreshes earnings data');
+      // Trigger notification only for payment updates (not for trip completion)
+      if (fareIncrement > 0) {
+        console.log('💰 Payment processed - triggering notification immediately');
+        await this.checkAndNotifyEarningsChange(update.driverId, newEarnings, senderName, currentEarnings);
+      } else {
+        console.log('🚗 Trip completion - no notification needed (only trip count updated)');
+      }
       
       // Save to database API
-      await this.saveEarningsToAPI(update);
+      console.log('💾 Saving earnings to API:', `${getBaseUrl()}/api/earnings/add`, {
+        destination: update.destination,
+        discountAmount: update.discountAmount,
+        driverId: update.driverId,
+        finalFare: update.finalFare,
+        incrementTripCount: update.incrementTripCount,
+        originalFare: update.originalFare,
+        passengerId: update.passengerId,
+        paymentMethod: update.paymentMethod,
+        pickupLocation: update.pickupLocation,
+        tripId: update.tripId
+      });
+      
+      const saveResult = await this.saveEarningsToAPI(update);
+      console.log('✅ Earnings saved to database:', saveResult);
+      
+      // Check if the save was successful
+      if (saveResult && saveResult.status === 'error') {
+        throw new Error(`Database save failed: ${saveResult.message}`);
+      }
       
       // Trigger driver profile refresh event
       console.log('📱 Driver profile should refresh now to show updated earnings');
@@ -288,7 +409,7 @@ class EarningsService {
       console.error('❌ Failed to update driver earnings:', error);
       return {
         success: false,
-        error: 'Failed to update earnings',
+        error: error instanceof Error ? error.message : 'Failed to update earnings',
       };
     }
   }
@@ -304,38 +425,81 @@ class EarningsService {
    * Check for earnings changes and trigger notification if driver earnings increased
    * This should only be called from the driver app
    */
-  private async checkAndNotifyEarningsChange(driverId: string, newEarnings: DriverEarnings): Promise<void> {
+  private async checkAndNotifyEarningsChange(driverId: string, newEarnings: DriverEarnings, senderName?: string, currentEarnings?: DriverEarnings): Promise<void> {
     const previousEarnings = this.previousEarnings.get(driverId);
     
-    if (previousEarnings && newEarnings.todayEarnings > previousEarnings.todayEarnings) {
-      const earningsIncrease = newEarnings.todayEarnings - previousEarnings.todayEarnings;
+    console.log('🔍 Earnings comparison for driver:', {
+      driverId,
+      hasPreviousEarnings: !!previousEarnings,
+      previousTodayEarnings: previousEarnings?.todayEarnings,
+      newTodayEarnings: newEarnings.todayEarnings,
+      willTriggerNotification: previousEarnings && newEarnings.todayEarnings > previousEarnings.todayEarnings,
+      localEarnings: this.earnings.get(driverId)?.todayEarnings,
+      senderNameProvided: !!senderName
+    });
+    
+    // Check if this is a driver app earnings refresh (no senderName provided)
+    // In this case, we should check for stored sender name and show notification
+    if (!senderName) {
+      console.log('💰 Driver app earnings refresh detected for driver:', driverId);
       
-      console.log('💰 Earnings increase detected for driver:', {
-        driverId,
-        previousEarnings: previousEarnings.todayEarnings,
-        newEarnings: newEarnings.todayEarnings,
-        increase: earningsIncrease
-      });
+      // Check if earnings increased
+      const hasEarningsIncrease = previousEarnings && newEarnings.todayEarnings > previousEarnings.todayEarnings;
+      
+      if (hasEarningsIncrease) {
+        const earningsIncrease = newEarnings.todayEarnings - previousEarnings.todayEarnings;
+        
+        // Try to get the stored sender name
+        const storedSenderName = await this.getLastPaymentSender(driverId);
+        
+        console.log('💰 Driver app earnings increase detected:', {
+          driverId,
+          previousEarnings: previousEarnings.todayEarnings,
+          newEarnings: newEarnings.todayEarnings,
+          earningsIncrease,
+          storedSenderName
+        });
+        
+        if (earningsIncrease > 0) {
+          const notificationTitle = '💰 Payment Received!';
+          const notificationBody = storedSenderName 
+            ? `${storedSenderName} paid ₱${earningsIncrease.toFixed(2)}. Today's earnings: ₱${newEarnings.todayEarnings.toFixed(2)}`
+            : `You received ₱${earningsIncrease.toFixed(2)}. Today's earnings: ₱${newEarnings.todayEarnings.toFixed(2)}`;
 
-      // Trigger local notification for the driver
-      await localNotificationService.notifyEarningsUpdate({
-        type: 'earnings_update',
-        driverId: driverId,
-        amount: earningsIncrease,
-        tripId: `earnings_${Date.now()}`,
-        paymentMethod: 'passenger_payment',
-        previousEarnings: previousEarnings.todayEarnings,
-        newEarnings: newEarnings.todayEarnings,
-        title: '💰 Earnings Updated!',
-        body: `You received ₱${earningsIncrease.toFixed(2)}. Today's earnings: ₱${newEarnings.todayEarnings.toFixed(2)}`,
-        data: {
-          driverId: driverId,
-          amount: earningsIncrease,
-          newTotal: newEarnings.todayEarnings,
-          previousTotal: previousEarnings.todayEarnings,
-          paymentMethod: 'passenger_payment'
+          // Trigger local notification for the driver
+          await localNotificationService.notifyEarningsUpdate({
+            type: 'earnings_update',
+            driverId: driverId,
+            amount: earningsIncrease,
+            tripId: `earnings_${Date.now()}`,
+            paymentMethod: 'passenger_payment',
+            previousEarnings: previousEarnings.todayEarnings,
+            newEarnings: newEarnings.todayEarnings,
+            senderName: storedSenderName,
+            title: notificationTitle,
+            body: notificationBody,
+            data: {
+              driverId: driverId,
+              amount: earningsIncrease,
+              newTotal: newEarnings.todayEarnings,
+              previousTotal: previousEarnings.todayEarnings,
+              paymentMethod: 'passenger_payment',
+              senderName: storedSenderName
+            }
+          });
+
+          console.log('✅ Driver app notification sent:', notificationBody);
+          
+          // Clear the stored sender name after notification
+          if (storedSenderName) {
+            await this.clearLastPaymentSender(driverId);
+          }
         }
-      });
+      }
+      
+      // Update previous earnings for future comparisons
+      this.previousEarnings.set(driverId, { ...newEarnings });
+      return;
     }
     
     // Update previous earnings for next comparison
@@ -345,13 +509,23 @@ class EarningsService {
   /**
    * Get current earnings for a driver (async version - tries API first)
    */
-  async getEarningsAsync(driverId: string): Promise<DriverEarnings> {
+  async getEarningsAsync(driverId: string, senderName?: string): Promise<DriverEarnings> {
     // Try to get from API first
     const apiEarnings = await this.getDriverEarningsFromAPI(driverId);
     
     if (apiEarnings) {
+      // Initialize previous earnings if not set (first time loading)
+      if (!this.previousEarnings.has(driverId)) {
+        console.log('💰 Initializing previous earnings for driver:', driverId, 'with current earnings:', apiEarnings.todayEarnings);
+        this.previousEarnings.set(driverId, { ...apiEarnings });
+        // Don't check for changes on first load - just initialize
+        this.earnings.set(driverId, apiEarnings);
+        console.log('💰 Updated local earnings cache from API for driver:', driverId);
+        return apiEarnings;
+      }
+      
       // Check for earnings changes and notify driver if increased
-      await this.checkAndNotifyEarningsChange(driverId, apiEarnings);
+      await this.checkAndNotifyEarningsChange(driverId, apiEarnings, senderName);
       
       // Update local cache with API data
       this.earnings.set(driverId, apiEarnings);
@@ -363,8 +537,16 @@ class EarningsService {
     console.log('💰 Using fallback local earnings for driver:', driverId);
     const localEarnings = this.getDriverEarnings(driverId);
     
+    // Initialize previous earnings if not set (first time loading)
+    if (!this.previousEarnings.has(driverId)) {
+      console.log('💰 Initializing previous earnings for driver:', driverId, 'with local earnings:', localEarnings.todayEarnings);
+      this.previousEarnings.set(driverId, { ...localEarnings });
+      // Don't check for changes on first load - just initialize
+      return localEarnings;
+    }
+    
     // Check for earnings changes even with local data
-    await this.checkAndNotifyEarningsChange(driverId, localEarnings);
+    await this.checkAndNotifyEarningsChange(driverId, localEarnings, senderName);
     
     return localEarnings;
   }
@@ -373,9 +555,9 @@ class EarningsService {
    * Refresh earnings for driver and check for updates (should be called by driver app)
    * This will trigger notifications if earnings have increased
    */
-  async refreshDriverEarnings(driverId: string): Promise<DriverEarnings> {
+  async refreshDriverEarnings(driverId: string, senderName?: string): Promise<DriverEarnings> {
     console.log('🔄 Driver app refreshing earnings for:', driverId);
-    return await this.getEarningsAsync(driverId);
+    return await this.getEarningsAsync(driverId, senderName);
   }
 
   /**

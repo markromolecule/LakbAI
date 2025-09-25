@@ -114,8 +114,13 @@ export const EarningsNotificationDisplay: React.FC<EarningsNotificationDisplayPr
         </View>
         
         <View style={styles.contentContainer}>
-          <Text style={styles.title}>💰 Earnings Updated!</Text>
+          <Text style={styles.title}>💰 Payment Received!</Text>
           <Text style={styles.amount}>+₱{notification.amount}</Text>
+          {notification.senderName && (
+            <Text style={styles.senderName}>
+              from {notification.senderName}
+            </Text>
+          )}
           <Text style={styles.subtitle}>
             Today's Total: ₱{notification.newEarnings}
           </Text>
@@ -187,6 +192,13 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: COLORS.white,
     marginBottom: 2,
+  },
+  senderName: {
+    ...FONTS.body4,
+    color: COLORS.white,
+    opacity: 0.9,
+    marginBottom: 2,
+    fontStyle: 'italic',
   },
   subtitle: {
     ...FONTS.body4,

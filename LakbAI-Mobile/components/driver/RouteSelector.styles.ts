@@ -153,4 +153,44 @@ export const routeSelectorStyles = StyleSheet.create({
     color: COLORS.gray600,
     marginLeft: 28, // Align with icon
   },
+
+  // Loading and empty state styles
+  routeLoadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: SPACING.xl,
+  },
+
+  routeLoadingText: {
+    fontSize: 16,
+    color: COLORS.gray600,
+    marginTop: SPACING.md,
+  },
+
+  routeEmptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: SPACING.xl,
+  },
+
+  routeEmptyText: {
+    fontSize: 16,
+    color: COLORS.gray600,
+    marginBottom: SPACING.lg,
+  },
+
+  routeRetryButton: {
+    backgroundColor: COLORS.blue500,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
+    borderRadius: 8,
+  },
+
+  routeRetryButtonText: {
+    color: COLORS.white,
+    fontSize: 16,
+    fontWeight: '500',
+  },
 });

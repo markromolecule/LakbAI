@@ -202,6 +202,167 @@ class EarningsController {
     }
 
     /**
+     * Get total aggregated earnings for all drivers (all-time)
+     */
+    public function getTotalAggregatedEarnings() {
+        try {
+            // Get total earnings from all drivers (all-time)
+            $query = "
+                SELECT 
+                    COUNT(DISTINCT driver_id) as total_drivers,
+                    COUNT(CASE WHEN counts_as_trip = 1 THEN 1 END) as total_trips,
+                    COALESCE(SUM(final_fare), 0) as total_revenue,
+                    COALESCE(AVG(final_fare), 0) as average_fare,
+                    COALESCE(SUM(discount_amount), 0) as total_discounts_given
+                FROM driver_earnings 
+            ";
+
+            $stmt = $this->db->prepare($query);
+            $stmt->execute();
+            $totalStats = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            // Get earnings breakdown by driver (all-time)
+            $driverBreakdownQuery = "
+                SELECT 
+                    de.driver_id,
+                    u.first_name,
+                    u.last_name,
+                    COUNT(CASE WHEN de.counts_as_trip = 1 THEN 1 END) as driver_trips,
+                    COALESCE(SUM(de.final_fare), 0) as driver_revenue,
+                    COALESCE(AVG(de.final_fare), 0) as driver_avg_fare
+                FROM driver_earnings de
+                LEFT JOIN users u ON de.driver_id = u.id
+                GROUP BY de.driver_id, u.first_name, u.last_name
+                ORDER BY driver_revenue DESC
+            ";
+
+            $driverStmt = $this->db->prepare($driverBreakdownQuery);
+            $driverStmt->execute();
+            $driverBreakdown = $driverStmt->fetchAll(PDO::FETCH_ASSOC);
+
+            // Get monthly breakdown for the last 12 months
+            $monthlyQuery = "
+                SELECT 
+                    DATE_FORMAT(transaction_date, '%Y-%m') as month,
+                    COUNT(CASE WHEN counts_as_trip = 1 THEN 1 END) as trips,
+                    COALESCE(SUM(final_fare), 0) as revenue
+                FROM driver_earnings 
+                WHERE transaction_date >= DATE_SUB(CURDATE(), INTERVAL 12 MONTH)
+                GROUP BY DATE_FORMAT(transaction_date, '%Y-%m')
+                ORDER BY month DESC
+            ";
+
+            $monthlyStmt = $this->db->prepare($monthlyQuery);
+            $monthlyStmt->execute();
+            $monthlyBreakdown = $monthlyStmt->fetchAll(PDO::FETCH_ASSOC);
+
+            return [
+                "status" => "success",
+                "type" => "total_aggregated",
+                "summary" => [
+                    "total_drivers" => (int)$totalStats['total_drivers'],
+                    "total_trips" => (int)$totalStats['total_trips'],
+                    "total_revenue" => (float)$totalStats['total_revenue'],
+                    "average_fare" => (float)$totalStats['average_fare'],
+                    "total_discounts_given" => (float)$totalStats['total_discounts_given']
+                ],
+                "driver_breakdown" => $driverBreakdown,
+                "monthly_breakdown" => $monthlyBreakdown,
+                "last_updated" => date('c')
+            ];
+        } catch (Exception $e) {
+            return [
+                "status" => "error",
+                "message" => "Failed to get total aggregated earnings: " . $e->getMessage()
+            ];
+        }
+    }
+
+    /**
+     * Get daily aggregated earnings for all drivers
+     */
+    public function getDailyAggregatedEarnings($date = null) {
+        try {
+            // Use today's date if no date provided
+            if (!$date) {
+                $date = date('Y-m-d');
+            }
+
+            // Get total daily earnings from all drivers
+            $query = "
+                SELECT 
+                    COUNT(DISTINCT driver_id) as total_active_drivers,
+                    COUNT(CASE WHEN counts_as_trip = 1 THEN 1 END) as total_trips,
+                    COALESCE(SUM(final_fare), 0) as total_revenue,
+                    COALESCE(AVG(final_fare), 0) as average_fare,
+                    COALESCE(SUM(discount_amount), 0) as total_discounts_given
+                FROM driver_earnings 
+                WHERE transaction_date = ?
+            ";
+
+            $stmt = $this->db->prepare($query);
+            $stmt->execute([$date]);
+            $dailyStats = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            // Get earnings breakdown by driver
+            $driverBreakdownQuery = "
+                SELECT 
+                    de.driver_id,
+                    u.first_name,
+                    u.last_name,
+                    COUNT(CASE WHEN de.counts_as_trip = 1 THEN 1 END) as driver_trips,
+                    COALESCE(SUM(de.final_fare), 0) as driver_revenue,
+                    COALESCE(AVG(de.final_fare), 0) as driver_avg_fare
+                FROM driver_earnings de
+                LEFT JOIN users u ON de.driver_id = u.id
+                WHERE de.transaction_date = ?
+                GROUP BY de.driver_id, u.first_name, u.last_name
+                ORDER BY driver_revenue DESC
+            ";
+
+            $driverStmt = $this->db->prepare($driverBreakdownQuery);
+            $driverStmt->execute([$date]);
+            $driverBreakdown = $driverStmt->fetchAll(PDO::FETCH_ASSOC);
+
+            // Get hourly breakdown for the day
+            $hourlyQuery = "
+                SELECT 
+                    HOUR(created_at) as hour,
+                    COUNT(CASE WHEN counts_as_trip = 1 THEN 1 END) as trips,
+                    COALESCE(SUM(final_fare), 0) as revenue
+                FROM driver_earnings 
+                WHERE transaction_date = ?
+                GROUP BY HOUR(created_at)
+                ORDER BY hour
+            ";
+
+            $hourlyStmt = $this->db->prepare($hourlyQuery);
+            $hourlyStmt->execute([$date]);
+            $hourlyBreakdown = $hourlyStmt->fetchAll(PDO::FETCH_ASSOC);
+
+            return [
+                "status" => "success",
+                "date" => $date,
+                "summary" => [
+                    "total_active_drivers" => (int)$dailyStats['total_active_drivers'],
+                    "total_trips" => (int)$dailyStats['total_trips'],
+                    "total_revenue" => (float)$dailyStats['total_revenue'],
+                    "average_fare" => (float)$dailyStats['average_fare'],
+                    "total_discounts_given" => (float)$dailyStats['total_discounts_given']
+                ],
+                "driver_breakdown" => $driverBreakdown,
+                "hourly_breakdown" => $hourlyBreakdown,
+                "last_updated" => date('c')
+            ];
+        } catch (Exception $e) {
+            return [
+                "status" => "error",
+                "message" => "Failed to get daily aggregated earnings: " . $e->getMessage()
+            ];
+        }
+    }
+
+    /**
      * End shift - record today's earnings and end the shift
      */
     public function endShift($data) {

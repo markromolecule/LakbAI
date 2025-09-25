@@ -2,15 +2,18 @@
 
 import React, { useState, useEffect } from "react";
 import { Container, Row, Col, Card, Tab, Tabs, Alert, Button } from "react-bootstrap";
+import { useLocation } from "react-router-dom";
 import AdminLayout from "../../components/admin/layout/AdminLayout";
 import JeepneyService from "../../services/jeepneyService";
 import JeepneyList from "../../components/jeepneys/JeepneyList";
 import JeepneyForm from "../../components/jeepneys/JeepneyForm";
 
 const Jeepneys = () => {
+  const location = useLocation();
   const [jeepneys, setJeepneys] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [activeTab, setActiveTab] = useState("list");
 
   // Stats for jeepneys
   const [stats, setStats] = useState({
@@ -21,7 +24,12 @@ const Jeepneys = () => {
 
   useEffect(() => {
     loadJeepneys();
-  }, []);
+    
+    // Check if we should show the add form (from dashboard quick action)
+    if (location.state?.showAddModal) {
+      setActiveTab("add");
+    }
+  }, [location.state]);
 
   const loadJeepneys = async () => {
     try {
@@ -108,9 +116,14 @@ const Jeepneys = () => {
         <Card className="border-0 shadow-sm">
           <Card.Body className="p-0">
             <Tabs
-              defaultActiveKey="all"
+              activeKey={activeTab}
+              onSelect={(key) => {
+                setActiveTab(key);
+                if (key !== "add") {
+                  handleDataUpdate();
+                }
+              }}
               className="nav-tabs-custom px-3 pt-3"
-              onSelect={() => handleDataUpdate()}
             >
               {/* All Jeepneys */}
               <Tab
@@ -185,7 +198,7 @@ const Jeepneys = () => {
         </Card>
       </Container>
 
-      <style jsx>{`
+      <style>{`
         .nav-tabs-custom {
           border-bottom: 1px solid #dee2e6;
         }

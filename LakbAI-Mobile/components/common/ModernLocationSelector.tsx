@@ -22,6 +22,7 @@ interface ModernLocationSelectorProps {
   excludeLocation?: string;
   pickupLocation?: string;
   isDestination?: boolean;
+  driverRoute?: string; // Driver's route information
 }
 
 // Route sequences for adaptive filtering
@@ -49,13 +50,30 @@ export const ModernLocationSelector: React.FC<ModernLocationSelectorProps> = ({
   excludeLocation,
   pickupLocation,
   isDestination = false,
+  driverRoute,
 }) => {
   const [modalVisible, setModalVisible] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [fadeAnim] = useState(new Animated.Value(0));
 
-  // Determine which route sequence to use based on pickup location
+  // Determine which route sequence to use based on pickup location and driver route
   const getRouteSequence = (pickup: string) => {
+    // If driver route is provided, use it to determine the correct sequence
+    if (driverRoute) {
+      console.log('🚌 Using driver route for destination filtering:', driverRoute);
+      
+      // Parse driver route to determine direction
+      if (driverRoute.includes('SM Epza') && driverRoute.includes('SM Dasmariñas')) {
+        // Check if it's SM Epza -> SM Dasmariñas (Route 1) or SM Dasmariñas -> SM Epza (Route 2)
+        if (driverRoute.includes('SM Epza -> SM Dasmariñas') || driverRoute.includes('SM Epza → SM Dasmariñas')) {
+          return ROUTE_SEQUENCES.route1;
+        } else if (driverRoute.includes('SM Dasmariñas -> SM Epza') || driverRoute.includes('SM Dasmariñas → SM Epza')) {
+          return ROUTE_SEQUENCES.route2;
+        }
+      }
+    }
+    
+    // Fallback to original logic
     if (pickup === 'SM Epza' || ROUTE_SEQUENCES.route1.includes(pickup)) {
       return ROUTE_SEQUENCES.route1;
     } else if (pickup === 'SM Dasmariñas' || ROUTE_SEQUENCES.route2.includes(pickup)) {
@@ -65,7 +83,7 @@ export const ModernLocationSelector: React.FC<ModernLocationSelectorProps> = ({
   };
 
   // Get available destinations based on pickup location
-  const getAvailableDestinations = (pickup: string) => {
+  const getAvailableDestinations = (pickup: string): string[] => {
     if (!pickup || !isDestination) return CHECKPOINTS;
     
     const routeSequence = getRouteSequence(pickup);
@@ -73,7 +91,7 @@ export const ModernLocationSelector: React.FC<ModernLocationSelectorProps> = ({
     
     if (pickupIndex === -1) return CHECKPOINTS;
     
-    return routeSequence.slice(pickupIndex + 1);
+    return routeSequence.slice(pickupIndex + 1) as string[];
   };
 
   // Filter locations based on search text, exclude specified location, and adaptive filtering
