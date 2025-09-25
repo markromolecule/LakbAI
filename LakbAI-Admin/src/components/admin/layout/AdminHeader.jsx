@@ -151,7 +151,7 @@ const AdminHeader = () => {
         </div>
       </Navbar>
       
-      <style jsx>{`
+      <style>{`
         .compact-header {
           min-height: 60px;
           padding: 0.75rem 0;

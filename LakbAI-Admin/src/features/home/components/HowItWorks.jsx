@@ -68,7 +68,7 @@ const HowItWorks = () => {
         </div>
       </section>
       
-      <style jsx>{`
+      <style>{`
         .header-content {
           max-width: 1400px;
           margin: 0 auto;

@@ -4,13 +4,13 @@ import styles from '../styles/AboutUs.module.css';
 
 const teamMembers = [
   { name: 'Mark Joseph Livado', role: 'Lead Developer | Project Manager', image: '/image/team/MARK.jpg'},
-  { name: 'Jiro Del Carmen', role: 'Backend Developer', image: '/image/team/member-2.jpg' },
-  { name: 'John Melthon Donaire', role: 'Backend Developer', image: '/image/team/member-3.jpg' },
+  { name: 'Jiro Del Carmen', role: 'Backend Developer', image: '/image/team/CARMEN.jpg' },
+  { name: 'John Melthon Donaire', role: 'Backend Developer', image: '/image/team/DONAIRE.jpg' },
   { name: 'Pia Ellaine Lucero', role: 'UI/UX Designer', image: '/image/team/LUCERO.jpg' },
-  { name: 'Ma. Rochelle Ogad', role: 'QA Tester', image: '/image/team/OGAD.jpg' },
+  { name: 'Ma. Rochelle Ogad', role: 'QA Tester', image: '/image/team/OGAD.png' },
   { name: 'Saffiya Rapsing', role: 'Documentation', image: '/image/team/RAPSING.jpg' },
   { name: 'Marquiz Dhaniel Salazar', role: 'Documentation', image: '/image/team/SALAZAR.jpg' },
-  { name: 'Julian Blaise Adriano', role: 'Documentation', image: '/image/team/ADRIANO.jpg' },
+  { name: 'Julian Blaise Adriano', role: 'Documentation', image: '/image/team/ADRIANO.png' },
 ];
 
 const AboutUs = () => {
@@ -53,7 +53,7 @@ const AboutUs = () => {
         </div>
       </section>
       
-      <style jsx>{`
+      <style>{`
         .header-content {
           max-width: 1400px;
           margin: 0 auto;

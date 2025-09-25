@@ -117,7 +117,7 @@ const DriverDashboard = () => {
 
   return (
     <div className="min-vh-100" style={{ backgroundColor: '#ffffff' }}>
-      <style jsx>{`
+      <style>{`
         .simple-card {
           background: white;
           border: 1px solid #e5e7eb;

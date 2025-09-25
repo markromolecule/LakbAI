@@ -30,7 +30,7 @@ const AdminLayout = ({ children, title, subtitle }) => {
       </main>
       <AdminFooter />
       
-             <style jsx>{`
+             <style>{`
                .header-content {
                  max-width: 1400px;
                  margin: 0 auto;

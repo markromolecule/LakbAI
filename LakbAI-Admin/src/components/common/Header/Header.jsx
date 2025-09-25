@@ -54,7 +54,7 @@ const Header = () => {
         </div>
       </Navbar>
       
-      <style jsx>{`
+      <style>{`
         .header-content {
           max-width: 1400px;
           margin: 0 auto;
