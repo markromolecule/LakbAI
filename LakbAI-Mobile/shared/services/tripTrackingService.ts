@@ -279,17 +279,19 @@ class TripTrackingService {
       });
 
       // Update driver earnings and increment trip count on completion
+      // For trip completion, we only increment trip count, not earnings
+      // Earnings should only be updated when passengers actually pay
       const earningsUpdate = await earningsService.updateDriverEarnings({
         driverId,
-        amount: tripData?.fareCollected || 0,
+        amount: 0, // No earnings change for trip completion
         tripId: completedTrip.id,
         passengerId: 'trip_completion',
         timestamp: now,
         paymentMethod: 'cash',
         pickupLocation: activeTrip.startCheckpoint.name,
         destination: endCheckpoint.name,
-        originalFare: tripData?.fareCollected || 0,
-        finalFare: tripData?.fareCollected || 0,
+        originalFare: 0, // No fare for trip completion
+        finalFare: 0, // No fare for trip completion - only increment trip count
         incrementTripCount: true // Increment trip count when trip is completed
       });
 

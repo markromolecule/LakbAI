@@ -77,7 +77,7 @@ export const FareMatrixScreen: React.FC = () => {
     if (fareMatrixData.length > 0) {
       return fareMatrixData.map((fare, index) => (
         <FareItem
-          key={`${fare.from_checkpoint_id}-${fare.to_checkpoint_id}`}
+          key={`fare-${fare.id}-${index}`}
           fareInfo={{
             from: fare.from_checkpoint,
             to: fare.to_checkpoint,

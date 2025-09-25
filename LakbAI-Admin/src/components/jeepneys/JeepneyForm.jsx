@@ -203,7 +203,7 @@ const JeepneyForm = ({ onDataUpdate }) => {
           </Form.Group>
 
           <Form.Group className="mb-3">
-            <Form.Label>Driver (Optional)</Form.Label>
+            <Form.Label>Driver</Form.Label>
             <Form.Select
               name="driver_id"
               value={formData.driver_id}

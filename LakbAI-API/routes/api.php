@@ -194,6 +194,34 @@ try {
             echo json_encode($result);
             exit;
         }
+
+        // DELETE /admin/jeepneys/{id}/driver - Unassign driver from jeepney
+        if ($method === 'DELETE' && count($pathParts) === 4 && $pathParts[3] === 'driver') {
+            $jeepneyId = intval($pathParts[2]);
+            $result = $jeepneyController->unassignDriver($jeepneyId);
+            echo json_encode($result);
+            exit;
+        }
+
+        // POST /admin/jeepneys/reassign - Reassign driver from one jeepney to another
+        if ($method === 'POST' && count($pathParts) === 3 && $pathParts[2] === 'reassign') {
+            $input = json_decode(file_get_contents('php://input'), true);
+            $fromJeepneyId = intval($input['from_jeepney_id'] ?? 0);
+            $toJeepneyId = intval($input['to_jeepney_id'] ?? 0);
+            $driverId = intval($input['driver_id'] ?? 0);
+            
+            if (!$fromJeepneyId || !$toJeepneyId || !$driverId) {
+                echo json_encode([
+                    "status" => "error",
+                    "message" => "Missing required parameters: from_jeepney_id, to_jeepney_id, driver_id"
+                ]);
+                exit;
+            }
+            
+            $result = $jeepneyController->reassignDriver($fromJeepneyId, $toJeepneyId, $driverId);
+            echo json_encode($result);
+            exit;
+        }
     }
 
     // ---------------------------
@@ -316,6 +344,21 @@ try {
             $offset = $_GET['offset'] ?? 0;
             
             $result = $earningsController->getTransactionHistory($driverId, $limit, $offset);
+            echo json_encode($result);
+            exit;
+        }
+
+        // GET /earnings/daily-aggregated - Get daily aggregated earnings for all drivers
+        if ($method === 'GET' && count($pathParts) === 2 && $pathParts[1] === 'daily-aggregated') {
+            $date = $_GET['date'] ?? null; // Optional date parameter (defaults to today)
+            $result = $earningsController->getDailyAggregatedEarnings($date);
+            echo json_encode($result);
+            exit;
+        }
+
+        // GET /earnings/total-aggregated - Get total aggregated earnings for all drivers (all-time)
+        if ($method === 'GET' && count($pathParts) === 2 && $pathParts[1] === 'total-aggregated') {
+            $result = $earningsController->getTotalAggregatedEarnings();
             echo json_encode($result);
             exit;
         }

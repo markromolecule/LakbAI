@@ -49,12 +49,24 @@ class Auth0SyncController {
                     'email_verified' => $user['email_verified'] ?? false,
                     'name' => $user['name'] ?? null,
                     'nickname' => $user['nickname'] ?? null,
-                    'picture' => $user['picture'] ?? null,
                     'provider' => $this->getProvider($user),
                     'connection' => $user['identities'][0]['connection'] ?? 'unknown',
                     'last_active' => date('Y-m-d H:i:s'),
                     'updated_at' => date('Y-m-d H:i:s')
                 ];
+                
+                // Only update picture if it's still the original Auth0 picture
+                // This preserves user-uploaded profile pictures
+                $currentPicture = $existingUser['picture'] ?? null;
+                $auth0Picture = $user['picture'] ?? null;
+                
+                // If current picture is the same as Auth0 picture, or if current picture is null/empty,
+                // then update with Auth0 picture. Otherwise, preserve the user's uploaded picture.
+                if (empty($currentPicture) || $currentPicture === $auth0Picture || 
+                    (strpos($currentPicture, 'lh3.googleusercontent.com') !== false && strpos($auth0Picture, 'lh3.googleusercontent.com') !== false)) {
+                    $updateData['picture'] = $auth0Picture;
+                }
+                // If current picture is a user-uploaded file (contains 'uploads/'), don't update it
 
                 $this->userRepository->update($existingUser['id'], $updateData);
                 

@@ -188,7 +188,7 @@ class LocationTrackingService {
         currentLocation: current.lastScannedCheckpoint,
         previousLocation: previous.lastScannedCheckpoint,
         coordinates: current.coordinates,
-        title: '📍 Jeepney Location Updated',
+        title: '📍 Jeepney Location',
         body: `${current.driverName} (${current.jeepneyNumber}) moved from ${previous.lastScannedCheckpoint} to ${current.lastScannedCheckpoint}`,
         data: {
           driverId: current.driverId,

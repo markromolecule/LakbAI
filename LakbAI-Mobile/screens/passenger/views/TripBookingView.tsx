@@ -410,6 +410,9 @@ export const TripBookingView: React.FC<TripBookingViewProps> = ({
 
   return (
     <ScrollView style={globalStyles.container}>
+      {/* Location Notifications */}
+      <LocationNotificationDisplay routeId={driverInfo.route ? getRouteIdFromRouteName(driverInfo.route)?.toString() || '1' : '1'} />
+      
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={onBack} style={styles.backButton}>
@@ -534,6 +537,7 @@ export const TripBookingView: React.FC<TripBookingViewProps> = ({
             placeholder="Select your pickup point"
             excludeLocation={destination}
             isDestination={false}
+            driverRoute={driverInfo.route}
           />
           {isAutoFilledLocation && (
             <View style={styles.autoFillBadge}>
@@ -551,6 +555,7 @@ export const TripBookingView: React.FC<TripBookingViewProps> = ({
           excludeLocation={pickupLocation}
           pickupLocation={pickupLocation}
           isDestination={true}
+          driverRoute={driverInfo.route}
         />
       </View>
 

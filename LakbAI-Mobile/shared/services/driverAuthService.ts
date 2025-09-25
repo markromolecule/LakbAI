@@ -577,6 +577,13 @@ class DriverAuthService {
    */
   async logout(): Promise<void> {
     try {
+      // Reset today's earnings and trips on logout
+      if (this.currentDriver?.id) {
+        const { earningsService } = await import('./earningsService');
+        earningsService.resetTodaysData(this.currentDriver.id.toString());
+        console.log('🔄 Reset today\'s earnings and trips on logout for driver:', this.currentDriver.id);
+      }
+      
       await AsyncStorage.multiRemove([
         'driver_profile',
         'driver_auth_token', 

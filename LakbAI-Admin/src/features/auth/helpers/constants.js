@@ -36,6 +36,7 @@ export const ERROR_MESSAGES = {
   REQUIRED: {
     FIRST_NAME: 'First name is required',
     LAST_NAME: 'Last name is required',
+    USERNAME: 'Username is required',
     EMAIL: 'Email is required',
     PHONE: 'Phone number is required',
     GENDER: 'Gender is required',
@@ -62,6 +63,9 @@ export const ERROR_MESSAGES = {
     INVALID_POSTAL_CODE: 'Please enter a valid 4-digit postal code',
     PASSWORD_MISMATCH: 'Passwords do not match',
     NAME_TOO_SHORT: 'Name must be at least 2 characters',
+    USERNAME_TOO_SHORT: 'Username must be at least 3 characters',
+    USERNAME_TOO_LONG: 'Username must be no more than 20 characters',
+    USERNAME_INVALID_CHARS: 'Username can only contain letters, numbers, and underscores',
     INVALID_AGE: 'You must be between 18 and 65 years old',
   },
   GENERAL: {
@@ -86,6 +90,7 @@ export const API_ENDPOINTS = {
 export const INITIAL_FORM_STATE = {
   firstName: '',
   lastName: '',
+  username: '',
   email: '',
   phoneNumber: '',
   gender: '',

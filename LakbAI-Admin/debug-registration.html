@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Registration</title>
+</head>
+<body>
+    <h1>Debug Registration Test</h1>
+    <button onclick="testRegistration()">Test Registration</button>
+    <div id="result"></div>
+
+    <script>
+        async function testRegistration() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = 'Testing...';
+            
+            try {
+                const testData = {
+                    first_name: "Test",
+                    last_name: "Driver",
+                    username: "test_driver_debug4",
+                    email: "testdriver9@example.com",
+                    phone_number: "09123456778",
+                    gender: "Male",
+                    password: "Test123!",
+                    confirmPassword: "Test123!",
+                    user_type: "driver",
+                    birthday: "1995-01-01",
+                    house_number: "123",
+                    street_name: "Main St",
+                    barangay: "Barangay 1",
+                    city_municipality: "Manila",
+                    province: "Metro Manila",
+                    postal_code: "1000",
+                    drivers_license: "license.png",
+                    drivers_license_path: "uploads/licenses/test.png",
+                    drivers_license_verified: 0
+                };
+
+                console.log('🚀 Test data:', testData);
+                console.log('🚀 JSON stringified:', JSON.stringify(testData, null, 2));
+
+                // Use the same API configuration as the main app
+                const API_BASE_URL = 'http://192.168.254.110/LakbAI/LakbAI-API/routes/api.php';
+                const url = `${API_BASE_URL}/register`;
+                console.log('🚀 API_BASE_URL:', API_BASE_URL);
+                console.log('🚀 URL:', url);
+
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                    },
+                    body: JSON.stringify(testData),
+                });
+
+                console.log('📥 Response status:', response.status);
+                console.log('📥 Response statusText:', response.statusText);
+                console.log('📥 Response URL:', response.url);
+                console.log('📥 Response redirected:', response.redirected);
+                console.log('📥 Response type:', response.type);
+                console.log('📥 Response ok:', response.ok);
+                console.log('📥 Response headers:', response.headers);
+
+                const contentType = response.headers.get('content-type');
+                console.log('📥 Content-Type:', contentType);
+
+                const responseText = await response.text();
+                console.log('📥 Raw response text:', responseText);
+                console.log('📥 Response length:', responseText.length);
+                console.log('📥 First 200 chars:', responseText.substring(0, 200));
+
+                if (!contentType || !contentType.includes('application/json')) {
+                    console.error('❌ Non-JSON response received. Content-Type:', contentType);
+                    console.error('❌ Full response text:', responseText);
+                    resultDiv.innerHTML = `<div style="color: red;">❌ Non-JSON Response<br>Content-Type: ${contentType}<br>Response: ${responseText.substring(0, 500)}</div>`;
+                    return;
+                }
+
+                const result = JSON.parse(responseText);
+                console.log('📥 Parsed JSON response:', result);
+                
+                if (result.status === 'success') {
+                    resultDiv.innerHTML = `<div style="color: green;">✅ Success: ${result.message}</div>`;
+                } else {
+                    resultDiv.innerHTML = `<div style="color: orange;">⚠️ Error: ${result.message}</div>`;
+                }
+
+            } catch (error) {
+                console.error('❌ Error:', error);
+                resultDiv.innerHTML = `<div style="color: red;">❌ Error: ${error.message}</div>`;
+            }
+        }
+    </script>
+</body>
+</html>

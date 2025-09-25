@@ -7,11 +7,16 @@ import { useState } from 'react';
 import { INITIAL_FORM_STATE, ERROR_MESSAGES } from '../helpers/constants';
 import { validateRegistrationForm } from '../helpers/validation';
 import { validateFile } from '../utils/fileUtils';
+import { API_CONFIG } from '../../../config/apiConfig';
 
 export const useRegisterForm = () => {
   const [formData, setFormData] = useState(INITIAL_FORM_STATE);
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
+  
+  // Debug: Log initial form state
+  console.log('🔍 useRegisterForm - INITIAL_FORM_STATE:', INITIAL_FORM_STATE);
+  console.log('🔍 useRegisterForm - formData:', formData);
   
 
 
@@ -22,9 +27,12 @@ export const useRegisterForm = () => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     
+    // Ensure value is never undefined
+    const safeValue = value || '';
+    
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: safeValue
     }));
 
     // Clear error when user starts typing
@@ -150,29 +158,61 @@ export const useRegisterForm = () => {
       
       let licensePath = null;
       
-      // Upload driver license if provided
+      // Upload driver license if provided (optional - continue even if upload fails)
       if (formData.driversLicense) {
-        const formDataUpload = new FormData();
-        formDataUpload.append('drivers_license', formData.driversLicense);
-        
-        const uploadResponse = await fetch('/api/upload-driver-license', {
-          method: 'POST',
-          body: formDataUpload,
-        });
-        
-        const uploadResult = await uploadResponse.json();
-        
-        if (uploadResult.status === 'success') {
-          licensePath = uploadResult.data.file_path;
-        } else {
-          setGeneralError(uploadResult.message || 'Failed to upload driver license');
-          return;
+        try {
+          const formDataUpload = new FormData();
+          formDataUpload.append('drivers_license', formData.driversLicense);
+          
+          const uploadUrl = `${API_CONFIG.BASE_URL}/upload-driver-license?t=${Date.now()}`;
+          console.log('📤 Uploading driver license to:', uploadUrl);
+          console.log('📤 Upload URL:', uploadUrl);
+          
+          const uploadResponse = await fetch(uploadUrl, {
+            method: 'POST',
+            body: formDataUpload,
+          });
+          
+          console.log('📥 Upload response status:', uploadResponse.status);
+          console.log('📥 Upload response statusText:', uploadResponse.statusText);
+          console.log('📥 Upload response URL:', uploadResponse.url);
+          console.log('📥 Upload response redirected:', uploadResponse.redirected);
+          console.log('📥 Upload response type:', uploadResponse.type);
+          console.log('📥 Upload response ok:', uploadResponse.ok);
+          
+          // Check if response is JSON
+          const uploadContentType = uploadResponse.headers.get('content-type');
+          console.log('📥 Upload Content-Type:', uploadContentType);
+          
+          if (!uploadContentType || !uploadContentType.includes('application/json')) {
+            const uploadTextResponse = await uploadResponse.text();
+            console.error('❌ Upload non-JSON response:', uploadTextResponse);
+            console.warn('⚠️ File upload failed, but continuing with registration...');
+            // Don't return - continue with registration without file
+            licensePath = null;
+          } else {
+            const uploadResult = await uploadResponse.json();
+            console.log('📥 Upload result:', uploadResult);
+            
+            if (uploadResult.status === 'success') {
+              licensePath = uploadResult.data.file_path;
+            } else {
+              console.warn('⚠️ File upload failed:', uploadResult.message, 'but continuing with registration...');
+              // Don't return - continue with registration without file
+              licensePath = null;
+            }
+          }
+        } catch (uploadError) {
+          console.error('❌ Upload error:', uploadError);
+          console.warn('⚠️ File upload failed, but continuing with registration...');
+          // Don't return - continue with registration without file
+          licensePath = null;
         }
       }
       
       // Set user type to driver for web registration and format data for API
       const driverData = {
-        username: formData.firstName.toLowerCase() + formData.lastName.toLowerCase(),
+        username: formData.username,
         email: formData.email,
         password: formData.password,
         first_name: formData.firstName,
@@ -190,29 +230,98 @@ export const useRegisterForm = () => {
         is_verified: false,
         discount_type: null,
         discount_verified: false,
-        drivers_license: formData.driversLicense ? formData.driversLicense.name : null,
-        drivers_license_path: licensePath,
-        drivers_license_verified: false
+        drivers_license: formData.driversLicense ? formData.driversLicense.name : 'pending_upload',
+        drivers_license_path: licensePath || 'pending_upload',
+        drivers_license_verified: 0  // 0 = pending, 1 = approved, -1 = rejected
       };
       
       if (onSubmit) {
         await onSubmit(driverData);
       } else {
         // Default submission logic - send to API
-        const response = await fetch('/api/register', {
+        console.log('🔧 API_CONFIG:', API_CONFIG);
+        console.log('🔧 API_CONFIG.BASE_URL:', API_CONFIG.BASE_URL);
+        const apiUrl = `${API_CONFIG.BASE_URL}/register`;
+        console.log('🚀 Registration API URL:', apiUrl);
+        console.log('📤 Registration data:', driverData);
+        console.log('📤 Registration data JSON:', JSON.stringify(driverData, null, 2));
+        
+        // Use API_CONFIG.BASE_URL instead of hardcoded URL
+        const finalUrl = `${apiUrl}?t=${Date.now()}`;
+        console.log('🚀 Using API_CONFIG URL:', apiUrl);
+        console.log('🚀 Final URL with cache busting:', finalUrl);
+        
+        const response = await fetch(finalUrl, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            'Accept': 'application/json',
           },
           body: JSON.stringify(driverData),
         });
         
-        const result = await response.json();
+        console.log('📥 Response status:', response.status);
+        console.log('📥 Response statusText:', response.statusText);
+        console.log('📥 Response headers:', response.headers);
+        console.log('📥 Response URL:', response.url);
+        console.log('📥 Response redirected:', response.redirected);
+        console.log('📥 Response type:', response.type);
+
+        // Check if response is JSON
+        const contentType = response.headers.get('content-type');
+        console.log('📥 Content-Type:', contentType);
+        console.log('📥 Response ok:', response.ok);
+        
+        // Always try to get the response as text first to see what we're actually getting
+        const responseText = await response.text();
+        console.log('📥 Raw response text:', responseText);
+        console.log('📥 Response length:', responseText.length);
+        console.log('📥 First 200 chars:', responseText.substring(0, 200));
+        console.log('📥 Full response text:', responseText); // Log the full response to see the HTML error
+
+        if (!contentType || !contentType.includes('application/json')) {
+          console.error('❌ Non-JSON response received. Content-Type:', contentType);
+          console.error('❌ Full response text:', responseText);
+          
+          // Check if it's an HTML error page
+          if (responseText.includes('<html') || responseText.includes('<br')) {
+            setGeneralError('Server error occurred. Please check your connection and try again.');
+          } else {
+            setGeneralError('Server returned invalid response. Please try again.');
+          }
+          return;
+        }
+
+        // Try to parse as JSON
+        let result;
+        try {
+          result = JSON.parse(responseText);
+          console.log('📥 Parsed JSON response:', result);
+        } catch (parseError) {
+          console.error('❌ JSON parse error:', parseError);
+          console.error('❌ Response text that failed to parse:', responseText);
+          console.error('❌ Response status:', response.status);
+          console.error('❌ Response URL:', response.url);
+          
+          // More specific error message based on response content
+          if (responseText.includes('Fatal error') || responseText.includes('Parse error')) {
+            setGeneralError('Server configuration error. Please contact support.');
+          } else if (responseText.includes('<br')) {
+            setGeneralError('Server returned HTML error page. Please try again.');
+          } else {
+            setGeneralError('Server returned invalid JSON response. Please try again.');
+          }
+          return;
+        }
         
         if (result.status === 'success') {
-          alert('Driver account created successfully! Please wait for admin verification before logging in.');
-          // Reset form
-          setFormData(INITIAL_FORM_STATE);
+          let successMessage = 'Driver account created successfully! Please wait for admin verification before logging in.';
+          if (formData.driversLicense && !licensePath) {
+            successMessage += '\n\nNote: Driver license file upload failed, but your account was created. You can upload your license later through the admin panel.';
+          }
+          alert(successMessage);
+          // Reset form with proper initial state
+          setFormData({...INITIAL_FORM_STATE});
           setErrors({}); // Ensure errors are cleared
           
           // Redirect to login page after successful registration
@@ -245,7 +354,7 @@ export const useRegisterForm = () => {
    */
   const getFormCompletionPercentage = () => {
     const requiredFields = [
-      'firstName', 'lastName', 'email', 'phoneNumber', 'gender',
+      'firstName', 'lastName', 'username', 'email', 'phoneNumber', 'gender',
       'password', 'confirmPassword', 'houseNumber', 'streetName',
       'barangay', 'city', 'province', 'postalCode',
       'birthMonth', 'birthDay', 'birthYear', 'driversLicense'

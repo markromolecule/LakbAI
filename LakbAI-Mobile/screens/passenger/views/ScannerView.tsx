@@ -15,17 +15,21 @@ import { showAlert } from '../../../shared/utils/alertUtils';
 import { earningsService, EarningsUpdate } from '../../../shared/services/earningsService';
 import { buildAuth0Url } from '../../../config/developerConfig';
 import { getBaseUrl } from '../../../config/apiConfig';
+import { usePassengerState } from '../hooks/usePassengerState';
 
 import styles from '../styles/ScannerScreen.styles';
 
 export const ScannerScreen: React.FC = () => {
   const hasPermission = useCameraPermissions();
+  const { passengerProfile } = usePassengerState();
   const [showCamera, setShowCamera] = useState(false);
   const [scanned, setScanned] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [showTripBooking, setShowTripBooking] = useState(false);
   const [qrData, setQrData] = useState<QRCodeData | null>(null);
   const [driverInfo, setDriverInfo] = useState<QRDriverInfo | null>(null);
+  const [paymentCompleted, setPaymentCompleted] = useState(false);
+  const [paymentLoading, setPaymentLoading] = useState(false);
   const isHandlingScanRef = useRef(false);
   const isOpeningBrowserRef = useRef(false);
 
@@ -232,13 +236,23 @@ export const ScannerScreen: React.FC = () => {
   };
 
   const handleBookingComplete = async (bookingData: TripBookingData) => {
-    setShowTripBooking(false);
-    setQrData(null);
-    setDriverInfo(null);
-    setScanned(false);
-    isHandlingScanRef.current = false;
+    setPaymentLoading(true);
+    setPaymentCompleted(false);
     
     try {
+      // Get passenger name for notification
+      const passengerName = passengerProfile?.firstName && passengerProfile?.lastName 
+        ? `${passengerProfile.firstName} ${passengerProfile.lastName}`
+        : passengerProfile?.username || 'Passenger';
+      
+      console.log('💰 Payment made by:', passengerName);
+      console.log('💰 Passenger profile data:', {
+        firstName: passengerProfile?.firstName,
+        lastName: passengerProfile?.lastName,
+        username: passengerProfile?.username,
+        finalName: passengerName
+      });
+
       // Update driver earnings automatically
       const earningsUpdate: EarningsUpdate = {
         driverId: bookingData.driver.id,
@@ -255,19 +269,70 @@ export const ScannerScreen: React.FC = () => {
         incrementTripCount: false // Explicitly don't increment trip count for passenger payments
       };
 
-      const earningsResult = await earningsService.updateDriverEarnings(earningsUpdate);
+      // Store the passenger name for the driver notification
+      await earningsService.setLastPaymentSender(bookingData.driver.id, passengerName);
+
+      const earningsResult = await earningsService.updateDriverEarnings(earningsUpdate, passengerName);
       
       if (earningsResult.success) {
         console.log('✅ Driver earnings updated successfully');
         console.log('🔔 Driver notification will be sent automatically by earnings service');
+        
+        // Send local notification to passenger app
+        const { localNotificationService } = await import('../../../shared/services/localNotificationService');
+        await localNotificationService.notifyEarningsUpdate({
+          type: 'earnings_update',
+          driverId: bookingData.driver.id,
+          amount: bookingData.discountedFare || bookingData.fare,
+          previousEarnings: 0, // We don't have previous earnings in this context
+          newEarnings: 0, // We don't have new earnings in this context
+          senderName: passengerName,
+          paymentMethod: 'xendit',
+          title: 'Payment Successful!',
+          body: `Sent ₱${bookingData.discountedFare || bookingData.fare} to ${bookingData.driver.name}`,
+          data: {
+            type: 'payment_confirmation',
+            amount: bookingData.discountedFare || bookingData.fare,
+            driverName: bookingData.driver.name,
+            timestamp: new Date().toISOString()
+          }
+        });
+        
+        console.log('💳 Payment confirmation notification sent to passenger app');
       } else {
         console.error('❌ Failed to update driver earnings:', earningsResult.error);
       }
 
-      // Payment successful - no need for alert notification as it's handled by the booking flow
+      // Payment successful - show success message
       console.log('✅ Payment completed successfully - driver earnings updated');
+      
+      // Set payment as completed and show success
+      setPaymentCompleted(true);
+      
+      // Wait a moment to show the success state, then redirect to scanner
+      setTimeout(() => {
+        setPaymentLoading(false);
+        setPaymentCompleted(false);
+        setShowTripBooking(false);
+        setQrData(null);
+        setDriverInfo(null);
+        setScanned(false);
+        isHandlingScanRef.current = false;
+        
+        // Show success message
+        Alert.alert(
+          'Payment Successful!',
+          `Your ride from ${bookingData.pickupLocation} to ${bookingData.destination} has been paid.\n\nDriver: ${bookingData.driver.name}\nJeepney: ${bookingData.driver.jeepneyNumber}\nFare: ₱${bookingData.discountedFare || bookingData.fare}`,
+          [{ text: 'OK' }]
+        );
+      }, 2000); // Show loading for 2 seconds
+      
     } catch (error) {
       console.error('Error processing payment completion:', error);
+      
+      // Reset loading state
+      setPaymentLoading(false);
+      setPaymentCompleted(false);
       
       // Still show success to passenger even if earnings update fails
       Alert.alert(
@@ -320,6 +385,35 @@ export const ScannerScreen: React.FC = () => {
     '• Pay securely through Xendit gateway',
     '• Legacy payment QR codes support',
   ];
+
+  // Show loading screen during payment processing
+  if (paymentLoading || paymentCompleted) {
+    return (
+      <View style={[globalStyles.container, { justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.white }]}>
+        <View style={styles.loadingContainer}>
+          <Ionicons 
+            name={paymentCompleted ? "checkmark-circle" : "card"} 
+            size={80} 
+            color={paymentCompleted ? COLORS.success : COLORS.primary} 
+          />
+          <Text style={styles.loadingTitle}>
+            {paymentCompleted ? 'Payment Successful!' : 'Processing Payment...'}
+          </Text>
+          <Text style={styles.loadingSubtitle}>
+            {paymentCompleted 
+              ? 'Your payment has been processed successfully' 
+              : 'Please wait while we process your payment'
+            }
+          </Text>
+          <ActivityIndicator 
+            size="large" 
+            color={COLORS.primary} 
+            style={{ marginTop: SPACING.lg }}
+          />
+        </View>
+      </View>
+    );
+  }
 
   return (
     <ScrollView 

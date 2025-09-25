@@ -32,6 +32,17 @@ const PersonalInfoSection = ({ formData, errors, onChange }) => {
         />
       </div>
 
+      {/* Username Field */}
+      <FormField
+        name="username"
+        label="Username"
+        value={formData.username}
+        onChange={onChange}
+        error={errors.username}
+        placeholder="Choose a username"
+        required
+      />
+
       {/* Email Field */}
       <FormField
         type="email"

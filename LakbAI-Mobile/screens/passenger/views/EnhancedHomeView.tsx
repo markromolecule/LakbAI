@@ -9,6 +9,7 @@ import { globalStyles } from '../../../shared/styles/globalStyles';
 import { useAuthContext } from '../../../shared/providers/AuthProvider';
 import { ArrivalTracker } from '../../../components/passenger/ArrivalTracker';
 import { NotificationManager } from '../../../components/passenger/NotificationManager';
+import { LocationNotificationDisplay } from '../../../components/passenger/LocationNotificationDisplay';
 import DriverLocationCard from '../components/DriverLocationCard';
 import styles from '../styles/HomeScreen.styles';
 import type { Href } from 'expo-router';
@@ -177,6 +178,9 @@ export const EnhancedHomeView: React.FC = () => {
 
   return (
     <ScrollView style={globalStyles.container}>
+      {/* Location Notifications */}
+      <LocationNotificationDisplay routeId={selectedRouteId.toString()} />
+      
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Welcome to LakbAI</Text>
         <Text style={styles.headerSubtitle}>Your smart jeepney companion</Text>

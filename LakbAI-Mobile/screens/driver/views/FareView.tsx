@@ -118,7 +118,7 @@ export const FareView: React.FC<FareViewProps> = ({
         ) : (
           <View style={fareStyles.fareList}>
             {fareMatrix.map((fare, index) => (
-              <FareItem key={index} fare={fare} />
+              <FareItem key={`driver-fare-${fare.from}-${fare.to}-${index}`} fare={fare} />
             ))}
           </View>
         )}

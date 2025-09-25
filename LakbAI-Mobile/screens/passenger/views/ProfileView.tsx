@@ -40,10 +40,11 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
       return picturePath;
     }
     
-    // If it's a relative path, construct the full URL
+    // If it's a relative path, construct the full URL with cache busting
     if (picturePath.startsWith('uploads/')) {
-      const fullUrl = `${getBaseUrl()}/profile-picture?path=${encodeURIComponent(picturePath)}`;
-      console.log('✅ Constructed full URL:', fullUrl);
+      const baseUrl = `${getBaseUrl()}/profile-picture?path=${encodeURIComponent(picturePath)}`;
+      const fullUrl = `${baseUrl}&t=${Date.now()}`;
+      console.log('✅ Constructed full URL with cache busting:', fullUrl);
       return fullUrl;
     }
     

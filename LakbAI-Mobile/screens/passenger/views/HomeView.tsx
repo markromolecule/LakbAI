@@ -8,10 +8,15 @@ import { PassengerRoutes, PassengerRouteHref } from '../../../routes/PassengerRo
 import { COLORS } from '../../../shared/styles';
 import { globalStyles } from '../../../shared/styles/globalStyles';
 import { useAuthContext } from '../../../shared/providers/AuthProvider';
+import { LocationNotificationDisplay } from '../../../components/passenger/LocationNotificationDisplay';
 import styles from '../styles/HomeScreen.styles';
 import DriverLocationCard from '../components/DriverLocationCard';
 import { getBaseUrl } from '../../../config/apiConfig';
 import type { Href } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+// AsyncStorage keys
+const SELECTED_ROUTE_KEY = 'selected_route';
 
 const GridItem: React.FC<{
   icon: keyof typeof Ionicons.glyphMap;
@@ -52,6 +57,31 @@ export const HomeScreen: React.FC = () => {
   const [showRouteModal, setShowRouteModal] = useState(false);
   const [loadingRoutes, setLoadingRoutes] = useState(false);
 
+  // Save selected route to AsyncStorage
+  const saveSelectedRoute = async (route: Route) => {
+    try {
+      await AsyncStorage.setItem(SELECTED_ROUTE_KEY, JSON.stringify(route));
+      console.log('🛣️ Route saved to storage:', route.route_name);
+    } catch (error) {
+      console.error('❌ Error saving route to storage:', error);
+    }
+  };
+
+  // Load selected route from AsyncStorage
+  const loadSelectedRoute = async (): Promise<Route | null> => {
+    try {
+      const savedRoute = await AsyncStorage.getItem(SELECTED_ROUTE_KEY);
+      if (savedRoute) {
+        const route = JSON.parse(savedRoute);
+        console.log('🛣️ Route loaded from storage:', route.route_name);
+        return route;
+      }
+    } catch (error) {
+      console.error('❌ Error loading route from storage:', error);
+    }
+    return null;
+  };
+
   // Load available routes
   const loadRoutes = async () => {
     try {
@@ -76,10 +106,30 @@ export const HomeScreen: React.FC = () => {
           
           setRoutes(data.routes);
           
-          // Set default route to first one if none selected
+          // Try to restore saved route, otherwise set default to first one
           if (!selectedRoute && data.routes.length > 0) {
-            setSelectedRoute(data.routes[0]);
-            console.log('🛣️ Default route set:', data.routes[0]);
+            const savedRoute = await loadSelectedRoute();
+            
+            if (savedRoute) {
+              // Check if saved route still exists in current routes
+              const routeExists = data.routes.find((route: any) => route.id === savedRoute.id);
+              if (routeExists) {
+                setSelectedRoute(routeExists);
+                console.log('🛣️ Restored saved route:', routeExists.route_name);
+              } else {
+                // Saved route no longer exists, use first available route
+                setSelectedRoute(data.routes[0]);
+                console.log('🛣️ Saved route not found, using default:', data.routes[0].route_name);
+                // Save the new default route
+                await saveSelectedRoute(data.routes[0]);
+              }
+            } else {
+              // No saved route, use first available route
+              setSelectedRoute(data.routes[0]);
+              console.log('🛣️ No saved route, using default:', data.routes[0].route_name);
+              // Save the default route
+              await saveSelectedRoute(data.routes[0]);
+            }
           }
         } else {
           console.warn('🛣️ No routes found in response');
@@ -206,6 +256,9 @@ export const HomeScreen: React.FC = () => {
 
   return (
     <ScrollView style={globalStyles.container}>
+      {/* Location Notifications */}
+      <LocationNotificationDisplay routeId={selectedRoute?.id?.toString() || '1'} />
+      
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Welcome to LakbAI</Text>
         <Text style={styles.headerSubtitle}>Your smart jeepney companion</Text>
@@ -234,7 +287,7 @@ export const HomeScreen: React.FC = () => {
                 {selectedRoute.route_name}
               </Text>
               <Text style={styles.compactRouteDetails} numberOfLines={1}>
-                {selectedRoute.origin} → {selectedRoute.destination}
+                Base fare: ₱{selectedRoute.fare_base || '13.00'} • Tap to change route
               </Text>
             </View>
             <View style={styles.compactRouteActions}>
@@ -310,9 +363,10 @@ export const HomeScreen: React.FC = () => {
                       styles.routeItem,
                       selectedRoute?.id === route.id && styles.selectedRouteItem
                     ]}
-                    onPress={() => {
+                    onPress={async () => {
                       console.log('🛣️ Route selected:', route);
                       setSelectedRoute(route);
+                      await saveSelectedRoute(route);
                       setShowRouteModal(false);
                     }}
                   >

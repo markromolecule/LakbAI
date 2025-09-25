@@ -342,7 +342,7 @@ const DriverStatusContainer = ({ onDataUpdate }) => {
         Status changes are reflected immediately when drivers start or end their shifts.
       </Alert>
       
-      <style jsx>{`
+      <style>{`
         .pulse-animation {
           animation: pulse 2s infinite;
         }

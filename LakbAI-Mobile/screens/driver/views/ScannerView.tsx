@@ -4,7 +4,7 @@ import { QrCode, Camera, MapPin, AlertCircle, Scan } from 'lucide-react-native';
 import { CameraView } from 'expo-camera';
 import { Ionicons } from '@expo/vector-icons';
 import { useCameraPermissions } from '../../../shared/helpers/useCameraPermission';
-import { ConflictResolutionData } from '../../../shared/services/notificationService';
+import { ConflictResolutionData, DriverLocationNotification, notificationService } from '../../../shared/services/notificationService';
 
 import { tripTrackingService, ActiveTrip, TripCheckpoint } from '../../../shared/services/tripTrackingService';
 
@@ -23,6 +23,7 @@ interface ScannerViewProps {
     jeepneyNumber: string;
     route: string;
   };
+  isOnDuty: boolean;
   onTripCompleted?: (tripSummary: any) => void;
   onShiftEnd?: () => void;
   onRefresh?: () => void;
@@ -64,6 +65,7 @@ export const ScannerView: React.FC<ScannerViewProps> = ({
   onLocationUpdate,
   driverProfile,
   driverInfo,
+  isOnDuty,
   onTripCompleted,
   onShiftEnd,
   onRefresh
@@ -73,6 +75,8 @@ export const ScannerView: React.FC<ScannerViewProps> = ({
   const [scanned, setScanned] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [activeTrip, setActiveTrip] = useState<ActiveTrip | null>(null);
+  const [tripCompleted, setTripCompleted] = useState(false);
+  const [tripLoading, setTripLoading] = useState(false);
   const isHandlingScanRef = useRef(false);
 
   // Check for active trip on component mount and listen for changes
@@ -98,6 +102,16 @@ export const ScannerView: React.FC<ScannerViewProps> = ({
   }, [driverInfo.id]);
 
   const handleOpenCamera = () => {
+    // Check if driver is on duty
+    if (!isOnDuty) {
+      Alert.alert(
+        'Not On Duty',
+        'You must be on duty to scan QR codes. Please start your shift first.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+    
     if (hasPermission === null) {
       Alert.alert('Permission Loading', 'Camera permission is being requested...');
       return;
@@ -291,8 +305,33 @@ export const ScannerView: React.FC<ScannerViewProps> = ({
         timestamp: new Date().toISOString(),
       };
 
+      // Send immediate notification to passenger apps
+      const { localNotificationService } = await import('../../../shared/services/localNotificationService');
+      await localNotificationService.notifyLocationUpdate({
+        type: 'location_update',
+        driverId: driverInfo.id,
+        driverName: realDriverName,
+        jeepneyNumber: realJeepneyNumber,
+        route: realRoute,
+        currentLocation: locationName,
+        previousLocation: driverLocation || 'Unknown',
+        coordinates: coordinates,
+        title: '📍 Jeepney Location Update',
+        body: `${realDriverName} (${realJeepneyNumber}) is now at ${locationName}`,
+        data: {
+          driverId: driverInfo.id,
+          driverName: realDriverName,
+          jeepneyNumber: realJeepneyNumber,
+          route: realRoute,
+          currentLocation: locationName,
+          previousLocation: driverLocation || 'Unknown',
+          coordinates: coordinates,
+          timestamp: new Date().toISOString()
+        }
+      });
+
       // Location update stored in database - passenger apps will detect via API polling
-      console.log(`📍 Location update stored in database: ${realDriverName} at ${locationName}`);
+      console.log(`📍 Location update sent immediately and stored in database: ${realDriverName} at ${locationName}`);
       
       return {
         success: true,
@@ -389,6 +428,10 @@ export const ScannerView: React.FC<ScannerViewProps> = ({
         console.log('🏁 Ending trip for driver:', driverInfo.id);
         console.log('🏁 Current activeTrip state:', activeTrip);
         
+        // Start trip completion loading
+        setTripLoading(true);
+        setTripCompleted(false);
+        
         const result = await tripTrackingService.endTrip(
           driverInfo.id,
           checkpoint
@@ -398,6 +441,20 @@ export const ScannerView: React.FC<ScannerViewProps> = ({
 
         if (result.success) {
           setActiveTrip(null);
+          
+          // Show trip completion success
+          setTripCompleted(true);
+          
+          // Wait a moment to show success, then redirect to home
+          setTimeout(() => {
+            setTripLoading(false);
+            setTripCompleted(false);
+            
+            // Call onShiftEnd to end the shift and redirect to home
+            if (onShiftEnd) {
+              onShiftEnd();
+            }
+          }, 3000); // Show loading for 3 seconds
           
           // Trip count is now incremented on START point scan, not END point
           // Just refresh the UI to show trip completion
@@ -638,6 +695,35 @@ export const ScannerView: React.FC<ScannerViewProps> = ({
 
 
 
+  // Show loading screen during trip completion
+  if (tripLoading || tripCompleted) {
+    return (
+      <View style={[driverStyles.container, { justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.white }]}>
+        <View style={scannerStyles.loadingContainer}>
+          <Ionicons 
+            name={tripCompleted ? "checkmark-circle" : "car"} 
+            size={80} 
+            color={tripCompleted ? COLORS.success : COLORS.driverPrimary} 
+          />
+          <Text style={scannerStyles.loadingTitle}>
+            {tripCompleted ? 'Trip Completed!' : 'Completing Trip...'}
+          </Text>
+          <Text style={scannerStyles.loadingSubtitle}>
+            {tripCompleted 
+              ? 'Your trip has been completed successfully. Accumulating earnings...' 
+              : 'Please wait while we complete your trip and update earnings'
+            }
+          </Text>
+          <ActivityIndicator 
+            size="large" 
+            color={COLORS.driverPrimary} 
+            style={{ marginTop: SPACING.lg }}
+          />
+        </View>
+      </View>
+    );
+  }
+
   return (
     <ScrollView 
       style={driverStyles.container} 
@@ -658,10 +744,19 @@ export const ScannerView: React.FC<ScannerViewProps> = ({
 
       <TouchableOpacity 
         onPress={handleOpenCamera}
-        style={[scannerStyles.scanButton, { backgroundColor: COLORS.driverPrimary }]}
+        style={[
+          scannerStyles.scanButton, 
+          { 
+            backgroundColor: isOnDuty ? COLORS.driverPrimary : COLORS.gray400,
+            opacity: isOnDuty ? 1 : 0.6
+          }
+        ]}
+        disabled={!isOnDuty}
       >
         <Scan size={20} color="white" style={{ marginRight: 8 }} />
-        <Text style={scannerStyles.scanButtonText}>Scan Location QR</Text>
+        <Text style={scannerStyles.scanButtonText}>
+          {isOnDuty ? 'Scan Location QR' : 'Start Shift to Scan'}
+        </Text>
       </TouchableOpacity>
 
 

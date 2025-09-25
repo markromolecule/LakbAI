@@ -330,11 +330,8 @@ export const useDriverState = () => {
       if (result.success) {
         // Immediately update the state
         setIsOnDuty(false);
-        Alert.alert(
-          'Shift Ended! 🏁',
-          `${result.message}\n\n✅ Any active trips have been cleared.`,
-          [{ text: 'OK' }]
-        );
+        console.log('✅ Shift ended successfully:', result.message);
+        // Note: Alert removed as user has loading screen for trip completion
       } else {
         Alert.alert('Error', result.message);
       }
@@ -382,6 +379,20 @@ export const useDriverState = () => {
   const refreshDriverProfile = async () => {
     console.log('🔄 Manually refreshing driver profile...');
     await loadDriverProfile();
+    
+    // Also refresh earnings to check for notifications
+    // Use driverProfile.id as fallback if userSession is not available
+    const driverId = userSession?.dbUserData?.id || driverProfile?.id;
+    if (driverId) {
+      console.log('💰 Refreshing earnings to check for notifications for driver:', driverId);
+      try {
+        await earningsService.refreshDriverEarnings(driverId.toString(), undefined);
+      } catch (error) {
+        console.error('❌ Failed to refresh earnings:', error);
+      }
+    } else {
+      console.log('⚠️ No driver ID available for earnings refresh');
+    }
   };
 
   const refreshDriverLocation = async () => {

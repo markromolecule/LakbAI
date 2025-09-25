@@ -271,7 +271,7 @@ const UserManagementDashboard = () => {
         </Card.Body>
       </Card>
 
-      <style jsx>{`
+      <style>{`
         .nav-tabs-custom .nav-link {
           border: none;
           border-radius: 0;

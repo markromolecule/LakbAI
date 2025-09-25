@@ -5,7 +5,7 @@ const API_BASE = import.meta.env.VITE_API_BASE_URL || DEFAULT_BASE;
 
 // Fare Matrix management service for admin operations
 class FareMatrixService {
-  static API_BASE_URL = '/api';
+  static API_BASE_URL = API_CONFIG.BASE_URL;
 
   /**
    * Get all fare matrices

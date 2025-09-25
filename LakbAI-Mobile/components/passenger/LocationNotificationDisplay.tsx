@@ -27,7 +27,14 @@ export const LocationNotificationDisplay: React.FC<LocationNotificationDisplayPr
 
   useEffect(() => {
     const handleNotification = (notificationData: any) => {
-      // IMPORTANT: Only show location notifications to passengers, filter out earnings notifications
+      console.log('🔍 Passenger app received notification:', {
+        type: notificationData.type,
+        title: notificationData.title,
+        body: notificationData.body,
+        routeId: routeId
+      });
+      
+      // Show location notifications and payment confirmations to passengers
       if (notificationData.type === 'location_update') {
         const locationNotification = notificationData as LocationNotificationData;
         
@@ -41,9 +48,42 @@ export const LocationNotificationDisplay: React.FC<LocationNotificationDisplayPr
         
         setNotification(locationNotification);
         showNotification();
+      } else if (notificationData.type === 'earnings_update' || 
+                 (notificationData.data && notificationData.data.type === 'earnings_update')) {
+        // Convert earnings notification to passenger-friendly payment confirmation
+        const senderName = notificationData.senderName || 'Driver';
+        const amount = notificationData.amount || 0;
+        
+        const paymentNotification = {
+          id: `passenger_payment_${Date.now()}`,
+          title: 'Payment Successful!',
+          body: `Sent ₱${amount} to ${senderName}`,
+          timestamp: notificationData.timestamp || new Date().toISOString(),
+          type: 'payment_confirmation' as const,
+          route: routeId || '1' // Use current route for display
+        };
+        
+        console.log('💳 Passenger app converted earnings notification to payment confirmation:', paymentNotification);
+        setNotification(paymentNotification);
+        showNotification();
+      } else if (notificationData.type === 'payment_confirmation' || 
+                 (notificationData.data && notificationData.data.type === 'payment_confirmation')) {
+        // Handle direct payment confirmation notifications
+        const paymentNotification = {
+          id: notificationData.id,
+          title: notificationData.title,
+          body: notificationData.body,
+          timestamp: notificationData.timestamp,
+          type: 'payment_confirmation' as const,
+          route: routeId || '1' // Use current route for display
+        };
+        
+        console.log('💳 Passenger app received payment confirmation:', paymentNotification);
+        setNotification(paymentNotification);
+        showNotification();
       } else {
-        // Log and ignore non-location notifications (e.g., earnings notifications)
-        console.log('🚫 Passenger app ignoring non-location notification:', notificationData.type);
+        // Log and ignore other notifications
+        console.log('🚫 Passenger app ignoring notification:', notificationData.type, notificationData.title);
       }
     };
 
@@ -117,21 +157,33 @@ export const LocationNotificationDisplay: React.FC<LocationNotificationDisplayPr
       >
         <View style={styles.iconContainer}>
           <Ionicons 
-            name="location" 
+            name={notification.type === 'payment_confirmation' ? 'card' : 'location'} 
             size={24} 
             color={COLORS.white} 
           />
         </View>
         
         <View style={styles.contentContainer}>
-          <Text style={styles.title}>📍 Driver Location Update</Text>
-          <Text style={styles.location}>{notification.currentLocation}</Text>
-          <Text style={styles.subtitle}>
-            {notification.driverName} • {notification.jeepneyNumber}
-          </Text>
-          <Text style={styles.route}>
-            Route: {notification.route}
-          </Text>
+          {notification.type === 'payment_confirmation' ? (
+            <>
+              <Text style={styles.title}>💳 {notification.title}</Text>
+              <Text style={styles.location}>{notification.body}</Text>
+              <Text style={styles.subtitle}>
+                Payment completed successfully
+              </Text>
+            </>
+          ) : (
+            <>
+              <Text style={styles.title}>📍 Driver Location Update</Text>
+              <Text style={styles.location}>{notification.currentLocation}</Text>
+              <Text style={styles.subtitle}>
+                {notification.driverName} • {notification.jeepneyNumber}
+              </Text>
+              <Text style={styles.route}>
+                Route: {notification.route}
+              </Text>
+            </>
+          )}
         </View>
 
         <TouchableOpacity 

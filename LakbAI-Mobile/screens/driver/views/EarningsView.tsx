@@ -42,7 +42,8 @@ export const EarningsView: React.FC<EarningsViewProps> = ({
     try {
       console.log('💰 Driver app loading earnings data for driver:', driverProfile.id);
       // Use refreshDriverEarnings to trigger notifications when driver app loads data
-      const earnings = await earningsService.refreshDriverEarnings(driverProfile.id.toString());
+      // Pass undefined as senderName to let the service retrieve stored sender name
+      const earnings = await earningsService.refreshDriverEarnings(driverProfile.id.toString(), undefined);
       
       setEarningsData({
         todayEarnings: earnings.todayEarnings,

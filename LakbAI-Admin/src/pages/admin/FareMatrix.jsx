@@ -5,7 +5,7 @@ import FareMatrixManagement from '../../components/admin/FareMatrixManagement';
 const FareMatrix = () => {
   return (
     <AdminLayout 
-      title="Fare Matrix"
+      title="Fare Management"
       subtitle="Configure and manage fare pricing"
     >
       <FareMatrixManagement />

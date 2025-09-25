@@ -37,7 +37,7 @@ export async function fetchCheckpoints() {
 
 // Route management service for admin operations
 class RouteService {
-  static API_BASE_URL = '/api';
+  static API_BASE_URL = API_CONFIG.BASE_URL;
 
   /**
    * Get all active routes

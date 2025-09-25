@@ -1,6 +1,8 @@
 // User management service for admin operations
+import { API_CONFIG } from '../config/apiConfig';
+
 class UserService {
-  static API_BASE_URL = '/api';
+  static API_BASE_URL = API_CONFIG.BASE_URL;
 
   /**
    * Get all users with filtering and pagination
@@ -17,10 +19,12 @@ class UserService {
       console.log('🔍 UserService - getUsers filters:', filters);
       console.log('🔍 UserService - API URL params:', params.toString());
 
+      console.log('🔍 UserService - getUsers API URL:', `${this.API_BASE_URL}/admin/users?${params.toString()}`);
       const response = await fetch(`${this.API_BASE_URL}/admin/users?${params.toString()}`);
+      console.log('🔍 UserService - getUsers response status:', response.status);
       const data = await response.json();
 
-      console.log('🔍 UserService - API response:', data);
+      console.log('🔍 UserService - getUsers API response:', data);
 
       if (data.status === 'success') {
         return {
@@ -45,8 +49,11 @@ class UserService {
    */
   static async getPendingApprovals() {
     try {
+      console.log('🔍 UserService - getPendingApprovals API URL:', `${this.API_BASE_URL}/admin/pending-approvals`);
       const response = await fetch(`${this.API_BASE_URL}/admin/pending-approvals`);
+      console.log('🔍 UserService - getPendingApprovals response status:', response.status);
       const data = await response.json();
+      console.log('🔍 UserService - getPendingApprovals response data:', data);
 
       if (data.status === 'success') {
         return {
@@ -289,7 +296,7 @@ class UserService {
         discount_status: userData.discount_status || 'pending'
       };
 
-      const response = await fetch(`${this.API_BASE_URL}/register`, {
+      const response = await fetch(`${API_CONFIG.BASE_URL}/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

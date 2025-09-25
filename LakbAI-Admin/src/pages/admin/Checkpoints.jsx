@@ -8,7 +8,7 @@ const Checkpoints = () => {
 
   return (
     <AdminLayout
-      title="Checkpoint Management System"
+      title="Checkpoint Management"
       subtitle="Generate QR codes for checkpoints, monitor real-time driver locations, and manage passenger notifications."
     >
       <Row className="justify-content-center">

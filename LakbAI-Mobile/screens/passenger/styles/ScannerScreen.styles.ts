@@ -196,6 +196,26 @@ const styles = StyleSheet.create({
     color: COLORS.gray600,
     lineHeight: 20,
   },
+  // Loading screen styles
+  loadingContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: SPACING.xl,
+  },
+  loadingTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: COLORS.gray800,
+    marginTop: SPACING.lg,
+    marginBottom: SPACING.sm,
+    textAlign: 'center',
+  },
+  loadingSubtitle: {
+    fontSize: 16,
+    color: COLORS.gray600,
+    textAlign: 'center',
+    lineHeight: 22,
+  },
 });
 
 export default styles;

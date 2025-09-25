@@ -117,15 +117,6 @@ export const HomeView: React.FC<HomeViewProps> = ({
           value={driverProfile.todayTrips}
           icon={TrendingUp}
           iconColor="#3B82F6"
-          onPress={() => {
-            // Debug: Force refresh on tap
-            console.log('📊 Force refresh triggered - current todayTrips:', driverProfile.todayTrips);
-            const currentEarnings = earningsService.getEarnings(driverProfile.id.toString());
-            console.log('📊 Current earnings in service:', currentEarnings);
-            if (onRefresh) {
-              onRefresh();
-            }
-          }}
         />
         <StatCard
           label="Today's Earnings"
@@ -133,15 +124,6 @@ export const HomeView: React.FC<HomeViewProps> = ({
           icon={Calculator}
           iconColor="#22C55E"
           valueColor="#16A34A"
-          onPress={() => {
-            // Debug: Force refresh on tap
-            console.log('💰 Force refresh triggered - current todayEarnings:', driverProfile.todayEarnings);
-            const currentEarnings = earningsService.getEarnings(driverProfile.id.toString());
-            console.log('💰 Current earnings in service:', currentEarnings);
-            if (onRefresh) {
-              onRefresh();
-            }
-          }}
         />
       </View>
 

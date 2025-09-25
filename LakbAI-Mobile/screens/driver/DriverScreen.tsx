@@ -58,6 +58,7 @@ export const DriverScreen: React.FC = () => {
               jeepneyNumber: driverProfile.jeepneyNumber,
               route: driverProfile.route,
             }}
+            isOnDuty={isOnDuty}
             onTripCompleted={(tripSummary) => {
               console.log('🔄 DriverScreen received onTripCompleted:', tripSummary);
             }}
