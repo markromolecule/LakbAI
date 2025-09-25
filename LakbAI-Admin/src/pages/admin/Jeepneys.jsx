@@ -76,7 +76,7 @@ const Jeepneys = () => {
       title="Jeepney Management"
       subtitle="Manage jeepney records, routes, and availability"
     >
-      <Container fluid className="px-0">
+      <div className="header-content">
         {error && (
           <Alert variant="danger" className="mb-4">
             <i className="bi bi-exclamation-triangle me-2"></i>
@@ -196,9 +196,15 @@ const Jeepneys = () => {
             </Tabs>
           </Card.Body>
         </Card>
-      </Container>
+      </div>
 
       <style>{`
+        .header-content {
+          max-width: 1400px;
+          margin: 0 auto;
+          padding: 0 1rem;
+        }
+        
         .nav-tabs-custom {
           border-bottom: 1px solid #dee2e6;
         }

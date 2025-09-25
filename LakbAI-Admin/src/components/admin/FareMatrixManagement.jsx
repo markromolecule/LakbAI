@@ -309,7 +309,7 @@ const FareMatrixManagement = () => {
               </Form.Group>
             </Col>
             <Col md={5}>
-              <div className="d-flex gap-2">
+              <div className="d-flex gap-2 justify-content-end">
                 <Button 
                   variant="primary" 
                   onClick={handleGenerateMatrix}

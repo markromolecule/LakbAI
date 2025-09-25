@@ -7,8 +7,8 @@ const HeroSection = () => {
   return (
     <>
       {/* Hero Text Section */}
-      <section className={styles.heroSection}>
-        <Container>
+      <section className={`${styles.heroSection} hero-section`}>
+        <div className="header-content">
           <Row className="align-items-center">
             <Col lg={12} className="text-center">
               <div className={styles.heroContent}>
@@ -35,7 +35,7 @@ const HeroSection = () => {
               </div>
             </Col>
           </Row>
-        </Container>
+        </div>
       </section>
 
       {/* Hero Image Section */}
@@ -50,6 +50,15 @@ const HeroSection = () => {
           </div>
         </Container>
       </section>
+      
+      <style jsx>{`
+        .header-content {
+          max-width: 1400px;
+          margin: 0 auto;
+          padding: 0 1rem;
+          width: 100%;
+        }
+      `}</style>
     </>
   );
 };

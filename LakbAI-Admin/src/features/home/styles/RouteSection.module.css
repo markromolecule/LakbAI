@@ -23,12 +23,12 @@
 
 .routeContainer {
   background: #ffffff;
-  border-radius: clamp(15px, 3vw, 25px);
-  padding: clamp(2rem, 5vw, 3rem) clamp(1.5rem, 4vw, 2.5rem) clamp(1.5rem, 4vw, 2.5rem);
-  box-shadow: 0 15px 50px rgba(44, 90, 160, 0.1);
+  border-radius: clamp(12px, 2.5vw, 20px);
+  padding: clamp(1.5rem, 3vw, 2rem) clamp(1rem, 2.5vw, 1.5rem) clamp(1rem, 2.5vw, 1.5rem);
+  box-shadow: 0 8px 25px rgba(44, 90, 160, 0.08);
   position: relative;
   overflow: visible; /* allow sticky children */
-  border: 1px solid rgba(44, 90, 160, 0.1);
+  border: 1px solid rgba(44, 90, 160, 0.08);
   margin: 0 clamp(5px, 1vw, 15px);
   backdrop-filter: blur(10px);
 }
@@ -39,20 +39,21 @@
   top: 0;
   left: 0;
   right: 0;
-  height: 6px;
+  height: 4px;
   background: linear-gradient(90deg, #ffc107, #28a745, #dc3545);
-  border-radius: clamp(15px, 3vw, 25px) clamp(15px, 3vw, 25px) 0 0;
+  border-radius: clamp(12px, 2.5vw, 20px) clamp(12px, 2.5vw, 20px) 0 0;
+  z-index: 1;
 }
 
 .routeHeader {
-  margin-bottom: clamp(1.5rem, 4vh, 2.5rem);
-  padding-bottom: clamp(1rem, 2.5vh, 1.5rem);
-  border-bottom: 2px solid #f8f9fa;
+  margin-bottom: clamp(1rem, 2.5vh, 1.5rem);
+  padding-bottom: clamp(0.75rem, 1.5vh, 1rem);
+  border-bottom: 1px solid #f0f2f5;
   display: flex;
   align-items: center;
   justify-content: flex-start;
   flex-wrap: wrap;
-  gap: clamp(0.5rem, 1vw, 1rem);
+  gap: clamp(0.5rem, 1vw, 0.75rem);
   text-align: left;
 }
 
@@ -69,14 +70,14 @@
 }
 
 .routeMarker {
-  width: clamp(40px, 10vw, 50px);
-  height: clamp(40px, 10vw, 50px);
+  width: clamp(32px, 8vw, 40px);
+  height: clamp(32px, 8vw, 40px);
   background: linear-gradient(135deg, #dc3545, #c82333);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3);
+  box-shadow: 0 3px 10px rgba(220, 53, 69, 0.25);
   flex-shrink: 0;
   margin: 0;
 }
@@ -90,7 +91,7 @@
 .routeStops {
   position: relative;
   background: transparent;
-  padding-top: clamp(0.5rem, 1vh, 1rem);
+  padding-top: clamp(0.25rem, 0.5vh, 0.5rem);
   overflow-x: visible;
 }
 
@@ -100,7 +101,7 @@
 }
 
 .stopItem {
-  margin-bottom: clamp(0.35rem, 1vh, 0.75rem);
+  margin-bottom: clamp(0.25rem, 0.5vh, 0.5rem);
   position: relative;
   z-index: 2;
   display: flex;
@@ -173,23 +174,26 @@
 }
 
 .stopBtn {
-  border-radius: clamp(15px, 3vw, 25px) !important;
-  font-size: clamp(0.75rem, 2vw, 0.9rem) !important;
+  border-radius: clamp(10px, 2.2vw, 14px) !important;
+  font-size: clamp(0.75rem, 1.8vw, 0.85rem) !important;
   font-weight: 500 !important;
-  padding: clamp(8px, 2vw, 10px) clamp(12px, 3vw, 20px) !important;
+  padding: clamp(8px, 2vw, 10px) clamp(16px, 4vw, 24px) !important;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-  border: 2px solid transparent !important;
+  border: 1px solid transparent !important;
   position: relative;
   overflow: hidden;
-  min-height: clamp(36px, 8vw, 44px);
-  min-width: clamp(120px, 16vw, 180px);
+  min-height: clamp(32px, 7vw, 36px);
+  min-width: clamp(140px, 18vw, 220px);
+  max-width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
   text-align: center;
   white-space: nowrap;
   width: 100%;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  box-sizing: border-box;
+  line-height: 1.2;
 }
 
 .stopBtn::before {
@@ -259,6 +263,12 @@
   .routeHeader {
     margin-bottom: clamp(1.25rem, 3vh, 2rem);
   }
+  
+  .stopBtn {
+    font-size: clamp(0.75rem, 1.8vw, 0.85rem) !important;
+    padding: clamp(8px, 2vw, 10px) clamp(16px, 4vw, 24px) !important;
+    min-width: clamp(140px, 18vw, 220px);
+  }
 }
 
 /* Mobile centering - apply centering for screens 768px and below */
@@ -289,8 +299,10 @@
   }
   
   .stopBtn {
-    font-size: clamp(0.7rem, 1.8vw, 0.85rem) !important;
-    padding: clamp(6px, 1.5vw, 8px) clamp(8px, 2vw, 12px) !important;
+    font-size: clamp(0.75rem, 1.8vw, 0.85rem) !important;
+    padding: clamp(8px, 2vw, 10px) clamp(16px, 4vw, 24px) !important;
+    min-width: clamp(140px, 18vw, 220px);
+    max-width: 100%;
   }
   
   .routeHeader {
@@ -331,9 +343,10 @@
   }
   
   .stopBtn {
-    font-size: clamp(0.65rem, 1.6vw, 0.8rem) !important;
-    padding: clamp(5px, 1.2vw, 8px) clamp(6px, 1.5vw, 12px) !important;
-    min-height: clamp(32px, 7vw, 40px);
+    font-size: clamp(0.75rem, 1.8vw, 0.85rem) !important;
+    padding: clamp(8px, 2vw, 10px) clamp(16px, 4vw, 24px) !important;
+    min-height: clamp(32px, 7vw, 36px);
+    min-width: clamp(140px, 18vw, 220px);
   }
   
   .routeHeader h4 {

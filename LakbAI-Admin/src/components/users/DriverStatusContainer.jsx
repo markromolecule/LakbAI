@@ -124,76 +124,47 @@ const DriverStatusContainer = ({ onDataUpdate }) => {
   };
 
   const DriverCard = ({ driver }) => (
-    <Card className="border-0 shadow-sm mb-3">
-      <Card.Body>
-        <Row className="align-items-center">
-          <Col md={8}>
-            <div className="d-flex align-items-center mb-2">
-              <div className="me-3">
-                <i className="bi bi-car-front fs-4 text-primary"></i>
-              </div>
-              <div>
-                <h6 className="mb-1 fw-bold">
-                  {driver.first_name} {driver.last_name}
-                  <Badge 
-                    bg={driver.shift_status === 'on_shift' ? 'success' : 'secondary'} 
-                    className="ms-2"
-                  >
-                    {driver.shift_status === 'on_shift' ? 'On Duty' : 'Off Duty'}
-                  </Badge>
-                </h6>
-                <small className="text-muted">{driver.email}</small>
-              </div>
+    <Card className="border-0 shadow-sm mb-3 compact-driver-card">
+      <Card.Body className="p-3">
+        <div className="d-flex justify-content-between align-items-start mb-2">
+          <div className="d-flex align-items-center">
+            <i className="bi bi-person-circle me-2 text-primary"></i>
+            <div>
+              <h6 className="mb-1 fw-bold">
+                {driver.first_name} {driver.last_name}
+              </h6>
+              <small className="text-muted">{driver.email}</small>
             </div>
-            
-            <div className="mb-2">
-              <strong>Phone:</strong> {driver.phone_number}
-            </div>
-
-            <div className="mb-2">
-              <strong>Status:</strong>
-              <Badge bg={driver.is_verified ? 'success' : 'warning'} className="ms-2">
-                {driver.is_verified ? 'Verified' : 'Pending Verification'}
-              </Badge>
-            </div>
-
-            <small className="text-muted">
-              <i className="bi bi-clock me-1"></i>
-              Last Active: {driver.status_updated ? driver.status_updated.toLocaleString() : 'Unknown'}
-            </small>
-            
+          </div>
+          <div className="d-flex flex-column gap-1">
+            <Badge 
+              bg={driver.shift_status === 'on_shift' ? 'success' : 'secondary'} 
+              className="badge-sm"
+            >
+              {driver.shift_status === 'on_shift' ? 'On Duty' : 'Off Duty'}
+            </Badge>
+            <Badge bg={driver.is_verified ? 'success' : 'warning'} className="badge-sm">
+              {driver.is_verified ? 'Verified' : 'Pending'}
+            </Badge>
             {driver.is_active && (
-              <div className="mt-2">
-                <Badge bg="success" className="pulse-animation">
-                  <i className="bi bi-circle-fill me-1"></i>
-                  Live
-                </Badge>
-              </div>
+              <Badge bg="success" className="pulse-animation badge-sm">
+                <i className="bi bi-circle-fill me-1"></i>
+                Live
+              </Badge>
             )}
-          </Col>
-
-          <Col md={4}>
-            <div className="text-center">
-              <div className="mb-3">
-                <div 
-                  className={`rounded-circle d-inline-flex align-items-center justify-content-center ${
-                    driver.shift_status === 'on_shift' ? 'bg-success' : 'bg-secondary'
-                  }`}
-                  style={{ width: '60px', height: '60px' }}
-                >
-                  <i className={`bi ${
-                    driver.shift_status === 'on_shift' ? 'bi-check-circle' : 'bi-dash-circle'
-                  } fs-3 text-white`}></i>
-                </div>
-              </div>
-              
-              {/* Note: In a real implementation, you would have API endpoints to update driver status */}
-              <small className="text-muted">
-                Status managed by driver
-              </small>
-            </div>
-          </Col>
-        </Row>
+          </div>
+        </div>
+        
+        <div className="row g-2 small">
+          <div className="col-6">
+            <i className="bi bi-phone me-1"></i>
+            {driver.phone_number}
+          </div>
+          <div className="col-6">
+            <i className="bi bi-clock me-1"></i>
+            {driver.status_updated ? driver.status_updated.toLocaleDateString() : 'Unknown'}
+          </div>
+        </div>
       </Card.Body>
     </Card>
   );
@@ -357,6 +328,31 @@ const DriverStatusContainer = ({ onDataUpdate }) => {
           100% {
             opacity: 1;
           }
+        }
+        
+        /* Compact Driver Card Styles */
+        .compact-driver-card {
+          border-radius: 8px !important;
+          transition: all 0.2s ease !important;
+        }
+        
+        .compact-driver-card:hover {
+          transform: translateY(-2px) !important;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+        }
+        
+        .compact-driver-card .card-body {
+          padding: 1rem !important;
+        }
+        
+        .compact-driver-card .small {
+          font-size: 0.8rem !important;
+          color: #6c757d !important;
+        }
+        
+        .badge-sm {
+          font-size: 0.7rem !important;
+          padding: 0.25rem 0.5rem !important;
         }
       `}</style>
     </div>

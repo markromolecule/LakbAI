@@ -23,12 +23,13 @@
 
 .stepCard {
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  padding: clamp(1.5rem, 4vw, 2.5rem) clamp(1rem, 3vw, 1.5rem);
+  padding: clamp(2rem, 5vw, 3rem) clamp(1.5rem, 4vw, 2rem);
   border: none !important;
   background: #ffffff;
   border-radius: clamp(15px, 3vw, 20px) !important;
   position: relative;
   overflow: hidden;
+  min-height: 320px;
   height: 100%;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
 }
@@ -41,8 +42,10 @@
   right: 0;
   height: 4px;
   background: linear-gradient(90deg, #2c5aa0, #1e3d72);
+  transform-origin: left center;
   transform: scaleX(0);
   transition: transform 0.3s ease;
+  z-index: 1;
 }
 
 .stepCard:hover::before {
@@ -148,8 +151,9 @@
   }
   
   .stepCard {
-    padding: clamp(1.25rem, 3vw, 2rem) clamp(0.75rem, 2vw, 1rem);
+    padding: clamp(1.5rem, 4vw, 2.5rem) clamp(1rem, 3vw, 1.5rem);
     margin-bottom: clamp(1.25rem, 2.5vh, 1.5rem);
+    min-height: 280px;
   }
   
   .stepIconContainer {
@@ -174,8 +178,9 @@
   }
   
   .stepCard {
-    padding: clamp(1rem, 2.5vw, 1.5rem) clamp(0.75rem, 2vw, 1rem);
+    padding: clamp(1.25rem, 3vw, 2rem) clamp(1rem, 2.5vw, 1.25rem);
     margin-bottom: clamp(1rem, 2vh, 1.25rem);
+    min-height: 260px;
   }
   
   .stepIconContainer {
@@ -208,9 +213,10 @@
   }
   
   .stepCard {
-    padding: clamp(0.75rem, 2vw, 1.25rem) clamp(0.5rem, 1.5vw, 0.75rem);
+    padding: clamp(1rem, 2.5vw, 1.5rem) clamp(0.75rem, 2vw, 1rem);
     margin-bottom: clamp(0.75rem, 1.5vh, 1rem);
     border-radius: clamp(12px, 2.5vw, 15px) !important;
+    min-height: 240px;
   }
   
   .stepIconContainer {
@@ -243,9 +249,10 @@
   }
   
   .stepCard {
-    padding: clamp(0.5rem, 1.5vw, 1rem) clamp(0.5rem, 1vw, 0.75rem);
+    padding: clamp(0.75rem, 2vw, 1.25rem) clamp(0.75rem, 1.5vw, 1rem);
     margin-bottom: clamp(0.5rem, 1vh, 0.75rem);
     border-radius: clamp(10px, 2vw, 12px) !important;
+    min-height: 220px;
   }
   
   .stepIconContainer {

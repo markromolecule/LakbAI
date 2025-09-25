@@ -318,7 +318,7 @@ const Dashboard = () => {
       {!loading && stats.dailyRevenue > 0 && (
         <Row className="g-3 mb-4">
           <Col lg={6}>
-            <Card className="border-0 shadow-sm">
+            <Card className="border-0 shadow-sm h-100">
               <Card.Header className="py-3 px-3">
                 <h6 className="mb-0 fw-semibold text-dark">
                   <i className="bi bi-graph-up me-2 text-success"></i>
@@ -365,34 +365,39 @@ const Dashboard = () => {
           </Col>
           
           <Col lg={6}>
-            <Card className="border-0 shadow-sm">
+            <Card className="border-0 shadow-sm h-100">
               <Card.Header className="py-3 px-3">
                 <h6 className="mb-0 fw-semibold text-dark">
                   <i className="bi bi-person-badge me-2 text-primary"></i>
                   Top Performing Drivers
+                  {stats.driverBreakdown && stats.driverBreakdown.length > 4 && (
+                    <small className="text-muted ms-2">({stats.driverBreakdown.length} drivers)</small>
+                  )}
                 </h6>
               </Card.Header>
-              <Card.Body className="p-0">
+              <Card.Body className="p-3">
                 {stats.driverBreakdown && stats.driverBreakdown.length > 0 ? (
-                  <div className="list-group list-group-flush">
+                  <div className="drivers-scroll-container">
                     {console.log('Driver breakdown data:', stats.driverBreakdown)}
-                    {stats.driverBreakdown.slice(0, 5).map((driver, index) => (
-                      <div key={driver.driver_id} className="list-group-item d-flex justify-content-between align-items-center">
-                        <div>
-                          <div className="fw-semibold">
-                            {driver.first_name} {driver.last_name}
+                    {stats.driverBreakdown.map((driver, index) => (
+                      <div key={driver.driver_id} className="driver-item">
+                        <div className="d-flex justify-content-between align-items-center">
+                          <div>
+                            <div className="fw-semibold">
+                              {index + 1}. {driver.first_name} {driver.last_name}
+                            </div>
+                            <small className="text-muted">
+                              {driver.driver_trips} trips
+                            </small>
                           </div>
-                          <small className="text-muted">
-                            {driver.driver_trips} trips
-                          </small>
-                        </div>
-                        <div className="text-end">
-                          <div className="fw-bold text-success">
-                            {DashboardService.formatCurrency(driver.driver_revenue)}
+                          <div className="text-end">
+                            <div className="fw-bold text-success">
+                              {DashboardService.formatCurrency(driver.driver_revenue)}
+                            </div>
+                            <small className="text-muted">
+                              ₱{parseFloat(driver.driver_avg_fare || 0).toFixed(0)} avg
+                            </small>
                           </div>
-                          <small className="text-muted">
-                            ₱{parseFloat(driver.driver_avg_fare || 0).toFixed(0)} avg
-                          </small>
                         </div>
                       </div>
                     ))}
@@ -471,7 +476,7 @@ const Dashboard = () => {
             <Card.Body className="p-3">
               <div className="d-grid gap-2">
                 <button 
-                  className="btn btn-outline-primary d-flex align-items-center justify-content-start p-3 quick-action-btn"
+                  className="btn d-flex align-items-center justify-content-start p-3 quick-action-btn"
                   onClick={handleAddJeepney}
                   title="Navigate to Jeepneys page to add a new vehicle"
                 >
@@ -483,7 +488,7 @@ const Dashboard = () => {
                   <i className="bi bi-arrow-right ms-auto text-muted"></i>
                 </button>
                 <button 
-                  className="btn btn-outline-success d-flex align-items-center justify-content-start p-3 quick-action-btn"
+                  className="btn d-flex align-items-center justify-content-start p-3 quick-action-btn"
                   onClick={handleRegisterDriver}
                   title="Navigate to Users page to register a new driver"
                 >
@@ -495,7 +500,7 @@ const Dashboard = () => {
                   <i className="bi bi-arrow-right ms-auto text-muted"></i>
                 </button>
                 <button 
-                  className="btn btn-outline-info d-flex align-items-center justify-content-start p-3 quick-action-btn"
+                  className="btn d-flex align-items-center justify-content-start p-3 quick-action-btn"
                   onClick={handleUpdateFareMatrix}
                   title="Navigate to Fare Matrix page to update pricing"
                 >
@@ -507,7 +512,7 @@ const Dashboard = () => {
                   <i className="bi bi-arrow-right ms-auto text-muted"></i>
                 </button>
                 <button 
-                  className="btn btn-outline-warning d-flex align-items-center justify-content-start p-3 quick-action-btn"
+                  className="btn d-flex align-items-center justify-content-start p-3 quick-action-btn"
                   onClick={handleManageRoutes}
                   title="Navigate to Checkpoints page to manage routes"
                 >
@@ -526,23 +531,50 @@ const Dashboard = () => {
 
       <style>{`
         .quick-action-btn {
-          transition: all 0.2s ease-in-out;
           border: 1px solid #dee2e6;
+          background: white;
         }
         
-        .quick-action-btn:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-          border-color: currentColor;
+        /* Top Performing Drivers Styles - Match Earnings Summary Height */
+        .drivers-scroll-container {
+          height: 200px;
+          overflow-y: auto;
+          overflow-x: hidden;
         }
         
-        .quick-action-btn:hover .bi-arrow-right {
-          transform: translateX(3px);
-          transition: transform 0.2s ease-in-out;
+        .driver-item {
+          padding: 8px 0;
+          border-bottom: 1px solid #f1f3f4;
         }
         
-        .quick-action-btn:active {
-          transform: translateY(0);
+        .driver-item:last-child {
+          border-bottom: none;
+        }
+        
+        .driver-item:hover {
+          background-color: #f8f9fa;
+          margin: 0 -12px;
+          padding: 8px 12px;
+          border-radius: 4px;
+        }
+        
+        /* Custom scrollbar */
+        .drivers-scroll-container::-webkit-scrollbar {
+          width: 4px;
+        }
+        
+        .drivers-scroll-container::-webkit-scrollbar-track {
+          background: #f1f1f1;
+          border-radius: 2px;
+        }
+        
+        .drivers-scroll-container::-webkit-scrollbar-thumb {
+          background: #c1c1c1;
+          border-radius: 2px;
+        }
+        
+        .drivers-scroll-container::-webkit-scrollbar-thumb:hover {
+          background: #a8a8a8;
         }
       `}</style>
     </AdminLayout>

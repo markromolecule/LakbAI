@@ -14,6 +14,7 @@ class JeepneyController {
                     u.first_name,
                     u.last_name,
                     u.phone_number,
+                    u.shift_status,
                     r.route_name
                 FROM jeepneys j
                 LEFT JOIN users u ON j.driver_id = u.id
@@ -22,6 +23,12 @@ class JeepneyController {
             ");
             $stmt->execute();
             $jeepneys = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            // Compute dynamic status based on driver's shift status
+            foreach ($jeepneys as &$jeepney) {
+                $jeepney['computed_status'] = $this->computeJeepneyStatus($jeepney);
+                $jeepney['status'] = $jeepney['computed_status']; // Override static status with computed status
+            }
 
             return [
                 "status" => "success",
@@ -178,6 +185,7 @@ class JeepneyController {
                     u.first_name,
                     u.last_name,
                     u.phone_number,
+                    u.shift_status,
                     r.route_name
                 FROM jeepneys j
                 LEFT JOIN users u ON j.driver_id = u.id
@@ -188,6 +196,10 @@ class JeepneyController {
             $jeepney = $stmt->fetch(PDO::FETCH_ASSOC);
             
             if ($jeepney) {
+                // Compute dynamic status based on driver's shift status
+                $jeepney['computed_status'] = $this->computeJeepneyStatus($jeepney);
+                $jeepney['status'] = $jeepney['computed_status']; // Override static status with computed status
+                
                 return ["status" => "success", "jeepney" => $jeepney];
             }
             return ["status" => "error", "message" => "Jeepney not found"];
@@ -367,6 +379,7 @@ class JeepneyController {
                     u.first_name,
                     u.last_name,
                     u.phone_number,
+                    u.shift_status,
                     r.route_name
                 FROM jeepneys j
                 LEFT JOIN users u ON j.driver_id = u.id
@@ -376,6 +389,12 @@ class JeepneyController {
             ");
             $stmt->execute([$limit, $offset]);
             $jeepneys = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            // Compute dynamic status based on driver's shift status
+            foreach ($jeepneys as &$jeepney) {
+                $jeepney['computed_status'] = $this->computeJeepneyStatus($jeepney);
+                $jeepney['status'] = $jeepney['computed_status']; // Override static status with computed status
+            }
 
             return [
                 "status" => "success",
@@ -393,6 +412,34 @@ class JeepneyController {
                 "message" => "Failed to fetch jeepneys: " . $e->getMessage()
             ];
         }
+    }
+
+    /**
+     * Compute jeepney status based on driver's shift status and jeepney's static status
+     */
+    private function computeJeepneyStatus($jeepney) {
+        // If jeepney has no driver assigned, use the static status
+        if (!$jeepney['driver_id'] || !$jeepney['shift_status']) {
+            return $jeepney['status'] ?? 'inactive';
+        }
+        
+        // If jeepney is in maintenance, it's always inactive regardless of driver status
+        if ($jeepney['status'] === 'maintenance') {
+            return 'maintenance';
+        }
+        
+        // If driver is on shift, jeepney is active
+        if ($jeepney['shift_status'] === 'on_shift') {
+            return 'active';
+        }
+        
+        // If driver is off shift, busy, or offline, jeepney is inactive
+        if (in_array($jeepney['shift_status'], ['off_shift', 'busy', 'offline'])) {
+            return 'inactive';
+        }
+        
+        // Default fallback to static status
+        return $jeepney['status'] ?? 'inactive';
     }
 
     /**

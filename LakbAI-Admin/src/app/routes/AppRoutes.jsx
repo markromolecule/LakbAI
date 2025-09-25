@@ -11,6 +11,9 @@ import Users from '../../pages/admin/Users';
 import FareMatrix from '../../pages/admin/FareMatrix';
 import Checkpoints from '../../pages/admin/Checkpoints';
 
+// Driver Components
+import DriverDashboard from '../../pages/driver/DriverDashboard';
+
 const AppRoutes = () => {
   return (
     <Router>
@@ -27,7 +30,7 @@ const AppRoutes = () => {
         <Route 
           path="/admin/dashboard" 
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedUserTypes={['admin']}>
               <Dashboard />
             </ProtectedRoute>
           } 
@@ -35,7 +38,7 @@ const AppRoutes = () => {
         <Route 
           path="/admin/jeepneys" 
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedUserTypes={['admin']}>
               <Jeepneys />
             </ProtectedRoute>
           } 
@@ -43,7 +46,7 @@ const AppRoutes = () => {
         <Route 
           path="/admin/users" 
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedUserTypes={['admin']}>
               <Users />
             </ProtectedRoute>
           } 
@@ -51,7 +54,7 @@ const AppRoutes = () => {
         <Route 
           path="/admin/fare-matrix" 
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedUserTypes={['admin']}>
               <FareMatrix />
             </ProtectedRoute>
           } 
@@ -59,8 +62,19 @@ const AppRoutes = () => {
         <Route 
           path="/admin/checkpoints" 
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedUserTypes={['admin']}>
               <Checkpoints />
+            </ProtectedRoute>
+          } 
+        />
+
+        {/* Driver Routes - Protected */}
+        <Route path="/driver" element={<Navigate to="/driver/dashboard" replace />} />
+        <Route 
+          path="/driver/dashboard" 
+          element={
+            <ProtectedRoute allowedUserTypes={['driver']}>
+              <DriverDashboard />
             </ProtectedRoute>
           } 
         />

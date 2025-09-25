@@ -11,7 +11,7 @@ const DEVELOPER_CONFIGS = {
 };
 
 // Current developer - change this to your name
-const CURRENT_DEVELOPER = 'joseph';
+const CURRENT_DEVELOPER = 'localhost';
 
 // Get the current developer's IP
 const getCurrentDeveloperIP = () => {

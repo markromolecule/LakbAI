@@ -42,8 +42,14 @@ const LoginForm = () => {
       const result = await AuthService.login(formData.email, formData.password);
       
       if (result.success) {
-        // Redirect to admin dashboard
-        navigate('/admin/dashboard');
+        // Redirect based on user type
+        if (result.user.userType === 'admin') {
+          navigate('/admin/dashboard');
+        } else if (result.user.userType === 'driver') {
+          navigate('/driver/dashboard');
+        } else {
+          navigate('/admin/dashboard'); // fallback
+        }
       } else {
         setErrors({ general: result.error });
       }

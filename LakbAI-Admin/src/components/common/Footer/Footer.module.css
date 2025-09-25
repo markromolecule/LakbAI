@@ -5,6 +5,13 @@
   overflow: hidden;
 }
 
+.customFooter h5 {
+  margin-bottom: clamp(1rem, 2.5vh, 1.25rem) !important;
+  font-size: clamp(1rem, 2.2vw, 1.1rem);
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
 .customFooter::before {
   content: '';
   position: absolute;
@@ -38,7 +45,7 @@
 .footerBrand p {
   font-size: clamp(0.85rem, 2vw, 0.95rem);
   line-height: 1.6;
-  margin: clamp(0.75rem, 2vh, 1rem) 0;
+  margin: clamp(0.75rem, 2vh, 1rem) 0 clamp(1rem, 2.5vh, 1.25rem) 0;
 }
 
 .footerLinks {
@@ -48,7 +55,7 @@
 }
 
 .footerLinks li {
-  margin-bottom: clamp(0.25rem, 1vh, 0.5rem);
+  margin-bottom: clamp(0.5rem, 1vh, 0.75rem);
 }
 
 .footerLink {
@@ -56,12 +63,11 @@
   text-decoration: none;
   transition: all 0.3s ease;
   font-size: clamp(0.8rem, 2vw, 0.9rem);
-  display: inline-block;
-  padding: clamp(2px, 0.5vh, 4px) 0;
-  min-height: clamp(24px, 4vw, 28px);
   display: flex;
   align-items: center;
   justify-content: flex-start;
+  padding: clamp(2px, 0.5vh, 4px) 0;
+  min-height: clamp(24px, 4vw, 28px);
 }
 
 .footerLink:hover {
@@ -106,7 +112,7 @@
 }
 
 .contactInfo .d-flex {
-  margin-bottom: clamp(0.5rem, 1.5vh, 0.75rem);
+  margin-bottom: clamp(0.75rem, 1.5vh, 1rem);
   align-items: flex-start;
   gap: clamp(0.5rem, 1vw, 0.75rem);
   justify-content: flex-start;
@@ -130,6 +136,7 @@
   font-size: clamp(0.75rem, 1.8vw, 0.85rem);
   padding: clamp(2px, 0.5vh, 4px) 0;
   display: inline-block;
+  margin-right: clamp(0.75rem, 2vw, 1rem);
 }
 
 .footerBottomLinks a:hover {

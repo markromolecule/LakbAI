@@ -8,29 +8,35 @@ const AdminLayout = ({ children, title, subtitle }) => {
     <div className="admin-layout min-vh-100 d-flex flex-column">
       <AdminHeader />
       <main className="flex-grow-1">
-        <Container fluid className="main-content px-0" style={{ maxWidth: '1400px', margin: '0 auto' }}>
-          <div className="content-padding px-3 px-sm-4 px-lg-5 py-3 py-md-4">
-            {(title || subtitle) && (
-              <div className="mb-3 mb-md-4">
-                {title && (
-                  <h1 className="fw-bold mb-1 text-dark fs-3 fs-md-2">
-                    {title}
-                  </h1>
-                )}
-                {subtitle && (
-                  <p className="text-muted mb-0 fs-6 fs-md-5">
-                    {subtitle}
-                  </p>
-                )}
-              </div>
-            )}
-            <div className="content-wrapper">
-              {children}
+        <div className="header-content py-3 py-md-4">
+          {(title || subtitle) && (
+            <div className="mb-3 mb-md-4">
+              {title && (
+                <h1 className="fw-bold mb-1 text-dark fs-3 fs-md-2">
+                  {title}
+                </h1>
+              )}
+              {subtitle && (
+                <p className="text-muted mb-0 fs-6 fs-md-5">
+                  {subtitle}
+                </p>
+              )}
             </div>
+          )}
+          <div className="content-wrapper">
+            {children}
           </div>
-        </Container>
+        </div>
       </main>
       <AdminFooter />
+      
+             <style jsx>{`
+               .header-content {
+                 max-width: 1400px;
+                 margin: 0 auto;
+                 padding: 0 1rem;
+               }
+             `}</style>
     </div>
   );
 };

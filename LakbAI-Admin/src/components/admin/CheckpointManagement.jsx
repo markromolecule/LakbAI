@@ -568,24 +568,24 @@ const CheckpointManagement = ({ visible, onClose }) => {
                 <Card.Body>
                   <Row>
                     {generatedQRs.map((qr, index) => (
-                      <Col md={6} lg={4} key={index} className="mb-3">
-                        <Card className="h-100">
-                          <Card.Body className="text-center d-flex flex-column">
-                            <h6 className="mb-3">{qr.checkpoint_name}</h6>
-                            <div className="d-flex justify-content-center align-items-center flex-grow-1 mb-3">
+                      <Col md={4} lg={3} key={index} className="mb-3">
+                        <Card className="border-0 shadow-sm compact-qr-card">
+                          <Card.Body className="p-3 text-center d-flex flex-column">
+                            <h6 className="mb-2 small fw-bold">{qr.checkpoint_name}</h6>
+                            <div className="d-flex justify-content-center align-items-center flex-grow-1 mb-2">
                               <Image 
                                 src={qr.qr_image_url} 
                                 alt="QR Code" 
                                 fluid 
                                 style={{ 
-                                  maxWidth: '150px', 
-                                  width: '150px',
-                                  height: '150px',
+                                  maxWidth: '100px', 
+                                  width: '100px',
+                                  height: '100px',
                                   objectFit: 'contain',
                                   cursor: 'pointer',
                                   border: '1px solid #dee2e6',
-                                  borderRadius: '8px',
-                                  padding: '8px'
+                                  borderRadius: '6px',
+                                  padding: '4px'
                                 }}
                                 onClick={() => {
                                   setPreviewQR(qr);
@@ -593,12 +593,13 @@ const CheckpointManagement = ({ visible, onClose }) => {
                                 }}
                               />
                             </div>
-                            <div className="d-flex justify-content-center gap-2">
+                            <div className="d-flex justify-content-center gap-1">
                               <Button 
                                 size="sm" 
                                 variant="outline-primary" 
                                 onClick={() => downloadQR(qr)}
-                                title="Download QR Code"
+                                title="Download"
+                                className="btn-compact btn-square"
                               >
                                 <i className="bi bi-download"></i>
                               </Button>
@@ -606,7 +607,8 @@ const CheckpointManagement = ({ visible, onClose }) => {
                                 size="sm" 
                                 variant="outline-secondary"
                                 onClick={() => printQR(qr)}
-                                title="Print QR Code"
+                                title="Print"
+                                className="btn-compact btn-square"
                               >
                                 <i className="bi bi-printer"></i>
                               </Button>
@@ -614,7 +616,8 @@ const CheckpointManagement = ({ visible, onClose }) => {
                                 size="sm" 
                                 variant="outline-danger"
                                 onClick={() => deleteQR(index)}
-                                title="Delete QR Code"
+                                title="Delete"
+                                className="btn-compact btn-square"
                               >
                                 <i className="bi bi-trash"></i>
                               </Button>
@@ -692,49 +695,51 @@ const CheckpointManagement = ({ visible, onClose }) => {
                   <Row>
                     {driverLocations.map((driver, index) => (
                       <Col md={6} lg={4} key={index} className="mb-3">
-                        <Card className="h-100 active-driver-card">
-                          <Card.Body>
-                            <div className="d-flex justify-content-between align-items-start mb-2">
-                              <h6 className="mb-0">
-                                <i className="bi bi-truck me-2 text-success"></i>
-                                {driver.jeepney_number}
-                              </h6>
-                              <div className="d-flex flex-column align-items-end">
-                              {getStatusBadge(driver.status)}
-                                <Badge bg="success" className="mt-1 pulse-animation status-active">
+                        <Card className="border-0 shadow-sm compact-driver-card">
+                          <Card.Body className="p-3">
+                            {/* Header with vehicle and status */}
+                            <div className="d-flex justify-content-between align-items-center mb-2">
+                              <div className="d-flex align-items-center">
+                                <i className="bi bi-truck me-2 text-primary"></i>
+                                <span className="fw-bold text-primary">{driver.jeepney_number}</span>
+                              </div>
+                              <div className="d-flex gap-1">
+                                <Badge bg="success" className="pulse-animation">
                                   <i className="bi bi-circle-fill me-1"></i>
+                                  Active
+                                </Badge>
+                                <Badge bg="success">
                                   On Shift
                                 </Badge>
                               </div>
                             </div>
-                            <ListGroup variant="flush" className="border-0">
-                              <ListGroup.Item className="px-0 py-1">
-                                <small className="text-muted">Driver:</small><br />
-                                <strong>{driver.driver_name}</strong>
-                              </ListGroup.Item>
-                              <ListGroup.Item className="px-0 py-1">
-                                <small className="text-muted">Current Location:</small><br />
+                            
+                            {/* Driver info */}
+                            <div className="mb-2">
+                              <strong>{driver.driver_name}</strong>
+                            </div>
+                            
+                            {/* Compact info grid */}
+                            <div className="row g-2 small">
+                              <div className="col-12">
                                 <i className="bi bi-geo-alt me-1 text-success"></i>
-                                <strong className="text-success">{driver.current_location || 'Unknown'}</strong>
-                              </ListGroup.Item>
-                              <ListGroup.Item className="px-0 py-1">
-                                <small className="text-muted">Last QR Scan:</small><br />
+                                <span className="text-success">{driver.current_location || 'Unknown'}</span>
+                              </div>
+                              <div className="col-6">
                                 <i className="bi bi-qr-code me-1"></i>
                                 {formatLastUpdate(driver.last_update)}
-                              </ListGroup.Item>
-                              <ListGroup.Item className="px-0 py-1">
-                                <small className="text-muted">Contact:</small><br />
+                              </div>
+                              <div className="col-6">
                                 <i className="bi bi-phone me-1"></i>
                                 {driver.phone || 'N/A'}
-                              </ListGroup.Item>
+                              </div>
                               {driver.estimated_arrival && driver.estimated_arrival !== 'N/A' && (
-                                <ListGroup.Item className="px-0 py-1">
-                                  <small className="text-muted">Next Arrival:</small><br />
+                                <div className="col-12">
                                   <i className="bi bi-stopwatch me-1"></i>
                                   {driver.estimated_arrival}
-                                </ListGroup.Item>
+                                </div>
                               )}
-                            </ListGroup>
+                            </div>
                           </Card.Body>
                         </Card>
                       </Col>
@@ -969,6 +974,65 @@ const CheckpointManagement = ({ visible, onClose }) => {
           backdrop-filter: blur(10px) !important;
         }
 
+        /* Compact Driver Card Styles */
+        .compact-driver-card {
+          border-radius: 8px !important;
+          transition: all 0.2s ease !important;
+        }
+        
+        .compact-driver-card:hover {
+          transform: translateY(-2px) !important;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+        }
+        
+        .compact-driver-card .card-body {
+          padding: 1rem !important;
+        }
+        
+        .compact-driver-card .small {
+          font-size: 0.8rem !important;
+          color: #6c757d !important;
+        }
+        
+        .compact-driver-card .badge {
+          font-size: 0.7rem !important;
+          padding: 0.25rem 0.5rem !important;
+        }
+
+        /* Compact QR Card Styles */
+        .compact-qr-card {
+          border-radius: 8px !important;
+          transition: all 0.2s ease !important;
+        }
+        
+        .compact-qr-card:hover {
+          transform: translateY(-2px) !important;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+        }
+        
+        .compact-qr-card .card-body {
+          padding: 0.75rem !important;
+        }
+        
+        .compact-qr-card h6 {
+          font-size: 0.85rem !important;
+          margin-bottom: 0.5rem !important;
+        }
+        
+        .btn-compact {
+          padding: 0.25rem 0.5rem !important;
+          font-size: 0.75rem !important;
+          min-width: 32px !important;
+          height: 32px !important;
+        }
+        
+        .btn-square {
+          border-radius: 6px !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+        }
+
         /* Responsive Enhancements */
         @media (max-width: 768px) {
           .active-driver-card {
@@ -981,6 +1045,28 @@ const CheckpointManagement = ({ visible, onClose }) => {
           
           .active-driver-card h6 {
             font-size: 1rem !important;
+          }
+          
+          .compact-driver-card .card-body {
+            padding: 0.75rem !important;
+          }
+          
+          .compact-qr-card .card-body {
+            padding: 0.5rem !important;
+          }
+          
+          .compact-qr-card h6 {
+            font-size: 0.8rem !important;
+          }
+          
+          .btn-compact {
+            min-width: 28px !important;
+            height: 28px !important;
+            font-size: 0.7rem !important;
+          }
+          
+          .btn-square {
+            border-radius: 4px !important;
           }
         }
       `}</style>

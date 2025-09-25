@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Row, Col, Card, Tab, Tabs, Alert } from 'react-bootstrap';
+import { Row, Col, Card, Tab, Tabs, Alert } from 'react-bootstrap';
 import { useLocation } from 'react-router-dom';
 import AdminLayout from '../../components/admin/layout/AdminLayout';
 import UserService from '../../services/userService';
@@ -70,19 +70,18 @@ const Users = () => {
       title="User Management"
       subtitle="Manage passenger and driver accounts, approvals, and user data"
     >
-      <Container fluid className="px-0">
-        {error && (
-          <Alert variant="danger" className="mb-4">
-            <i className="bi bi-exclamation-triangle me-2"></i>
-            {error}
-          </Alert>
-        )}
+      {error && (
+        <Alert variant="danger" className="mb-4">
+          <i className="bi bi-exclamation-triangle me-2"></i>
+          {error}
+        </Alert>
+      )}
 
-        {/* Debug Component - Remove in production */}
-        {error && <ApiTestComponent />}
+      {/* Debug Component - Remove in production */}
+      {error && <ApiTestComponent />}
 
-        {/* User Statistics Cards */}
-        <UserStatsCards stats={stats} loading={loading} />
+      {/* User Statistics Cards */}
+      <UserStatsCards stats={stats} loading={loading} />
 
         {/* Main Content Tabs */}
         <Card className="border-0 shadow-sm">
@@ -168,7 +167,6 @@ const Users = () => {
             </Tabs>
           </Card.Body>
         </Card>
-      </Container>
 
       <style>{`
         .nav-tabs-custom {
