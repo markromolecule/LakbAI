@@ -1,6 +1,7 @@
 import { Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { buildAuth0Url } from '../../config/developerConfig';
+import { getBaseUrl } from '../../config/apiConfig';
 
 export interface DriverCredentials {
   username: string;
@@ -71,7 +72,6 @@ export interface LoginResponse {
 }
 
 class DriverAuthService {
-  private readonly API_BASE_URL = 'http://192.168.254.110/LakbAI/LakbAI-API'; // Updated for Joseph's setup
   private currentDriver: DriverProfile | null = null;
   private authToken: string | null = null;
 
@@ -208,7 +208,8 @@ class DriverAuthService {
    */
   private async getDriverJeepneyAssignment(user: any): Promise<any> {
     try {
-      const response = await fetch(`${this.API_BASE_URL}/jeepneys`);
+      const baseUrl = getBaseUrl().replace('/routes/api.php', '');
+      const response = await fetch(`${baseUrl}/jeepneys`);
       if (response.ok) {
         const data = await response.json();
         const jeepney = data.jeepneys?.find((j: any) => j.driver_id === user.id);

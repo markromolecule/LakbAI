@@ -22,6 +22,8 @@ import { googleMapsService, Coordinates } from '../../../shared/services/googleM
 import { COLORS, SPACING } from '../../../shared/styles';
 import { globalStyles } from '../../../shared/styles/globalStyles';
 import { LocationNotificationDisplay } from '../../../components/passenger/LocationNotificationDisplay';
+import { getBaseUrl, API_CONFIG } from '../../../config/apiConfig';
+import { NetworkUtils } from '../../../shared/utils/networkUtils';
 
 interface TripBookingViewProps {
   qrData: QRCodeData;
@@ -448,22 +450,13 @@ export const TripBookingView: React.FC<TripBookingViewProps> = ({
   // Function to fetch driver's real-time location
   const fetchDriverRealTimeLocation = async (driverId: string): Promise<string | null> => {
     try {
-      const response = await fetch(`http://192.168.254.110/LakbAI/LakbAI-API/routes/api.php/mobile/driver/info/${driverId}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+      const url = NetworkUtils.getApiUrl(`/mobile/driver/info/${driverId}`);
+      const response = await NetworkUtils.get(url);
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
+      console.log('📡 Driver real-time location response:', response.data);
 
-      const data = await response.json();
-      console.log('📡 Driver real-time location response:', data);
-
-      if (data.status === 'success' && data.data?.current_location) {
-        return data.data.current_location;
+      if (response.data.status === 'success' && response.data.data?.current_location) {
+        return response.data.data.current_location;
       }
       
       return null;
@@ -476,22 +469,13 @@ export const TripBookingView: React.FC<TripBookingViewProps> = ({
   // Function to fetch complete driver data from database
   const fetchDriverData = async (driverId: string): Promise<any | null> => {
     try {
-      const response = await fetch(`http://192.168.254.110/LakbAI/LakbAI-API/routes/api.php/mobile/driver/info/${driverId}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+      const url = NetworkUtils.getApiUrl(`/mobile/driver/info/${driverId}`);
+      const response = await NetworkUtils.get(url);
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
+      console.log('📡 Driver data response:', response.data);
 
-      const data = await response.json();
-      console.log('📡 Driver data response:', data);
-
-      if (data.status === 'success' && data.data) {
-        return data.data;
+      if (response.data.status === 'success' && response.data.data) {
+        return response.data.data;
       }
       
       return null;

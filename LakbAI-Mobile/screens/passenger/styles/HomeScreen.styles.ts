@@ -556,44 +556,6 @@ const styles = StyleSheet.create({
     gap: SPACING.md,
   },
 
-  clearTripButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: COLORS.warningLight,
-    padding: SPACING.md,
-    borderRadius: SPACING.sm,
-    borderWidth: 1,
-    borderColor: COLORS.warning,
-    marginTop: SPACING.md,
-  },
-
-  clearTripButtonText: {
-    color: COLORS.warning,
-    fontSize: 14,
-    fontWeight: '600',
-    marginLeft: SPACING.xs,
-  },
-
-  debugClearButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: COLORS.warningLight,
-    padding: SPACING.sm,
-    borderRadius: SPACING.sm,
-    borderWidth: 1,
-    borderColor: COLORS.warning,
-    margin: SPACING.md,
-    marginTop: SPACING.sm,
-  },
-
-  debugClearButtonText: {
-    color: COLORS.warning,
-    fontSize: 12,
-    fontWeight: '600',
-    marginLeft: SPACING.xs,
-  },
 
 });
 

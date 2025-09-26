@@ -460,7 +460,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onBackButtonPress, onSho
       setShowActiveTripView(false);
       onBackButtonPress?.(); // Notify parent to hide back button
       
-      Alert.alert('Trip Completed', 'Thank you for using LakbAI!');
+      Alert.alert('You have reached your destination.', 'Thank you for using LakbAI!');
     } catch (error) {
       console.error('Error completing trip:', error);
     }
@@ -483,56 +483,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onBackButtonPress, onSho
     }, 0);
   }, [onBackButtonPress, isInitialized]);
 
-  const clearTripData = useCallback(async () => {
-    try {
-      await AsyncStorage.removeItem(ACTIVE_TRIP_KEY);
-      setActiveTrip(null);
-      setShowActiveTripView(false);
-      setDriverLocation(null);
-      setTripStatus('waiting');
-      onBackButtonPress?.(); // Notify parent to hide back button
-      console.log('🧹 Trip data cleared successfully');
-      Alert.alert('Trip Data Cleared', 'Old trip data has been cleared. You can now start a new trip.');
-    } catch (error) {
-      console.error('Error clearing trip data:', error);
-      Alert.alert('Error', 'Failed to clear trip data. Please try again.');
-    }
-  }, [onBackButtonPress]);
 
-  const clearAllTripData = useCallback(async () => {
-    try {
-      // Clear all possible trip-related storage keys
-      await AsyncStorage.multiRemove([
-        ACTIVE_TRIP_KEY,
-        'selected_route',
-        'driver_location',
-        'trip_status',
-        'active_trip',
-        'trip_data'
-      ]);
-      setActiveTrip(null);
-      setShowActiveTripView(false);
-      setDriverLocation(null);
-      setTripStatus('waiting');
-      onBackButtonPress?.(); // Notify parent to hide back button
-      console.log('🧹 All trip data cleared successfully');
-      Alert.alert('All Trip Data Cleared', 'All trip-related data has been cleared. The app will restart fresh.');
-    } catch (error) {
-      console.error('Error clearing all trip data:', error);
-      Alert.alert('Error', 'Failed to clear trip data. Please try again.');
-    }
-  }, [onBackButtonPress]);
 
-  // Test function to simulate driver reaching destination
-  const testTripCompletion = useCallback(async () => {
-    if (!activeTrip) {
-      Alert.alert('No Active Trip', 'No active trip to test completion with.');
-      return;
-    }
-    
-    console.log('🧪 Testing trip completion for destination:', activeTrip.destination);
-    await checkTripCompletion(activeTrip.destination);
-  }, [activeTrip]);
 
   // Store the hideActiveTripView function in a ref so parent can access it
   React.useEffect(() => {
@@ -852,23 +804,6 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onBackButtonPress, onSho
             </View>
           )}
           
-          {/* Clear Trip Data Button - for troubleshooting */}
-          <TouchableOpacity 
-            style={styles.clearTripButton} 
-            onPress={() => {
-              Alert.alert(
-                'Clear Trip Data',
-                'This will clear the current trip data. Are you sure?',
-                [
-                  { text: 'Cancel', style: 'cancel' },
-                  { text: 'Clear', style: 'destructive', onPress: clearTripData }
-                ]
-              );
-            }}
-          >
-            <Ionicons name="trash-outline" size={16} color={COLORS.warning} />
-            <Text style={styles.clearTripButtonText}>Clear Trip Data</Text>
-          </TouchableOpacity>
           
         </View>
       </ScrollView>
@@ -945,44 +880,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onBackButtonPress, onSho
         </Text>
       </View>
 
-      {/* Debug: Clear Trip Data Button */}
-      {activeTrip && (
-        <TouchableOpacity 
-          style={styles.debugClearButton} 
-          onPress={() => {
-            Alert.alert(
-              'Clear All Trip Data',
-              'This will clear all trip data and reset the app. Are you sure?',
-              [
-                { text: 'Cancel', style: 'cancel' },
-                { text: 'Clear All', style: 'destructive', onPress: clearAllTripData }
-              ]
-            );
-          }}
-        >
-          <Ionicons name="trash-outline" size={16} color={COLORS.warning} />
-          <Text style={styles.debugClearButtonText}>Clear All Trip Data (Debug)</Text>
-        </TouchableOpacity>
-      )}
 
-      {activeTrip && ( // Test button for trip completion
-        <TouchableOpacity 
-          style={styles.debugClearButton} 
-          onPress={() => {
-            Alert.alert(
-              'Test Trip Completion',
-              'This will simulate the driver reaching the destination. Are you sure?',
-              [
-                { text: 'Cancel', style: 'cancel' },
-                { text: 'Test', style: 'default', onPress: testTripCompletion }
-              ]
-            );
-          }}
-        >
-          <Ionicons name="checkmark-circle-outline" size={16} color={COLORS.success} />
-          <Text style={styles.debugClearButtonText}>Test Trip Completion (Debug)</Text>
-        </TouchableOpacity>
-      )}
 
       {/* Route Selection Modal */}
       <Modal

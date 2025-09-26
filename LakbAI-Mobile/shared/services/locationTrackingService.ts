@@ -12,6 +12,7 @@
  */
 
 import { getBaseUrl } from '../../config/apiConfig';
+import { NetworkUtils } from '../utils/networkUtils';
 import { localNotificationService } from './localNotificationService';
 
 export interface DriverLocationInfo {
@@ -95,13 +96,10 @@ class LocationTrackingService {
   async fetchDriverLocations(routeId?: string): Promise<DriverLocationInfo[]> {
     try {
       const route = routeId || this.routeId;
-      const response = await fetch(`${getBaseUrl()}/mobile/locations/route/${route}?t=${Date.now()}`);
+      const url = NetworkUtils.getApiUrl(`/mobile/locations/route/${route}?t=${Date.now()}`);
+      const response = await NetworkUtils.get(url);
       
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
-      
-      const data = await response.json();
+      const data = response.data;
       
       if (data.driver_locations && Array.isArray(data.driver_locations)) {
         return data.driver_locations.map((location: any) => ({

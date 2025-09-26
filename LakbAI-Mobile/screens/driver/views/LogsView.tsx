@@ -217,8 +217,8 @@ export const LogsView: React.FC<LogsViewProps> = ({
       console.log('📅 LogsView trip data updated:', {
         todayTrips: todayCompletedTrips,
         totalTripsAllTime: earnings.totalTrips,
-        todayCheckpoints: todaysScans.length,
-        completedTripsFromTracking: completedTrips.length
+        todayCheckpoints: allScansToday.length,
+        completedTripsFromTracking: todayCompletedTrips
       });
     }
   }, [driverProfile]);
