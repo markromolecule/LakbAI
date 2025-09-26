@@ -16,11 +16,15 @@ import { earningsService, EarningsUpdate } from '../../../shared/services/earnin
 import { buildAuth0Url } from '../../../config/developerConfig';
 import { getBaseUrl } from '../../../config/apiConfig';
 import { usePassengerState } from '../hooks/usePassengerState';
+import { googleMapsService } from '../../../shared/services/googleMapsService';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useRouter } from 'expo-router';
 
 import styles from '../styles/ScannerScreen.styles';
 
 export const ScannerScreen: React.FC = () => {
   const hasPermission = useCameraPermissions();
+  const router = useRouter();
   const { passengerProfile } = usePassengerState();
   const [showCamera, setShowCamera] = useState(false);
   const [scanned, setScanned] = useState(false);
@@ -309,7 +313,28 @@ export const ScannerScreen: React.FC = () => {
       // Set payment as completed and show success
       setPaymentCompleted(true);
       
-      // Wait a moment to show the success state, then redirect to scanner
+      // Store active trip for home view
+      const activeTrip = {
+        id: `trip_${Date.now()}`,
+        driverId: bookingData.driver.id,
+        driverName: bookingData.driver.name,
+        jeepneyNumber: bookingData.driver.jeepneyNumber,
+        route: bookingData.driver.route,
+        pickupLocation: bookingData.pickupLocation,
+        destination: bookingData.destination,
+        fare: bookingData.discountedFare || bookingData.fare,
+        pickupCoordinates: await googleMapsService.getCheckpointCoordinates(bookingData.pickupLocation),
+        destinationCoordinates: await googleMapsService.getCheckpointCoordinates(bookingData.destination),
+        routeCoordinates: [],
+        status: 'waiting' as const,
+        startTime: new Date().toISOString(),
+      };
+
+      // Store active trip in AsyncStorage
+      await AsyncStorage.setItem('active_trip', JSON.stringify(activeTrip));
+      console.log('💾 Active trip stored:', activeTrip);
+
+      // Wait a moment to show the success state, then redirect to home view
       setTimeout(() => {
         setPaymentLoading(false);
         setPaymentCompleted(false);
@@ -318,6 +343,10 @@ export const ScannerScreen: React.FC = () => {
         setDriverInfo(null);
         setScanned(false);
         isHandlingScanRef.current = false;
+        
+        // Navigate to home view
+        console.log('🏠 Redirecting to home view after payment');
+        router.replace('/passenger/home');
         
         // Show success message
         Alert.alert(

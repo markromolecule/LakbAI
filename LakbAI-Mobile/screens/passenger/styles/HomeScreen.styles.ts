@@ -256,6 +256,345 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
   },
+  
+  // Active Trip Styles
+  activeTripInfo: {
+    flex: 1,
+  },
+  activeTripTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: COLORS.white,
+    marginBottom: SPACING.xs,
+  },
+  activeTripSubtitle: {
+    fontSize: 14,
+    color: COLORS.blue100,
+  },
+  cancelButton: {
+    backgroundColor: COLORS.warning,
+    borderRadius: 20,
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  mapContainer: {
+    height: 300,
+    margin: SPACING.lg,
+    borderRadius: SPACING.md,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  map: {
+    flex: 1,
+  },
+  tripInfo: {
+    backgroundColor: COLORS.white,
+    margin: SPACING.lg,
+    padding: SPACING.lg,
+    borderRadius: SPACING.md,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  routeInfo: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: SPACING.md,
+  },
+  routeText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.gray800,
+    flex: 1,
+  },
+  fareText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: COLORS.primary,
+  },
+  statusInfo: {
+    marginBottom: SPACING.md,
+  },
+  statusText: {
+    fontSize: 14,
+    color: COLORS.gray600,
+    marginBottom: SPACING.xs,
+  },
+  locationText: {
+    fontSize: 14,
+    color: COLORS.gray600,
+  },
+  completeButton: {
+    backgroundColor: COLORS.success,
+    padding: SPACING.md,
+    borderRadius: SPACING.sm,
+    alignItems: 'center',
+  },
+  completeButtonText: {
+    color: COLORS.white,
+    fontSize: 16,
+    fontWeight: '600',
+  },
+
+  // Modern Active Trip Styles
+  modernActiveTripHeader: {
+    backgroundColor: COLORS.white,
+    padding: SPACING.lg,
+    marginTop: SPACING.md,
+    borderRadius: SPACING.md,
+    marginHorizontal: SPACING.lg,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  tripStatusIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: SPACING.md,
+  },
+  statusDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    marginRight: SPACING.sm,
+  },
+  tripStatusText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.gray800,
+  },
+  tripDriverInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: SPACING.md,
+  },
+  driverAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: COLORS.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: SPACING.md,
+  },
+  driverDetails: {
+    flex: 1,
+  },
+  driverName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.gray800,
+    marginBottom: 2,
+  },
+  jeepneyNumber: {
+    fontSize: 14,
+    color: COLORS.gray600,
+  },
+  modernCancelButton: {
+    position: 'absolute',
+    top: SPACING.md,
+    right: SPACING.md,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: COLORS.gray100,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  // Modern Trip Info Styles
+  modernTripInfo: {
+    margin: SPACING.lg,
+    gap: SPACING.md,
+  },
+  routeCard: {
+    backgroundColor: COLORS.white,
+    padding: SPACING.lg,
+    borderRadius: SPACING.md,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  routeHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: SPACING.md,
+  },
+  routeTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.gray800,
+    marginLeft: SPACING.sm,
+  },
+  routeDetails: {
+    gap: SPACING.sm,
+  },
+  routePoint: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  routeDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    marginRight: SPACING.md,
+  },
+  routePointText: {
+    fontSize: 14,
+    color: COLORS.gray700,
+    flex: 1,
+  },
+  routeLine: {
+    width: 2,
+    height: 20,
+    backgroundColor: COLORS.gray300,
+    marginLeft: 5,
+  },
+  fareCard: {
+    backgroundColor: COLORS.white,
+    padding: SPACING.lg,
+    borderRadius: SPACING.md,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  fareHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: SPACING.sm,
+  },
+  fareTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.gray800,
+    marginLeft: SPACING.sm,
+  },
+  fareAmount: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: COLORS.primary,
+  },
+  driverLocationCard: {
+    backgroundColor: COLORS.white,
+    padding: SPACING.lg,
+    borderRadius: SPACING.md,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  driverLocationHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: SPACING.sm,
+  },
+  driverLocationTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.gray800,
+    marginLeft: SPACING.sm,
+  },
+  driverLocationText: {
+    fontSize: 14,
+    color: COLORS.gray600,
+  },
+  modernCompleteButton: {
+    backgroundColor: COLORS.success,
+    padding: SPACING.lg,
+    borderRadius: SPACING.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  modernCompleteButtonText: {
+    color: COLORS.white,
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: SPACING.sm,
+  },
+
+
+  // Tips Section Styles
+  tipsSection: {
+    backgroundColor: COLORS.primaryLightest,
+    margin: SPACING.lg,
+    padding: SPACING.md,
+    borderRadius: SPACING.sm,
+    borderLeftWidth: 4,
+    borderLeftColor: COLORS.primary,
+  },
+  tipsText: {
+    fontSize: 14,
+    color: COLORS.gray700,
+    lineHeight: 20,
+    fontStyle: 'italic',
+  },
+
+  modernActiveTripContent: {
+    margin: SPACING.lg,
+    gap: SPACING.md,
+  },
+
+  clearTripButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.warningLight,
+    padding: SPACING.md,
+    borderRadius: SPACING.sm,
+    borderWidth: 1,
+    borderColor: COLORS.warning,
+    marginTop: SPACING.md,
+  },
+
+  clearTripButtonText: {
+    color: COLORS.warning,
+    fontSize: 14,
+    fontWeight: '600',
+    marginLeft: SPACING.xs,
+  },
+
+  debugClearButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.warningLight,
+    padding: SPACING.sm,
+    borderRadius: SPACING.sm,
+    borderWidth: 1,
+    borderColor: COLORS.warning,
+    margin: SPACING.md,
+    marginTop: SPACING.sm,
+  },
+
+  debugClearButtonText: {
+    color: COLORS.warning,
+    fontSize: 12,
+    fontWeight: '600',
+    marginLeft: SPACING.xs,
+  },
+
 });
 
 export default styles;

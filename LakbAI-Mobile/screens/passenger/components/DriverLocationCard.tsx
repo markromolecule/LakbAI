@@ -40,25 +40,35 @@ export const DriverLocationCard: React.FC<DriverLocationCardProps> = ({
     };
   }, [routeId]);
 
+  // Auto-refresh driver locations every 5 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      console.log('🔄 Auto-refreshing driver locations...');
+      loadDriverLocations();
+    }, 5000); // Auto-refresh every 5 seconds
+
+    return () => clearInterval(interval);
+  }, [routeId]);
+
   // Load driver locations from API
   const loadDriverLocations = async () => {
     try {
-      const response = await fetch(`${getBaseUrl()}/mobile/locations/route/${routeId}?t=${Date.now()}`);
+      const response = await fetch(`${getBaseUrl()}/mobile/passenger/real-time-drivers/${routeId}?t=${Date.now()}`);
       if (response.ok) {
         const data = await response.json();
         
         if (data.driver_locations && Array.isArray(data.driver_locations)) {
           const driverInfos: DriverLocationInfo[] = data.driver_locations.map((location: any) => {
-            // Determine if driver is active based on shift_status and status
-            const isActive = location.shift_status === 'on_shift' && location.status === 'active';
+            // Determine if driver is active based on shift_status from drivers table
+            const isActive = location.shift_status === 'on_shift';
             
             return {
               driverId: location.driver_id.toString(),
-              driverName: location.driver_name || 'Unknown Driver',
+              driverName: `${location.first_name} ${location.last_name}` || 'Unknown Driver',
               jeepneyNumber: location.jeepney_number || 'Unknown',
-              route: data.route_name || `Route ${routeId}`,
-              currentLocation: location.last_scanned_checkpoint || 'Unknown Location',
-              lastUpdate: location.last_update ? new Date(location.last_update).toLocaleTimeString() : 'Unknown',
+              route: location.route_name || `Route ${routeId}`,
+              currentLocation: location.current_location || 'Unknown Location',
+              lastUpdate: location.last_update_formatted || 'Unknown',
               isActive: isActive
             };
           });
@@ -76,27 +86,8 @@ export const DriverLocationCard: React.FC<DriverLocationCardProps> = ({
     setRefreshing(true);
     
     try {
-      console.log('🔄 Refreshing driver locations via location tracking service...');
-      // Use location tracking service for refresh to trigger change detection
-      const locations = await locationTrackingService.refreshLocations(routeId);
-      
-      // Update drivers list with fresh data
-      const driverInfos: DriverLocationInfo[] = locations.map((location: any) => {
-        const isActive = location.shiftStatus === 'on_shift' && location.status === 'active';
-        
-        return {
-          driverId: location.driverId,
-          driverName: location.driverName,
-          jeepneyNumber: location.jeepneyNumber,
-          route: location.route,
-          currentLocation: location.lastScannedCheckpoint,
-          lastUpdate: location.lastUpdate ? new Date(location.lastUpdate).toLocaleTimeString() : 'Unknown',
-          isActive: isActive
-        };
-      });
-      
-      setDrivers(driverInfos);
-      setLastRefresh(new Date().toLocaleTimeString());
+      console.log('🔄 Manual refresh of driver locations...');
+      await loadDriverLocations();
     } catch (error) {
       console.error('❌ Failed to refresh driver locations:', error);
       Alert.alert('Error', 'Failed to refresh driver locations');

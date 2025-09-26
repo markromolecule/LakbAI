@@ -37,6 +37,88 @@ class CheckpointController {
     }
 
     /**
+     * Get coordinates for a specific checkpoint by name
+     */
+    public function getCheckpointCoordinates($checkpointName) {
+        try {
+            $stmt = $this->db->prepare("
+                SELECT 
+                    c.id,
+                    c.checkpoint_name,
+                    c.latitude,
+                    c.longitude,
+                    c.route_id,
+                    r.route_name
+                FROM checkpoints c
+                JOIN routes r ON c.route_id = r.id
+                WHERE c.checkpoint_name = ? AND c.status = 'active'
+                ORDER BY c.route_id ASC
+            ");
+            $stmt->execute([$checkpointName]);
+            $checkpoints = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            if (empty($checkpoints)) {
+                return [
+                    "status" => "error",
+                    "message" => "Checkpoint not found: " . $checkpointName
+                ];
+            }
+
+            // Return the first checkpoint found (or you can return all if needed)
+            $checkpoint = $checkpoints[0];
+            
+            return [
+                "status" => "success",
+                "coordinates" => [
+                    "latitude" => (float)$checkpoint['latitude'],
+                    "longitude" => (float)$checkpoint['longitude']
+                ],
+                "checkpoint" => [
+                    "id" => $checkpoint['id'],
+                    "name" => $checkpoint['checkpoint_name'],
+                    "route_id" => $checkpoint['route_id'],
+                    "route_name" => $checkpoint['route_name']
+                ]
+            ];
+        } catch (Exception $e) {
+            return [
+                "status" => "error",
+                "message" => "Failed to fetch checkpoint coordinates: " . $e->getMessage()
+            ];
+        }
+    }
+
+    /**
+     * Get all checkpoints with coordinates
+     */
+    public function getAllCheckpointsWithCoordinates() {
+        try {
+            $stmt = $this->db->prepare("
+                SELECT 
+                    c.*,
+                    r.route_name
+                FROM checkpoints c
+                JOIN routes r ON c.route_id = r.id
+                WHERE c.status = 'active' AND c.latitude IS NOT NULL AND c.longitude IS NOT NULL
+                ORDER BY c.route_id, c.sequence_order ASC
+            ");
+            $stmt->execute();
+            $checkpoints = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            return [
+                "status" => "success",
+                "checkpoints" => $checkpoints,
+                "count" => count($checkpoints)
+            ];
+        } catch (Exception $e) {
+            return [
+                "status" => "error",
+                "message" => "Failed to fetch checkpoints with coordinates: " . $e->getMessage()
+            ];
+        }
+    }
+
+    /**
      * Get all checkpoints
      */
     public function getAllCheckpoints() {

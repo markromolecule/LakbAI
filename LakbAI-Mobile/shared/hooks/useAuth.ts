@@ -260,10 +260,9 @@ export const useAuth = (): UseAuthReturn => {
           // Clear active trip
           tripTrackingService.clearActiveTrip(driverId);
           
-          // Reset today's data for this driver
-          earningsService.resetTodaysData(driverId);
-          
-          console.log('✅ Trip counts reset for driver logout');
+          // DO NOT reset today's data on logout - earnings should persist
+          // Earnings should only reset at 5:00 AM daily, not on logout
+          console.log('✅ Driver logout - preserving today\'s earnings and trips');
         }
       } catch (resetError) {
         console.error('❌ Error resetting trip counts on logout:', resetError);

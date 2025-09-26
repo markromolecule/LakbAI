@@ -658,18 +658,18 @@ try {
     // ---------------------------
     // Enhanced Passenger Location Routes
     // ---------------------------
-    if (isset($pathParts[2]) && $pathParts[2] === 'mobile' && isset($pathParts[3]) && $pathParts[3] === 'passenger') {
+    if (isset($pathParts[0]) && $pathParts[0] === 'mobile' && isset($pathParts[1]) && $pathParts[1] === 'passenger') {
         // GET /mobile/passenger/real-time-drivers/{routeId}
-        if ($method === 'GET' && count($pathParts) === 6 && $pathParts[4] === 'real-time-drivers') {
-            $routeId = $pathParts[5];
+        if ($method === 'GET' && count($pathParts) === 4 && $pathParts[2] === 'real-time-drivers') {
+            $routeId = $pathParts[3];
             $result = $notificationController->getDriverLocationsForPassengers($routeId);
             echo json_encode($result);
             exit;
         }
 
         // GET /mobile/passenger/checkpoint-conflicts/{checkpointId}
-        if ($method === 'GET' && count($pathParts) === 6 && $pathParts[4] === 'checkpoint-conflicts') {
-            $checkpointId = $pathParts[5];
+        if ($method === 'GET' && count($pathParts) === 4 && $pathParts[2] === 'checkpoint-conflicts') {
+            $checkpointId = $pathParts[3];
             $result = $notificationController->handleMultipleDriversAtCheckpoint($checkpointId);
             echo json_encode($result);
             exit;
@@ -869,6 +869,21 @@ try {
     if ($pathParts[0] === 'routes' && $method === 'GET' && count($pathParts) === 3 && $pathParts[2] === 'checkpoints') {
         $routeId = $pathParts[1];
         $result = $checkpointController->getCheckpointsByRoute($routeId);
+        echo json_encode($result);
+        exit;
+    }
+    
+    // GET /checkpoints/coordinates/{checkpointName} - Get coordinates for a specific checkpoint
+    if ($pathParts[0] === 'checkpoints' && $pathParts[1] === 'coordinates' && $method === 'GET' && count($pathParts) === 3) {
+        $checkpointName = urldecode($pathParts[2]);
+        $result = $checkpointController->getCheckpointCoordinates($checkpointName);
+        echo json_encode($result);
+        exit;
+    }
+    
+    // GET /checkpoints/coordinates - Get all checkpoints with coordinates
+    if ($pathParts[0] === 'checkpoints' && $pathParts[1] === 'coordinates' && $method === 'GET' && count($pathParts) === 2) {
+        $result = $checkpointController->getAllCheckpointsWithCoordinates();
         echo json_encode($result);
         exit;
     }

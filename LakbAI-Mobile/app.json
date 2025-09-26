@@ -61,7 +61,8 @@
           "savePhotosPermission": "Allow LakbAI to save photos.",
           "isAccessMediaLocationEnabled": true
         }
-      ]
+      ],
+      "expo-build-properties"
     ]
   }
 }

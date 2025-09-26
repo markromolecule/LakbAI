@@ -385,7 +385,7 @@ class DriverAuthService {
       'maria.santos': 'password456'
     };
 
-    if (validPasswords[credentials.username] !== credentials.password) {
+    if ((validPasswords as any)[credentials.username] !== credentials.password) {
       return {
         success: false,
         message: 'Invalid username or password.',
@@ -577,11 +577,10 @@ class DriverAuthService {
    */
   async logout(): Promise<void> {
     try {
-      // Reset today's earnings and trips on logout
+      // DO NOT reset today's earnings and trips on logout - they should persist
+      // Earnings should only reset at 5:00 AM daily, not on logout
       if (this.currentDriver?.id) {
-        const { earningsService } = await import('./earningsService');
-        earningsService.resetTodaysData(this.currentDriver.id.toString());
-        console.log('🔄 Reset today\'s earnings and trips on logout for driver:', this.currentDriver.id);
+        console.log('🚪 Driver logout - preserving today\'s earnings and trips for driver:', this.currentDriver.id);
       }
       
       await AsyncStorage.multiRemove([
