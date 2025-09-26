@@ -168,7 +168,7 @@
 
 @media (max-width: 768px) {
   .customFooter {
-    text-align: center;
+    text-align: left;
   }
   
   .customFooter .py-5 {
@@ -178,26 +178,26 @@
   
   .footerBottomLinks {
     margin-top: clamp(0.75rem, 2vh, 1rem);
-    text-align: center;
+    text-align: left;
   }
   
   .socialLinks {
-    justify-content: center;
+    justify-content: flex-start;
     display: flex;
   }
   
   .contactInfo {
     display: flex;
     flex-direction: column;
-    align-items: center;
+    align-items: flex-start;
   }
   
   .contactInfo .d-flex {
-    justify-content: center;
-    text-align: center;
-    max-width: 300px;
-    margin-left: auto;
-    margin-right: auto;
+    justify-content: flex-start;
+    text-align: left;
+    max-width: none;
+    margin-left: 0;
+    margin-right: 0;
     width: 100%;
   }
   
@@ -206,7 +206,7 @@
   }
   
   .footerBrand .d-flex {
-    justify-content: center;
+    justify-content: flex-start;
   }
   
   .footerBrand img {
@@ -220,21 +220,22 @@
   
   .footerBrand p {
     font-size: clamp(0.75rem, 1.6vw, 0.85rem);
-    max-width: 400px;
-    margin-left: auto;
-    margin-right: auto;
+    max-width: none;
+    margin-left: 0;
+    margin-right: 0;
+    text-align: left;
   }
   
-  /* Center quick links on mobile */
+  /* Left-align quick links on mobile */
   .footerLinks {
     display: flex;
     flex-direction: column;
-    align-items: center;
+    align-items: flex-start;
   }
   
   .footerLink {
-    justify-content: center;
-    text-align: center;
+    justify-content: flex-start;
+    text-align: left;
   }
 }
 
@@ -247,7 +248,7 @@
   .footerBottomLinks a {
     display: block;
     margin: clamp(0.25rem, 1vh, 0.5rem) 0;
-    text-align: center;
+    text-align: left;
   }
   
   .footerBrand img {
@@ -273,13 +274,13 @@
   .contactInfo {
     display: flex;
     flex-direction: column;
-    align-items: center;
+    align-items: flex-start;
   }
   
   .contactInfo .d-flex {
-    justify-content: center;
-    text-align: center;
-    max-width: 280px;
+    justify-content: flex-start;
+    text-align: left;
+    max-width: none;
     width: 100%;
   }
   
@@ -291,16 +292,16 @@
     font-size: clamp(11px, 2.2vw, 13px);
   }
   
-  /* Ensure quick links remain centered on smaller screens */
+  /* Left-align quick links on smaller screens */
   .footerLinks {
     display: flex;
     flex-direction: column;
-    align-items: center;
+    align-items: flex-start;
   }
   
   .footerLink {
-    justify-content: center;
-    text-align: center;
+    justify-content: flex-start;
+    text-align: left;
   }
 }
 
@@ -333,13 +334,13 @@
   .contactInfo {
     display: flex;
     flex-direction: column;
-    align-items: center;
+    align-items: flex-start;
   }
   
   .contactInfo .d-flex {
-    justify-content: center;
-    text-align: center;
-    max-width: 260px;
+    justify-content: flex-start;
+    text-align: left;
+    max-width: none;
     width: 100%;
   }
   
@@ -351,16 +352,16 @@
     font-size: clamp(10px, 2vw, 12px);
   }
   
-  /* Ensure quick links remain centered on very small screens */
+  /* Left-align quick links on very small screens */
   .footerLinks {
     display: flex;
     flex-direction: column;
-    align-items: center;
+    align-items: flex-start;
   }
   
   .footerLink {
-    justify-content: center;
-    text-align: center;
+    justify-content: flex-start;
+    text-align: left;
   }
 }
 

@@ -174,11 +174,11 @@ const Footer = () => {
           .footer-brand-section {
             flex: none;
             max-width: 100%;
-            text-align: center;
+            text-align: left;
           }
           
           .footer-links-sections {
-            justify-content: space-around;
+            justify-content: flex-start;
             gap: clamp(1rem, 2vw, 1.5rem);
           }
         }
@@ -187,12 +187,12 @@ const Footer = () => {
           .footer-links-sections {
             flex-direction: column;
             gap: clamp(1.5rem, 3vh, 2rem);
-            text-align: center;
+            text-align: left;
           }
           
           .footer-bottom-content {
             flex-direction: column;
-            text-align: center;
+            text-align: left;
             gap: 1rem;
           }
         }
