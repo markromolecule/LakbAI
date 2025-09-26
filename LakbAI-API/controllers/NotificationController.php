@@ -328,6 +328,7 @@ class NotificationController {
      */
     public function getDriverLocationsForPassengers($routeId) {
         try {
+            // First try to get from driver_status_tracking table, using users.shift_status as source of truth
             $stmt = $this->db->prepare("
                 SELECT 
                     dst.driver_id,
@@ -335,22 +336,50 @@ class NotificationController {
                     u.last_name,
                     j.jeepney_number,
                     j.plate_number,
-                    dst.current_checkpoint_name,
+                    dst.current_checkpoint_name as current_location,
                     dst.next_checkpoint_eta,
                     dst.passenger_count,
                     dst.status,
-                    dst.last_scan_timestamp,
+                    u.shift_status,
+                    dst.last_scan_timestamp as last_updated,
                     TIMESTAMPDIFF(MINUTE, dst.last_scan_timestamp, NOW()) as minutes_since_update,
                     r.route_name
                 FROM driver_status_tracking dst
                 JOIN users u ON dst.driver_id = u.id
                 JOIN jeepneys j ON dst.driver_id = j.driver_id
                 JOIN routes r ON dst.route_id = r.id
-                WHERE dst.route_id = ? AND dst.status != 'offline'
+                WHERE dst.route_id = ? AND dst.status != 'offline' AND u.shift_status = 'on_shift'
                 ORDER BY dst.last_scan_timestamp DESC
             ");
             $stmt->execute([$routeId]);
             $drivers = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            // If no drivers found in driver_status_tracking, try drivers table
+            if (empty($drivers)) {
+                $stmt = $this->db->prepare("
+                    SELECT 
+                        d.user_id as driver_id,
+                        u.first_name,
+                        u.last_name,
+                        j.jeepney_number,
+                        j.plate_number,
+                        d.current_location,
+                        NULL as next_checkpoint_eta,
+                        0 as passenger_count,
+                        u.shift_status as status,
+                        d.updated_at as last_updated,
+                        TIMESTAMPDIFF(MINUTE, d.updated_at, NOW()) as minutes_since_update,
+                        r.route_name
+                    FROM drivers d
+                    JOIN users u ON d.user_id = u.id
+                    JOIN jeepneys j ON d.user_id = j.driver_id
+                    JOIN routes r ON j.route_id = r.id
+                    WHERE r.id = ? AND u.shift_status = 'on_shift' AND d.current_location IS NOT NULL
+                    ORDER BY d.updated_at DESC
+                ");
+                $stmt->execute([$routeId]);
+                $drivers = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            }
 
             // Add real-time status
             foreach ($drivers as &$driver) {
@@ -367,14 +396,15 @@ class NotificationController {
                 }
 
                 // Format last update time
-                $driver['last_update_formatted'] = date('g:i A', strtotime($driver['last_scan_timestamp']));
+                $lastUpdateField = isset($driver['last_scan_timestamp']) ? 'last_scan_timestamp' : 'last_updated';
+                $driver['last_update_formatted'] = date('g:i A', strtotime($driver[$lastUpdateField]));
             }
 
             return [
                 "status" => "success",
                 "route_id" => $routeId,
                 "active_drivers" => count($drivers),
-                "drivers" => $drivers,
+                "driver_locations" => $drivers, // Changed from "drivers" to "driver_locations" to match mobile app expectation
                 "last_updated" => date('c')
             ];
         } catch (Exception $e) {

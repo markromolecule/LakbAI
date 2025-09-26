@@ -206,8 +206,11 @@ class EarningsService {
    * Initialize or get driver earnings (fallback to memory)
    */
   private getDriverEarnings(driverId: string): DriverEarnings {
-    // Check if we need to reset today's trips (24-hour reset)
-    this.checkAndResetDailyTrips(driverId);
+    // Only check for daily reset if we haven't checked today
+    const currentDate = new Date().toDateString();
+    if (this.lastResetDate !== currentDate) {
+      this.checkAndResetDailyTrips(driverId);
+    }
     
     if (!this.earnings.has(driverId)) {
       // Initialize with zeros as requested (real earnings will be updated when payments are made)
@@ -241,34 +244,35 @@ class EarningsService {
     const shouldReset = currentHour >= 5 && this.lastResetDate !== currentDate;
     
     if (shouldReset) {
-      console.log('🔄 5:00 AM reset time reached - resetting today\'s trips for all drivers');
+      console.log('🔄 5:00 AM reset time reached - resetting today\'s trips for driver:', driverId);
       
-      // Reset today's trips for all drivers
-      this.earnings.forEach((earnings, id) => {
+      // Only reset for the specific driver, not all drivers
+      const currentEarnings = this.earnings.get(driverId);
+      if (currentEarnings) {
         const updatedEarnings = {
-          ...earnings,
+          ...currentEarnings,
           todayEarnings: 0,
           todayTrips: 0,
           lastUpdate: new Date().toISOString()
         };
-        this.earnings.set(id, updatedEarnings);
-        console.log(`🔄 Reset today\'s data for driver ${id}:`, {
+        this.earnings.set(driverId, updatedEarnings);
+        console.log(`🔄 Reset today\'s data for driver ${driverId}:`, {
           todayEarnings: updatedEarnings.todayEarnings,
           todayTrips: updatedEarnings.todayTrips
         });
-      });
+        
+        // Notify listeners about the reset for this specific driver
+        this.listeners.forEach(listener => {
+          try {
+            listener(driverId);
+          } catch (error) {
+            console.error('❌ Error notifying listener about daily reset:', error);
+          }
+        });
+      }
       
-      // Update last reset date
+      // Update last reset date only once per day
       this.lastResetDate = currentDate;
-      
-      // Notify all listeners about the reset
-      this.listeners.forEach(listener => {
-        try {
-          listener(driverId);
-        } catch (error) {
-          console.error('❌ Error notifying listener about daily reset:', error);
-        }
-      });
     }
   }
 
@@ -846,17 +850,12 @@ class EarningsService {
     try {
       console.log('🚀 Starting shift for driver:', driverId);
       
+      // getDriverEarnings already handles daily reset check, no need to call it again
       const currentEarnings = this.getDriverEarnings(driverId);
-      
-      // Check for daily reset first (5:00 AM reset)
-      this.checkAndResetDailyTrips(driverId);
-      
-      // Get updated earnings after potential reset
-      const updatedEarnings = this.getDriverEarnings(driverId);
       
       // Update stored earnings (preserve today's data unless reset by 5:00 AM logic)
       this.earnings.set(driverId, {
-        ...updatedEarnings,
+        ...currentEarnings,
         lastUpdate: new Date().toISOString(),
       });
       
@@ -866,11 +865,11 @@ class EarningsService {
       // Notify listeners
       this.notifyListeners(driverId);
       
-      console.log('✅ Shift started successfully. Today earnings preserved:', updatedEarnings.todayEarnings);
+      console.log('✅ Shift started successfully. Today earnings preserved:', currentEarnings.todayEarnings);
       
       return {
         success: true,
-        message: `Shift started. Today's earnings: ₱${updatedEarnings.todayEarnings}, Trips: ${updatedEarnings.todayTrips}`
+        message: `Shift started. Today's earnings: ₱${currentEarnings.todayEarnings}, Trips: ${currentEarnings.todayTrips}`
       };
     } catch (error) {
       console.error('❌ Failed to start shift:', error);

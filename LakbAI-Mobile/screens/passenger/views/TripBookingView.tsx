@@ -8,14 +8,17 @@ import {
   TouchableOpacity,
   Image,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
+import MapView, { Marker, Polyline } from 'react-native-maps';
 import { Button } from '../../../components/common/Button';
 import { ModernLocationSelector } from '../../../components/common/ModernLocationSelector';
 import { usePassengerState } from '../hooks/usePassengerState';
 import { QRDriverInfo, TripBookingData, QRCodeData } from '../../../shared/types';
 import { calculateFare, getFareInfo, getFareCalculationSummary, formatFareAmount } from '../../../shared/utils/fareCalculator';
+import { googleMapsService, Coordinates } from '../../../shared/services/googleMapsService';
 import { COLORS, SPACING } from '../../../shared/styles';
 import { globalStyles } from '../../../shared/styles/globalStyles';
 import { LocationNotificationDisplay } from '../../../components/passenger/LocationNotificationDisplay';
@@ -47,6 +50,18 @@ export const TripBookingView: React.FC<TripBookingViewProps> = ({
   const [locationLastUpdated, setLocationLastUpdated] = useState<string>('');
   const [realDriverData, setRealDriverData] = useState<any>(null);
   const [isLoadingDriverData, setIsLoadingDriverData] = useState(false);
+  
+  // Map-related state
+  const [pickupCoordinates, setPickupCoordinates] = useState<Coordinates | null>(null);
+  const [destinationCoordinates, setDestinationCoordinates] = useState<Coordinates | null>(null);
+  const [routeCoordinates, setRouteCoordinates] = useState<Coordinates[]>([]);
+  const [mapRegion, setMapRegion] = useState({
+    latitude: 14.5995,
+    longitude: 120.9842,
+    latitudeDelta: 0.05,
+    longitudeDelta: 0.05,
+  });
+  const [showMap, setShowMap] = useState(false);
 
   // Auto-fill pickup location from QR code when component mounts
   useEffect(() => {
@@ -57,12 +72,18 @@ export const TripBookingView: React.FC<TripBookingViewProps> = ({
         setRealTimeDriverLocation(qrData.currentLocation);
         setLocationLastUpdated(new Date().toLocaleTimeString());
         setIsAutoFilledLocation(true);
+        
+        // Load pickup coordinates for map
+        await loadPickupCoordinates(qrData.currentLocation);
       } else if (driverInfo?.currentLocation && driverInfo.currentLocation !== 'Unknown') {
         console.log('🎯 Auto-filling pickup location from driver info:', driverInfo.currentLocation);
         setPickupLocation(driverInfo.currentLocation);
         setRealTimeDriverLocation(driverInfo.currentLocation);
         setLocationLastUpdated(new Date().toLocaleTimeString());
         setIsAutoFilledLocation(true);
+        
+        // Load pickup coordinates for map
+        await loadPickupCoordinates(driverInfo.currentLocation);
       } else if (driverInfo?.id) {
         // Fetch real-time driver location from API
         try {
@@ -75,6 +96,9 @@ export const TripBookingView: React.FC<TripBookingViewProps> = ({
             setRealTimeDriverLocation(realTimeLocation);
             setLocationLastUpdated(new Date().toLocaleTimeString());
             setIsAutoFilledLocation(true);
+            
+            // Load pickup coordinates for map
+            await loadPickupCoordinates(realTimeLocation);
           }
         } catch (error) {
           console.error('❌ Error fetching real-time driver location:', error);
@@ -116,6 +140,11 @@ export const TripBookingView: React.FC<TripBookingViewProps> = ({
       if (pickupLocation && destination && pickupLocation !== destination) {
         setIsCalculatingFare(true);
         
+        // Check discount status once
+        const hasApprovedDiscount = passengerProfile?.fareDiscount?.status === 'approved';
+        const discountType = hasApprovedDiscount ? passengerProfile.fareDiscount.type : undefined;
+        const discountPercentage = hasApprovedDiscount ? passengerProfile.fareDiscount.percentage : undefined;
+        
         try {
           // Get route ID from driver info if available
           const routeId = driverInfo.route ? getRouteIdFromRouteName(driverInfo.route) : undefined;
@@ -123,14 +152,21 @@ export const TripBookingView: React.FC<TripBookingViewProps> = ({
           // Use dynamic fare calculation
           const calculatedFare = await calculateFare(pickupLocation, destination, routeId);
           setFare(calculatedFare);
-
-          // Get comprehensive fare calculation summary
+          
+          console.log('🎯 Discount Check:', {
+            hasFareDiscount: !!passengerProfile?.fareDiscount,
+            discountStatus: passengerProfile?.fareDiscount?.status,
+            discountType,
+            discountPercentage,
+            hasApprovedDiscount
+          });
+          
           const summary = await getFareCalculationSummary(
             pickupLocation,
             destination,
             routeId,
-            passengerProfile.fareDiscount.status === 'approved' ? passengerProfile.fareDiscount.type : undefined,
-            passengerProfile.fareDiscount.status === 'approved' ? passengerProfile.fareDiscount.percentage : undefined
+            discountType,
+            discountPercentage
           );
 
           if (summary) {
@@ -138,7 +174,7 @@ export const TripBookingView: React.FC<TripBookingViewProps> = ({
             setDiscountedFare(summary.finalFare);
           } else {
             // Fallback to old calculation method
-            if (calculatedFare && passengerProfile.fareDiscount.status === 'approved') {
+            if (calculatedFare && hasApprovedDiscount) {
               const discount = passengerProfile.fareDiscount.percentage;
               const discounted = calculatedFare * (1 - discount / 100);
               setDiscountedFare(Math.round(discounted * 100) / 100); // Round to 2 decimal places
@@ -146,6 +182,9 @@ export const TripBookingView: React.FC<TripBookingViewProps> = ({
               setDiscountedFare(null);
             }
           }
+          
+          // Load destination coordinates and update map
+          await loadDestinationCoordinates(destination);
         } catch (error) {
           console.error('Error calculating fare:', error);
           // Fallback to legacy calculation
@@ -153,7 +192,7 @@ export const TripBookingView: React.FC<TripBookingViewProps> = ({
             const calculatedFare = await calculateFare(pickupLocation, destination);
             setFare(calculatedFare);
             
-            if (calculatedFare && passengerProfile.fareDiscount.status === 'approved') {
+            if (calculatedFare && hasApprovedDiscount) {
               const discount = passengerProfile.fareDiscount.percentage;
               const discounted = calculatedFare * (1 - discount / 100);
               setDiscountedFare(Math.round(discounted * 100) / 100); // Round to 2 decimal places
@@ -207,6 +246,73 @@ export const TripBookingView: React.FC<TripBookingViewProps> = ({
       return `${minutes} mins`;
     }
     return 'Unknown';
+  };
+
+  // Map-related helper functions
+  const loadPickupCoordinates = async (checkpointName: string) => {
+    try {
+      const coords = await googleMapsService.getCheckpointCoordinates(checkpointName);
+      setPickupCoordinates(coords);
+      console.log('📍 Pickup coordinates loaded:', coords, 'for location:', checkpointName);
+      setMapRegion({
+        latitude: coords.latitude,
+        longitude: coords.longitude,
+        latitudeDelta: 0.05,
+        longitudeDelta: 0.05,
+      });
+    } catch (error) {
+      console.error('Error loading pickup coordinates:', error);
+    }
+  };
+
+  const loadDestinationCoordinates = async (checkpointName: string) => {
+    try {
+      const coords = await googleMapsService.getCheckpointCoordinates(checkpointName);
+      setDestinationCoordinates(coords);
+      console.log('🎯 Destination coordinates loaded:', coords, 'for location:', checkpointName);
+      
+      // Update map with route if pickup coordinates are available
+      if (pickupCoordinates) {
+        await updateMapWithRoute();
+      }
+    } catch (error) {
+      console.error('Error loading destination coordinates:', error);
+    }
+  };
+
+  const updateMapWithRoute = async () => {
+    if (!pickupCoordinates || !destinationCoordinates) return;
+    
+    console.log('🗺️ Updating map with route from:', pickupCoordinates, 'to:', destinationCoordinates);
+    
+    try {
+      const route = await googleMapsService.getRoute(pickupCoordinates, destinationCoordinates);
+      setRouteCoordinates(route);
+      console.log('🛣️ Route coordinates loaded:', route.length, 'points');
+      
+      // Update map region to show both points with proper padding
+      const bounds = googleMapsService.calculateBounds([pickupCoordinates, destinationCoordinates]);
+      setMapRegion({
+        ...bounds,
+        latitudeDelta: Math.max(bounds.latitudeDelta, 0.01),
+        longitudeDelta: Math.max(bounds.longitudeDelta, 0.01),
+      });
+    } catch (error) {
+      console.error('Error updating map with route:', error);
+      // Fallback: create a simple region between the two points
+      const centerLat = (pickupCoordinates.latitude + destinationCoordinates.latitude) / 2;
+      const centerLng = (pickupCoordinates.longitude + destinationCoordinates.longitude) / 2;
+      const latDelta = Math.abs(pickupCoordinates.latitude - destinationCoordinates.latitude) * 1.5;
+      const lngDelta = Math.abs(pickupCoordinates.longitude - destinationCoordinates.longitude) * 1.5;
+      
+      setMapRegion({
+        latitude: centerLat,
+        longitude: centerLng,
+        latitudeDelta: Math.max(latDelta, 0.01),
+        longitudeDelta: Math.max(lngDelta, 0.01),
+      });
+      console.log('📍 Using fallback map region:', { centerLat, centerLng, latDelta, lngDelta });
+    }
   };
 
   const handleBookTrip = async () => {
@@ -396,7 +502,7 @@ export const TripBookingView: React.FC<TripBookingViewProps> = ({
   };
 
   const finalFareAmount = discountedFare || fare;
-  const hasDiscount = discountedFare && passengerProfile.fareDiscount.status === 'approved';
+  const hasDiscount = discountedFare && passengerProfile?.fareDiscount?.status === 'approved';
   
   // Debug profile and discount information
   console.log('🎯 TripBookingView Profile Debug:', {
@@ -559,6 +665,72 @@ export const TripBookingView: React.FC<TripBookingViewProps> = ({
         />
       </View>
 
+      {/* Map Section */}
+      {pickupLocation && destination && (
+        <View style={styles.mapSection}>
+          <View style={styles.mapHeader}>
+            <Text style={styles.mapTitle}>Route Preview</Text>
+            <TouchableOpacity 
+              style={styles.mapToggle}
+              onPress={() => setShowMap(!showMap)}
+            >
+              <Ionicons 
+                name={showMap ? "eye-off" : "eye"} 
+                size={16} 
+                color={COLORS.primary} 
+              />
+              <Text style={styles.mapToggleText}>
+                {showMap ? "Hide Map" : "Show Map"}
+              </Text>
+            </TouchableOpacity>
+          </View>
+          
+          {showMap && (
+            <View style={styles.mapContainer}>
+              <MapView
+                style={styles.map}
+                region={mapRegion}
+                showsUserLocation={true}
+                showsMyLocationButton={true}
+                provider={Platform.OS === 'ios' ? undefined : 'google'}
+                mapType="standard"
+                initialRegion={mapRegion}
+              >
+                {/* Pickup Location Marker */}
+                {pickupCoordinates && (
+                  <Marker
+                    coordinate={pickupCoordinates}
+                    title="📍 Pickup Location"
+                    description={pickupLocation}
+                    pinColor="green"
+                  />
+                )}
+                
+                {/* Destination Marker */}
+                {destinationCoordinates && (
+                  <Marker
+                    coordinate={destinationCoordinates}
+                    title="🎯 Destination"
+                    description={destination}
+                    pinColor="red"
+                  />
+                )}
+                
+                {/* Route Polyline */}
+                {routeCoordinates.length > 0 && (
+                  <Polyline
+                    coordinates={routeCoordinates}
+                    strokeColor="#007AFF"
+                    strokeWidth={4}
+                    lineDashPattern={[1]}
+                  />
+                )}
+              </MapView>
+            </View>
+          )}
+        </View>
+      )}
+
       {/* Fare Information */}
       {fare && (
         <View style={styles.fareCard}>
@@ -597,7 +769,7 @@ export const TripBookingView: React.FC<TripBookingViewProps> = ({
                     <View style={styles.fareRow}>
                       <Text style={styles.fareLabel}>Original Fare:</Text>
                       <Text style={[styles.fareValue, styles.crossedOut]}>
-                        {formatFareAmount(fareCalculationSummary?.baseFare || fare || 0)}
+                        {formatFareAmount(fareCalculationSummary?.actualFare || fare || 0)}
                       </Text>
                     </View>
                     <View style={styles.fareRow}>
@@ -802,6 +974,50 @@ const styles = StyleSheet.create({
     color: COLORS.gray500,
     fontStyle: 'italic',
     marginTop: 2,
+  },
+  mapSection: {
+    backgroundColor: COLORS.white,
+    borderRadius: 16,
+    padding: SPACING.lg,
+    marginBottom: SPACING.lg,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  mapHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: SPACING.md,
+  },
+  mapTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.gray800,
+  },
+  mapToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.xs,
+    backgroundColor: COLORS.primaryLight,
+    borderRadius: 8,
+  },
+  mapToggleText: {
+    fontSize: 12,
+    color: COLORS.primary,
+    fontWeight: '500',
+    marginLeft: 4,
+  },
+  mapContainer: {
+    height: 250,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  map: {
+    flex: 1,
   },
   fareCard: {
     backgroundColor: COLORS.white,

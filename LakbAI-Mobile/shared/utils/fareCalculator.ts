@@ -31,13 +31,14 @@ export const calculateFare = async (
   routeId?: number
 ): Promise<number | null> => {
   try {
-    console.log('🔄 Calculating fare from', from, 'to', to);
+    console.log('🔄 Calculating fare from', from, 'to', to, 'routeId:', routeId);
     
     // First try to get checkpoint IDs from names (with route context)
     const fromCheckpointId = getCheckpointIdByName(from, routeId);
     const toCheckpointId = getCheckpointIdByName(to, routeId);
 
     console.log('📍 Checkpoint IDs:', { fromCheckpointId, toCheckpointId });
+    console.log('📍 Checkpoint names:', { from, to });
 
     if (fromCheckpointId && toCheckpointId) {
       // Use dynamic fare matrix service
@@ -118,6 +119,8 @@ const calculateLegacyFare = (from: string, to: string): number | null => {
  * Get checkpoint ID by name (matching database IDs)
  */
 const getCheckpointIdByName = (checkpointName: string, routeId?: number): number | null => {
+  console.log('🔍 Looking up checkpoint ID for:', checkpointName, 'routeId:', routeId);
+  
   // Route 1: SM Epza → SM Dasmariñas (IDs 46-62)
   const route1Map: { [key: string]: number } = {
     'SM Epza': 46,
@@ -162,13 +165,25 @@ const getCheckpointIdByName = (checkpointName: string, routeId?: number): number
 
   // Use route-specific mapping if route ID is provided
   if (routeId === 1) {
-    return route1Map[checkpointName] || null;
+    const id = route1Map[checkpointName] || null;
+    console.log('📍 Route 1 mapping result:', id);
+    return id;
   } else if (routeId === 2) {
-    return route2Map[checkpointName] || null;
+    const id = route2Map[checkpointName] || null;
+    console.log('📍 Route 2 mapping result:', id);
+    return id;
   }
 
   // Default to Route 1 mapping for backward compatibility
-  return route1Map[checkpointName] || null;
+  const id = route1Map[checkpointName] || null;
+  console.log('📍 Default Route 1 mapping result:', id);
+  
+  if (!id) {
+    console.log('❌ Checkpoint not found in mapping. Available checkpoints:', Object.keys(route1Map));
+    console.log('❌ Looking for:', checkpointName);
+  }
+  
+  return id;
 };
 
 /**
@@ -217,6 +232,7 @@ export const getFareCalculationSummary = async (
   from: string;
   to: string;
   baseFare: number;
+  actualFare: number;
   discountType?: string;
   discountPercentage?: number;
   finalFare: number;
@@ -224,20 +240,23 @@ export const getFareCalculationSummary = async (
   calculationMethod: string;
 } | null> => {
   try {
-    const baseFare = await calculateFare(from, to, routeId);
-    if (baseFare === null) {
+    const actualFare = await calculateFare(from, to, routeId);
+    if (actualFare === null) {
       return null;
     }
 
+    const BASE_FARE = 13.00; // This is the true base fare from database
+
     // Calculate discount amount from percentage
-    const discountAmount = discountPercentage ? (baseFare * discountPercentage / 100) : 0;
-    const finalFare = calculateFareWithDiscount(baseFare, discountType as any, discountAmount);
-    const savings = discountAmount > 0 ? baseFare - finalFare : 0;
+    const discountAmount = discountPercentage ? (actualFare * discountPercentage / 100) : 0;
+    const finalFare = calculateFareWithDiscount(actualFare, discountType as any, discountAmount);
+    const savings = discountAmount > 0 ? actualFare - finalFare : 0;
 
     return {
       from,
       to,
-      baseFare,
+      baseFare: BASE_FARE, // Return the true base fare (13.00)
+      actualFare: actualFare, // Return the actual calculated fare
       discountType,
       discountPercentage,
       finalFare,
