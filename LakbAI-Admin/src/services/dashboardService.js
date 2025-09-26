@@ -52,8 +52,7 @@ class DashboardService {
    */
   static async fetchUsers() {
     try {
-      const baseUrl = API_CONFIG.BASE_URL.replace('/routes/api.php', '');
-      const response = await fetch(`${baseUrl}/api/admin/users`);
+      const response = await fetch(`${API_CONFIG.BASE_URL}/admin/users`);
       
       if (response.ok) {
         const data = await response.json();
@@ -210,8 +209,7 @@ class DashboardService {
       console.log('📋 Fetching recent activities...');
       
       // Get recent user registrations
-      const baseUrl = API_CONFIG.BASE_URL.replace('/routes/api.php', '');
-      const usersResponse = await fetch(`${baseUrl}/api/admin/users?limit=10`);
+      const usersResponse = await fetch(`${API_CONFIG.BASE_URL}/admin/users?limit=10`);
       
       const activities = [];
       

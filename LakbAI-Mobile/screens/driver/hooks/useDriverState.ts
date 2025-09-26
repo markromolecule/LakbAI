@@ -167,12 +167,14 @@ export const useDriverState = () => {
     const currentEarnings = await earningsService.refreshDriverEarnings(apiProfile.id.toString());
     console.log('💰 Current earnings for driver', apiProfile.id, ':', currentEarnings);
     
-    // Get actual completed trips count from trip tracking service
-    const actualTodayTrips = getTodayCompletedTripsCount(apiProfile.id.toString());
+    // Use database-backed trip count from earnings service (not local trip tracking service)
+    // The earnings service gets data from the database via API, which is the source of truth
+    const actualTodayTrips = currentEarnings.todayTrips;
     console.log('📊 Trip counts:', {
       earningsTodayTrips: currentEarnings.todayTrips,
       actualTodayTrips: actualTodayTrips,
-      totalTrips: currentEarnings.totalTrips
+      totalTrips: currentEarnings.totalTrips,
+      note: 'Using database-backed trip count from earnings service'
     });
     
     return {

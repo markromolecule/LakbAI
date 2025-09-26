@@ -114,8 +114,7 @@ class EarningsService {
   async getDriverEarningsFromAPI(driverId: string): Promise<DriverEarnings | null> {
     try {
       const { getBaseUrl } = await import('../../config/apiConfig');
-      const baseUrl = getBaseUrl().replace('/routes/api.php', '');
-      const apiUrl = `${baseUrl}/api/earnings/driver/${driverId}`;
+      const apiUrl = `${getBaseUrl()}/earnings/driver/${driverId}`;
       
       console.log('💰 Fetching earnings from API:', apiUrl);
       
@@ -157,8 +156,7 @@ class EarningsService {
   async saveEarningsToAPI(update: EarningsUpdate): Promise<any> {
     try {
       const { getBaseUrl } = await import('../../config/apiConfig');
-      const baseUrl = getBaseUrl().replace('/routes/api.php', '');
-      const apiUrl = `${baseUrl}/api/earnings/add`;
+      const apiUrl = `${getBaseUrl()}/earnings/add`;
       
       const payload = {
         driverId: update.driverId,
