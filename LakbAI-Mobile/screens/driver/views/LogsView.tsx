@@ -194,16 +194,12 @@ export const LogsView: React.FC<LogsViewProps> = ({
         console.log('📅 Initialized with', initialScans.length, 'total scans (showing 5)');
       }
       
-      // Count completed trips from trip tracking service for today
-      const completedTrips = tripTrackingService.getCompletedTrips(driverId);
-      const todayCompletedTrips = completedTrips.filter(trip => {
-        const tripDate = new Date(trip.startTime).toDateString();
-        const today = new Date().toDateString();
-        return tripDate === today && trip.endCheckpoint; // Only count completed trips
-      }).length;
+      // Use database-backed trip count from earnings service (source of truth)
+      // The tripTrackingService only tracks current session trips, not historical data
+      const todayCompletedTrips = earnings.todayTrips;
 
       setTripData({
-        todayTrips: todayCompletedTrips, // Use actual completed trips from trip tracking
+        todayTrips: todayCompletedTrips, // Use database-backed trip count
         totalTripsAllTime: earnings.totalTrips,
         todayCheckpoints: allScansToday.length, // Use total scans count (not limited to 5)
         totalEarnings: earnings.totalEarnings
@@ -211,7 +207,7 @@ export const LogsView: React.FC<LogsViewProps> = ({
 
       // Set period trips data (from database via API)
       setPeriodTrips({
-        todayTrips: todayCompletedTrips, // Use actual completed trips
+        todayTrips: todayCompletedTrips, // Use database-backed trip count
         weeklyTrips: earnings.weeklyTrips || 0,
         monthlyTrips: earnings.monthlyTrips || 0, 
         yearlyTrips: earnings.yearlyTrips || 0,

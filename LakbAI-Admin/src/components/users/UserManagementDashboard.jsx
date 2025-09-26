@@ -39,7 +39,7 @@ const UserManagementDashboard = () => {
     try {
       // Load various user statistics
       const [allUsers, pendingApprovals] = await Promise.all([
-        UserService.getUsers(),
+        UserService.getUsers({ limit: 100 }), // Get all users (increased limit)
         UserService.getPendingApprovals()
       ]);
 

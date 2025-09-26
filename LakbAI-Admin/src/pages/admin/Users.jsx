@@ -35,7 +35,7 @@ const Users = () => {
       setError(null);
 
       // Get all users
-      const allUsersResult = await UserService.getUsers();
+      const allUsersResult = await UserService.getUsers({ limit: 100 }); // Get all users (increased limit)
       
       // Get pending approvals
       const pendingResult = await UserService.getPendingApprovals();
