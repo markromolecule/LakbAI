@@ -1368,6 +1368,13 @@ try {
             exit;
         }
 
+        // POST /fare-matrix/cleanup - Clean up duplicate entries
+        if ($method === 'POST' && count($pathParts) === 2 && $pathParts[1] === 'cleanup') {
+            $result = $fareMatrixController->cleanupDuplicateEntries();
+            echo json_encode($result);
+            exit;
+        }
+
         // GET /fare-matrix/history/{fareMatrixId} - Get fare matrix history
         if ($method === 'GET' && count($pathParts) === 3 && $pathParts[1] === 'history') {
             $fareMatrixId = intval($pathParts[2]);

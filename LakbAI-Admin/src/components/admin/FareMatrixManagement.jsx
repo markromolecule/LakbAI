@@ -148,7 +148,26 @@ const FareMatrixManagement = () => {
   };
 
   const handleSaveEntry = async () => {
+    // Validate form data
+    if (!formData.from_checkpoint_id || !formData.to_checkpoint_id || !formData.fare_amount) {
+      setError('Please fill in all required fields (From, To, Fare Amount)');
+      return;
+    }
+    
+    if (formData.from_checkpoint_id === formData.to_checkpoint_id) {
+      setError('From and To checkpoints cannot be the same');
+      return;
+    }
+    
+    if (parseFloat(formData.fare_amount) <= 0) {
+      setError('Fare amount must be greater than 0');
+      return;
+    }
+    
     setLoading(true);
+    setError(null);
+    setSuccess(null);
+    
     try {
       // Ensure all required fields are included
       const dataToSend = {

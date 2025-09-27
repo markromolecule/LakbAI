@@ -292,23 +292,41 @@ class FareMatrixController {
                 return ["status" => "error", "message" => "Missing required fields"];
             }
 
-            // Check if entry already exists
+            // Check if entry already exists (find most recent active entry)
             $stmt = $this->db->prepare("
-                SELECT id FROM fare_matrix 
+                SELECT id, effective_date FROM fare_matrix 
                 WHERE from_checkpoint_id = ? 
                 AND to_checkpoint_id = ? 
                 AND route_id = ? 
-                AND effective_date = ?
+                AND status = 'active'
+                AND (expiry_date IS NULL OR expiry_date >= CURRENT_DATE)
+                ORDER BY effective_date DESC
+                LIMIT 1
             ");
             $stmt->execute([
                 $sanitizedData['from_checkpoint_id'],
                 $sanitizedData['to_checkpoint_id'],
-                $sanitizedData['route_id'],
-                $sanitizedData['effective_date']
+                $sanitizedData['route_id']
             ]);
             $existingEntry = $stmt->fetch(PDO::FETCH_ASSOC);
 
             if ($existingEntry) {
+                // Check if the fare amount is actually different
+                $stmt = $this->db->prepare("
+                    SELECT fare_amount FROM fare_matrix WHERE id = ?
+                ");
+                $stmt->execute([$existingEntry['id']]);
+                $currentFare = $stmt->fetchColumn();
+                
+                if ($currentFare == $sanitizedData['fare_amount']) {
+                    // No change needed, just return success
+                    return [
+                        "status" => "success",
+                        "message" => "Fare matrix entry unchanged (both directions)",
+                        "fare_matrix_id" => $existingEntry['id']
+                    ];
+                }
+                
                 // Update existing entry
                 $stmt = $this->db->prepare("
                     UPDATE fare_matrix 
@@ -571,6 +589,43 @@ class FareMatrixController {
     }
 
     /**
+     * Clean up duplicate fare matrix entries (keep only the most recent active entry per route pair)
+     */
+    public function cleanupDuplicateEntries() {
+        try {
+            // Find and deactivate old entries, keeping only the most recent active entry per route pair
+            $stmt = $this->db->prepare("
+                UPDATE fare_matrix fm1
+                SET status = 'inactive', updated_at = CURRENT_TIMESTAMP
+                WHERE fm1.status = 'active'
+                AND EXISTS (
+                    SELECT 1 FROM fare_matrix fm2
+                    WHERE fm2.from_checkpoint_id = fm1.from_checkpoint_id
+                    AND fm2.to_checkpoint_id = fm1.to_checkpoint_id
+                    AND fm2.route_id = fm1.route_id
+                    AND fm2.status = 'active'
+                    AND fm2.effective_date > fm1.effective_date
+                )
+            ");
+            $stmt->execute();
+            
+            $affectedRows = $stmt->rowCount();
+            
+            return [
+                "status" => "success",
+                "message" => "Cleaned up $affectedRows duplicate fare matrix entries",
+                "affected_rows" => $affectedRows
+            ];
+            
+        } catch (Exception $e) {
+            return [
+                "status" => "error",
+                "message" => "Failed to cleanup duplicate entries: " . $e->getMessage()
+            ];
+        }
+    }
+
+    /**
      * Get fare matrix statistics
      */
     public function getFareMatrixStats() {
@@ -636,6 +691,9 @@ class FareMatrixController {
             $stmt->execute([$data['to_checkpoint_id']]);
             $toCheckpointName = $stmt->fetchColumn();
             
+            // Debug: Log checkpoint names
+            error_log("DEBUG: Updating opposite route. From: $fromCheckpointName, To: $toCheckpointName, Route: {$data['route_id']} -> $oppositeRouteId");
+            
             // Find corresponding checkpoint IDs in opposite route
             $stmt = $this->db->prepare("
                 SELECT id FROM checkpoints 
@@ -647,20 +705,25 @@ class FareMatrixController {
             $stmt->execute([$oppositeRouteId, $fromCheckpointName]);
             $oppositeToCheckpointId = $stmt->fetchColumn();
             
+            // Debug: Log found checkpoint IDs
+            error_log("DEBUG: Found opposite checkpoints. From: $oppositeFromCheckpointId, To: $oppositeToCheckpointId");
+            
             if ($oppositeFromCheckpointId && $oppositeToCheckpointId) {
-                // Update or create fare in opposite route
+                // Update or create fare in opposite route (find most recent active entry)
                 $stmt = $this->db->prepare("
-                    SELECT id FROM fare_matrix 
+                    SELECT id, effective_date FROM fare_matrix 
                     WHERE from_checkpoint_id = ? 
                     AND to_checkpoint_id = ? 
                     AND route_id = ? 
-                    AND effective_date = ?
+                    AND status = 'active'
+                    AND (expiry_date IS NULL OR expiry_date >= CURRENT_DATE)
+                    ORDER BY effective_date DESC
+                    LIMIT 1
                 ");
                 $stmt->execute([
                     $oppositeFromCheckpointId,
                     $oppositeToCheckpointId,
-                    $oppositeRouteId,
-                    $data['effective_date']
+                    $oppositeRouteId
                 ]);
                 $existingOppositeEntry = $stmt->fetch(PDO::FETCH_ASSOC);
                 
@@ -733,19 +796,21 @@ class FareMatrixController {
             $oppositeToCheckpointId = $stmt->fetchColumn();
             
             if ($oppositeFromCheckpointId && $oppositeToCheckpointId) {
-                // Check if opposite entry already exists
+                // Check if opposite entry already exists (find most recent active entry)
                 $stmt = $this->db->prepare("
-                    SELECT id FROM fare_matrix 
+                    SELECT id, effective_date FROM fare_matrix 
                     WHERE from_checkpoint_id = ? 
                     AND to_checkpoint_id = ? 
                     AND route_id = ? 
-                    AND effective_date = ?
+                    AND status = 'active'
+                    AND (expiry_date IS NULL OR expiry_date >= CURRENT_DATE)
+                    ORDER BY effective_date DESC
+                    LIMIT 1
                 ");
                 $stmt->execute([
                     $oppositeFromCheckpointId,
                     $oppositeToCheckpointId,
-                    $oppositeRouteId,
-                    $data['effective_date']
+                    $oppositeRouteId
                 ]);
                 $existingOppositeEntry = $stmt->fetch(PDO::FETCH_ASSOC);
                 
