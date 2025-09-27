@@ -76,6 +76,41 @@ class SessionManager {
   }
 
   /**
+   * Create and store a guest session
+   */
+  async createGuestSession(): Promise<void> {
+    try {
+      console.log('🔄 Creating guest session...');
+      
+      // First clear any existing session data
+      await this.clearAllAuthData();
+      
+      // Create a guest session
+      const guestSession: UserSession = {
+        userId: 'guest',
+        username: 'guest',
+        email: 'guest@lakbai.app',
+        userType: 'passenger',
+        loginTime: new Date().toISOString(),
+        profileCompleted: false,
+        auth0Id: null,
+        dbUserData: null
+      };
+      
+      // Store the guest session
+      await AsyncStorage.setItem(AUTH_CONFIG.session.storageKeys.userSession, JSON.stringify(guestSession));
+      
+      // Clear logout flag since user is now in guest mode
+      await AsyncStorage.removeItem(AUTH_CONFIG.session.storageKeys.logoutFlag);
+      
+      console.log('✅ Guest session created successfully');
+    } catch (error) {
+      console.error('❌ Error creating guest session:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Get current user session
    */
   async getUserSession(): Promise<UserSession | null> {

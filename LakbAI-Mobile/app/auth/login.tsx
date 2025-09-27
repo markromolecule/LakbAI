@@ -59,9 +59,24 @@ const LoginRoute: React.FC = () => {
     // Implement forgot password functionality
   };
 
-  const handleGuestContinue = () => {
-    console.log('Guest continue pressed');
-    router.push(PassengerRoutes.HOME);
+  const handleGuestContinue = async () => {
+    console.log('🏃‍♂️ Guest continue pressed');
+    
+    try {
+      // Create a proper guest session
+      await sessionManager.createGuestSession();
+      console.log('✅ Guest session created');
+      
+      // Refresh the session to update auth state
+      await refreshTraditionalSession();
+      
+      // Navigate to home
+      router.push(PassengerRoutes.HOME);
+    } catch (error) {
+      console.error('❌ Error creating guest session:', error);
+      // Fallback: just redirect to home
+      router.push(PassengerRoutes.HOME);
+    }
   };
 
   const handleBack = () => {

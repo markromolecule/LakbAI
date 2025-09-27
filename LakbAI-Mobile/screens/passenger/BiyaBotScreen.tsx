@@ -15,7 +15,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { ChatMessage, QuickQuestion } from '../../shared/types';
 import { COLORS, SPACING } from '../../shared/styles';
-import { biyaBotService } from '../../shared/services/biyabotService';
+import { biyaBotService } from '../../shared/services/biyaBotService';
 import { ChatMessage as ChatMessageComponent } from './components/chat/ChatMessage';
 import { ChatInput } from './components/chat/ChatInput';
 import { FloatingQuickQuestions } from './components/chat/FloatingQuickQuestions';

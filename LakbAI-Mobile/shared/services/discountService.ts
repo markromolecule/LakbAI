@@ -233,6 +233,12 @@ class DiscountService {
         const session = JSON.parse(userSession);
         console.log('📋 User session data keys:', Object.keys(session));
         
+        // Check if this is a guest session
+        if (session.userId === 'guest' || session.username === 'guest') {
+          console.log('👤 Guest session detected - no user ID available');
+          throw new Error('Guest users do not have discount access');
+        }
+        
         if (session.dbUserData && session.dbUserData.id) {
           const userId = session.dbUserData.id.toString();
           console.log('✅ Found user ID from session.dbUserData:', userId);
