@@ -4,7 +4,7 @@
  */
 
 // CHANGE THIS TO YOUR LOCAL IP ADDRESS
-export const DEVELOPER_IP = '192.168.254.121';
+export const DEVELOPER_IP = '192.168.254.102';
 
 // Instructions for co-developers:
 // 1. Find your computer's IP address:
@@ -26,7 +26,7 @@ export const DEVELOPER_IP = '192.168.254.121';
 
 // Alternative configuration for different developers
 export const DEVELOPER_IPS = {
-  joseph: '192.168.254.121',
+  joseph: '192.168.254.102',
   jiro: 'localhost', // For local XAMPP development
 };
 

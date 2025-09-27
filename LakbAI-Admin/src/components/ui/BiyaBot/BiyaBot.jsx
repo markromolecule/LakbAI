@@ -415,19 +415,19 @@ const BiyaBot = () => {
     // Get bot response with real-time data
     try {
       const botResponseText = await getBotResponse(inputMessage);
-      
-      // Simulate bot typing delay
-      setTimeout(() => {
-        const botResponse = {
-          id: Date.now() + 1,
+
+    // Simulate bot typing delay
+    setTimeout(() => {
+      const botResponse = {
+        id: Date.now() + 1,
           text: botResponseText,
-          sender: 'bot',
-          timestamp: new Date()
-        };
-        
-        setMessages(prev => [...prev, botResponse]);
-        setIsTyping(false);
-      }, 1000 + Math.random() * 1000); // Random delay between 1-2 seconds
+        sender: 'bot',
+        timestamp: new Date()
+      };
+      
+      setMessages(prev => [...prev, botResponse]);
+      setIsTyping(false);
+    }, 1000 + Math.random() * 1000); // Random delay between 1-2 seconds
     } catch (error) {
       console.error('Error getting bot response:', error);
       const errorResponse = {
@@ -498,14 +498,14 @@ const BiyaBot = () => {
                 >
                   <i className={`bi ${currentLanguage === 'auto' ? 'bi-translate' : currentLanguage === 'en' ? 'bi-flag' : 'bi-flag-fill'}`}></i>
                 </Button>
-                <Button 
-                  variant="link" 
-                  size="sm" 
-                  onClick={toggleChat}
-                  className={styles.closeBtn}
-                >
-                  <i className="bi bi-x-lg"></i>
-                </Button>
+              <Button 
+                variant="link" 
+                size="sm" 
+                onClick={toggleChat}
+                className={styles.closeBtn}
+              >
+                <i className="bi bi-x-lg"></i>
+              </Button>
               </div>
             </div>
           </Card.Header>
