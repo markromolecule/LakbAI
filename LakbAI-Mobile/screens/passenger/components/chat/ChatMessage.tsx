@@ -65,7 +65,7 @@ const styles = StyleSheet.create({
   },
   userMessage: {
     alignSelf: 'flex-end',
-    flexDirection: 'row-reverse',
+    flexDirection: 'row',
   },
   botMessage: {
     alignSelf: 'flex-start',
@@ -88,7 +88,8 @@ const styles = StyleSheet.create({
   userBubble: {
     backgroundColor: COLORS.primary,
     borderBottomRightRadius: 6,
-    marginRight: SPACING.xs,
+    marginLeft: SPACING.xs,
+    marginRight: SPACING.sm,
   },
   botBubble: {
     backgroundColor: COLORS.white,
@@ -122,27 +123,27 @@ const styles = StyleSheet.create({
     textAlign: 'left',
   },
   botAvatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     backgroundColor: COLORS.primary,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: SPACING.xs,
   },
   botAvatarText: {
-    fontSize: 16,
+    fontSize: 12,
   },
   userAvatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     backgroundColor: COLORS.gray300,
     justifyContent: 'center',
     alignItems: 'center',
-    marginLeft: SPACING.xs,
+    marginRight: SPACING.sm,
   },
   userAvatarText: {
-    fontSize: 16,
+    fontSize: 12,
   },
 });

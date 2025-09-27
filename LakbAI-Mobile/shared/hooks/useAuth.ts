@@ -68,6 +68,28 @@ export const useAuth = (): UseAuthReturn => {
       const isSessionValid = await sessionManager.isSessionValid();
       
       if (session && isSessionValid) {
+        // Handle guest sessions differently
+        if (session.userId === 'guest' && session.username === 'guest') {
+          console.log('👤 Guest session found');
+          setAuthState({
+            isAuthenticated: true,
+            isLoading: false,
+            user: {
+              sub: 'guest',
+              name: 'Guest User',
+              email: 'guest@lakbai.app',
+              nickname: 'guest',
+              picture: null,
+              email_verified: false,
+            },
+            session,
+            error: null,
+          });
+          
+          // Don't auto-redirect guest users, let them navigate manually
+          return;
+        }
+        
         const userProfile = await sessionManager.getUserProfile();
         
         if (userProfile) {
@@ -79,7 +101,7 @@ export const useAuth = (): UseAuthReturn => {
             error: null,
           });
           
-          // Redirect based on user type
+          // Redirect based on user type (only for authenticated users, not guests)
           if (session.userType === 'driver') {
             router.replace('/driver');
           } else {

@@ -120,9 +120,9 @@ export const FareMatrixScreen: React.FC = () => {
       
       <View style={styles.fareMatrixContainer}>
         <View style={styles.fareMatrixHeader}>
-          <Text style={styles.fareMatrixTitle}>Sequential Route Fares</Text>
+          <Text style={styles.fareMatrixTitle}>Vice-versa Routes</Text>
           <Text style={styles.fareMatrixSubtitle}>
-            {fareMatrixData.length > 0 ? 'Adjacent checkpoint fares' : 'Sample fares (limited)'}
+            {fareMatrixData.length > 0 ? 'Checkpoint Fares' : 'Sample fares (limited)'}
           </Text>
         </View>
         

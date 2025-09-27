@@ -9,13 +9,18 @@ export const usePassengerState = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Check if current session is guest
+  const isGuestSession = useMemo(() => {
+    return session?.userId === 'guest' || session?.username === 'guest';
+  }, [session]);
+
   // Default passenger profile for fallback (no hardcoded data)
   const defaultPassengerProfile: PassengerProfile = {
-    firstName: 'User',
-    lastName: '',
-    email: '',
+    firstName: isGuestSession ? 'Guest' : 'User',
+    lastName: isGuestSession ? 'User' : '',
+    email: isGuestSession ? 'guest@lakbai.app' : '',
     phoneNumber: '',
-    username: 'user',
+    username: isGuestSession ? 'guest' : 'user',
     address: {
       houseNumber: '',
       streetName: '',
@@ -40,6 +45,14 @@ export const usePassengerState = () => {
     const createPassengerProfile = async () => {
       console.log('🔍 usePassengerState: Creating profile...', { isAuthenticated, user, session });
       
+      // Handle guest sessions
+      if (isGuestSession) {
+        console.log('👤 usePassengerState: Guest session detected, using default profile');
+        setPassengerProfile(null);
+        setIsLoading(false);
+        return;
+      }
+
       if (!isAuthenticated || !user) {
         console.log('❌ usePassengerState: Not authenticated or no user');
         setPassengerProfile(null);
@@ -254,7 +267,7 @@ export const usePassengerState = () => {
     };
 
     createPassengerProfile();
-  }, [isAuthenticated, user, session]);
+  }, [isAuthenticated, user, session, isGuestSession]);
 
   // Return the profile data, with fallback to default data if not authenticated
   const profileToReturn = useMemo(() => {
@@ -275,7 +288,7 @@ export const usePassengerState = () => {
   }, [isAuthenticated, passengerProfile]);
 
   const refreshProfile = useCallback(async () => {
-    if (!isAuthenticated || !user) return;
+    if (!isAuthenticated || !user || isGuestSession) return;
     
     try {
       setIsLoading(true);

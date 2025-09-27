@@ -20,7 +20,7 @@ const createMockService = () => ({
 const loadBiyaBotService = async () => {
   try {
     console.log('🔍 Attempting to load biyabotService module...');
-    const module = await import('../../../shared/services/biyabotService');
+    const module = await import('../../../shared/services/biyaBotService');
     console.log('🔍 Module loaded successfully');
     console.log('🔍 Module keys:', Object.keys(module));
     console.log('🔍 Module.biyaBotService:', module.biyaBotService);
@@ -54,7 +54,13 @@ const loadBiyaBotService = async () => {
 
 const INITIAL_MESSAGE: ChatMessage = {
   type: 'bot',
-  message: "Hello! I'm Biya, your LakbAI assistant! 😊 I can help you with fares, routes, and schedules in English or Tagalog! Just ask me anything! 🤗",
+  message: `Hello! Ako si Biya, your LakbAI Jeepney Assistant! Pwede kang magtanong tungkol sa pamasahe, ruta, at location ng jeepney.  
+
+Try asking:  
+- "Magkano pamasahe SM to Robinsons?"  
+- "Nasaan ang jeep?"  
+
+Sasagutin kita agad — in English or Tagalog! 🚍✨`,
   timestamp: new Date()
 };
 

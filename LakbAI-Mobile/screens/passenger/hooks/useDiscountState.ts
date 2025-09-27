@@ -1,14 +1,24 @@
 import { useState, useCallback } from 'react';
 import { discountService, DiscountApplication } from '../../../shared/services/discountService';
 import { DiscountStatus } from '../../../shared/services/discountService';
+import { useAuthContext } from '../../../shared/providers/AuthProvider';
 
 export const useDiscountState = () => {
+  const { session } = useAuthContext();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [discountStatus, setDiscountStatus] = useState<DiscountStatus | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // Check if current session is guest
+  const isGuestSession = session?.userId === 'guest' || session?.username === 'guest';
+
   const submitApplication = useCallback(async (application: DiscountApplication) => {
     if (isSubmitting) return { success: false, message: 'Already submitting...' };
+    
+    // Block guest users from submitting discount applications
+    if (isGuestSession) {
+      return { success: false, message: 'Please log in to apply for discounts' };
+    }
     
     setIsSubmitting(true);
     setError(null);
@@ -38,6 +48,12 @@ export const useDiscountState = () => {
   }, [isSubmitting]);
 
   const fetchDiscountStatus = useCallback(async () => {
+    // Don't fetch discount status for guest users
+    if (isGuestSession) {
+      setDiscountStatus(null);
+      return null;
+    }
+
     try {
       const status = await discountService.getDiscountStatus();
       setDiscountStatus(status);
@@ -47,7 +63,7 @@ export const useDiscountState = () => {
       setError(errorMessage);
       return null;
     }
-  }, []);
+  }, [isGuestSession]);
 
   const getDiscountPercentage = (type: string): number => {
     switch (type) {
