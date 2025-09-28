@@ -127,6 +127,7 @@ class EarningsService {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
+            'Accept': 'application/json',
           },
           signal: controller.signal,
         });
@@ -158,11 +159,11 @@ class EarningsService {
         }
       } catch (fetchError: any) {
         clearTimeout(timeoutId);
-        
+        console.error('💰 Network error during API request:', fetchError.message);
         if (fetchError.name === 'AbortError') {
-          console.error('❌ Earnings API request timed out after 10 seconds');
-        } else {
-          console.error('❌ Earnings API fetch error:', fetchError);
+          console.error('💰 Request was aborted due to timeout');
+        } else if (fetchError.message.includes('Network request failed')) {
+          console.error('💰 Network connection failed - check if API server is running and reachable');
         }
         throw fetchError;
       }
@@ -177,6 +178,7 @@ class EarningsService {
     
     return null;
   }
+
 
   /**
    * Save earnings to database API

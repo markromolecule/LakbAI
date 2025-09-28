@@ -88,6 +88,7 @@ export const EarningsView: React.FC<EarningsViewProps> = ({
     setRefreshing(false);
   };
 
+
   const EarningsCard: React.FC<{
     title: string;
     amount: number;

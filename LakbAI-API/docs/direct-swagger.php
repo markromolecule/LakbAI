@@ -1,0 +1,420 @@
+<?php
+/**
+ * Direct Swagger API Documentation
+ * Bypasses the main API router for direct access
+ */
+
+// Set headers to prevent routing through main API
+header('Content-Type: application/json');
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: GET, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type');
+
+// Handle CORS preflight
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit;
+}
+
+// Basic OpenAPI 3.0 specification
+$openapi = [
+    'openapi' => '3.0.0',
+    'info' => [
+        'title' => 'LakbAI API',
+        'version' => '1.0.0',
+        'description' => 'Smart jeepney tracking and fare management system API',
+        'contact' => [
+            'email' => 'livadomc@gmail.com',
+            'name' => 'Mark Joseph Livado'
+        ]
+    ],
+    'servers' => [
+        [
+            'url' => 'http://localhost/LakbAI/LakbAI-API/routes/api.php',
+            'description' => 'Local Development Server'
+        ]
+    ],
+    'paths' => [
+        // Authentication Endpoints
+        '/mobile/driver/login' => [
+            'post' => [
+                'tags' => ['Authentication'],
+                'summary' => 'Driver Login',
+                'description' => 'Authenticate driver and return access token',
+                'requestBody' => [
+                    'required' => true,
+                    'content' => [
+                        'application/json' => [
+                            'schema' => [
+                                'type' => 'object',
+                                'properties' => [
+                                    'email' => ['type' => 'string', 'format' => 'email'],
+                                    'password' => ['type' => 'string']
+                                ],
+                                'required' => ['email', 'password']
+                            ]
+                        ]
+                    ]
+                ],
+                'responses' => [
+                    '200' => [
+                        'description' => 'Login successful',
+                        'content' => [
+                            'application/json' => [
+                                'schema' => [
+                                    'type' => 'object',
+                                    'properties' => [
+                                        'status' => ['type' => 'string'],
+                                        'message' => ['type' => 'string'],
+                                        'data' => [
+                                            'type' => 'object',
+                                            'properties' => [
+                                                'token' => ['type' => 'string'],
+                                                'user' => ['type' => 'object']
+                                            ]
+                                        ]
+                                    ]
+                                ]
+                            ]
+                        ]
+                    ]
+                ]
+            ]
+        ],
+        '/mobile/passenger/login' => [
+            'post' => [
+                'tags' => ['Authentication'],
+                'summary' => 'Passenger Login',
+                'description' => 'Authenticate passenger and return access token',
+                'requestBody' => [
+                    'required' => true,
+                    'content' => [
+                        'application/json' => [
+                            'schema' => [
+                                'type' => 'object',
+                                'properties' => [
+                                    'email' => ['type' => 'string', 'format' => 'email'],
+                                    'password' => ['type' => 'string']
+                                ],
+                                'required' => ['email', 'password']
+                            ]
+                        ]
+                    ]
+                ],
+                'responses' => [
+                    '200' => [
+                        'description' => 'Login successful',
+                        'content' => [
+                            'application/json' => [
+                                'schema' => [
+                                    'type' => 'object',
+                                    'properties' => [
+                                        'status' => ['type' => 'string'],
+                                        'message' => ['type' => 'string'],
+                                        'data' => [
+                                            'type' => 'object',
+                                            'properties' => [
+                                                'token' => ['type' => 'string'],
+                                                'user' => ['type' => 'object']
+                                            ]
+                                        ]
+                                    ]
+                                ]
+                            ]
+                        ]
+                    ]
+                ]
+            ]
+        ],
+        // Driver Endpoints
+        '/mobile/driver/scan/checkpoint' => [
+            'post' => [
+                'tags' => ['Driver Operations'],
+                'summary' => 'Scan Checkpoint QR',
+                'description' => 'Driver scans checkpoint QR code to update location',
+                'requestBody' => [
+                    'required' => true,
+                    'content' => [
+                        'application/json' => [
+                            'schema' => [
+                                'type' => 'object',
+                                'properties' => [
+                                    'driver_id' => ['type' => 'string'],
+                                    'qr_data' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'checkpoint_id' => ['type' => 'integer'],
+                                            'route_id' => ['type' => 'integer'],
+                                            'checkpoint_name' => ['type' => 'string']
+                                        ]
+                                    ]
+                                ],
+                                'required' => ['driver_id', 'qr_data']
+                            ]
+                        ]
+                    ]
+                ],
+                'responses' => [
+                    '200' => [
+                        'description' => 'Checkpoint scanned successfully',
+                        'content' => [
+                            'application/json' => [
+                                'schema' => [
+                                    'type' => 'object',
+                                    'properties' => [
+                                        'status' => ['type' => 'string'],
+                                        'message' => ['type' => 'string'],
+                                        'data' => ['type' => 'object']
+                                    ]
+                                ]
+                            ]
+                        ]
+                    ]
+                ]
+            ]
+        ],
+        '/mobile/driver/earnings/{driverId}' => [
+            'get' => [
+                'tags' => ['Driver Operations'],
+                'summary' => 'Get Driver Earnings',
+                'description' => 'Retrieve earnings for a specific driver',
+                'parameters' => [
+                    [
+                        'name' => 'driverId',
+                        'in' => 'path',
+                        'required' => true,
+                        'schema' => ['type' => 'string']
+                    ]
+                ],
+                'responses' => [
+                    '200' => [
+                        'description' => 'Earnings retrieved successfully',
+                        'content' => [
+                            'application/json' => [
+                                'schema' => [
+                                    'type' => 'object',
+                                    'properties' => [
+                                        'status' => ['type' => 'string'],
+                                        'data' => [
+                                            'type' => 'object',
+                                            'properties' => [
+                                                'total_earnings' => ['type' => 'number'],
+                                                'trips' => ['type' => 'array']
+                                            ]
+                                        ]
+                                    ]
+                                ]
+                            ]
+                        ]
+                    ]
+                ]
+            ]
+        ],
+        // Passenger Endpoints
+        '/mobile/passenger/real-time-drivers/{route}' => [
+            'get' => [
+                'tags' => ['Passenger Operations'],
+                'summary' => 'Get Real-time Driver Locations',
+                'description' => 'Get current locations of drivers on a specific route',
+                'parameters' => [
+                    [
+                        'name' => 'route',
+                        'in' => 'path',
+                        'required' => true,
+                        'schema' => ['type' => 'string']
+                    ]
+                ],
+                'responses' => [
+                    '200' => [
+                        'description' => 'Driver locations retrieved successfully',
+                        'content' => [
+                            'application/json' => [
+                                'schema' => [
+                                    'type' => 'object',
+                                    'properties' => [
+                                        'status' => ['type' => 'string'],
+                                        'driver_locations' => [
+                                            'type' => 'array',
+                                            'items' => [
+                                                'type' => 'object',
+                                                'properties' => [
+                                                    'driver_id' => ['type' => 'string'],
+                                                    'driver_name' => ['type' => 'string'],
+                                                    'current_location' => ['type' => 'string'],
+                                                    'last_updated' => ['type' => 'string']
+                                                ]
+                                            ]
+                                        ]
+                                    ]
+                                ]
+                            ]
+                        ]
+                    ]
+                ]
+            ]
+        ],
+        '/mobile/passenger/book-trip' => [
+            'post' => [
+                'tags' => ['Passenger Operations'],
+                'summary' => 'Book Trip',
+                'description' => 'Book a trip with a driver',
+                'requestBody' => [
+                    'required' => true,
+                    'content' => [
+                        'application/json' => [
+                            'schema' => [
+                                'type' => 'object',
+                                'properties' => [
+                                    'driver_id' => ['type' => 'string'],
+                                    'pickup_location' => ['type' => 'string'],
+                                    'destination' => ['type' => 'string'],
+                                    'fare' => ['type' => 'number']
+                                ],
+                                'required' => ['driver_id', 'pickup_location', 'destination', 'fare']
+                            ]
+                        ]
+                    ]
+                ],
+                'responses' => [
+                    '200' => [
+                        'description' => 'Trip booked successfully',
+                        'content' => [
+                            'application/json' => [
+                                'schema' => [
+                                    'type' => 'object',
+                                    'properties' => [
+                                        'status' => ['type' => 'string'],
+                                        'message' => ['type' => 'string'],
+                                        'data' => [
+                                            'type' => 'object',
+                                            'properties' => [
+                                                'trip_id' => ['type' => 'string'],
+                                                'fare' => ['type' => 'number']
+                                            ]
+                                        ]
+                                    ]
+                                ]
+                            ]
+                        ]
+                    ]
+                ]
+            ]
+        ],
+        // Admin Endpoints
+        '/admin/routes' => [
+            'get' => [
+                'tags' => ['Admin Operations'],
+                'summary' => 'Get All Routes',
+                'description' => 'Retrieve all available routes',
+                'responses' => [
+                    '200' => [
+                        'description' => 'Routes retrieved successfully',
+                        'content' => [
+                            'application/json' => [
+                                'schema' => [
+                                    'type' => 'object',
+                                    'properties' => [
+                                        'status' => ['type' => 'string'],
+                                        'data' => [
+                                            'type' => 'array',
+                                            'items' => [
+                                                'type' => 'object',
+                                                'properties' => [
+                                                    'id' => ['type' => 'integer'],
+                                                    'route_name' => ['type' => 'string'],
+                                                    'origin' => ['type' => 'string'],
+                                                    'destination' => ['type' => 'string']
+                                                ]
+                                            ]
+                                        ]
+                                    ]
+                                ]
+                            ]
+                        ]
+                    ]
+                ]
+            ]
+        ],
+        '/admin/checkpoints' => [
+            'get' => [
+                'tags' => ['Admin Operations'],
+                'summary' => 'Get All Checkpoints',
+                'description' => 'Retrieve all checkpoints',
+                'responses' => [
+                    '200' => [
+                        'description' => 'Checkpoints retrieved successfully',
+                        'content' => [
+                            'application/json' => [
+                                'schema' => [
+                                    'type' => 'object',
+                                    'properties' => [
+                                        'status' => ['type' => 'string'],
+                                        'data' => [
+                                            'type' => 'array',
+                                            'items' => [
+                                                'type' => 'object',
+                                                'properties' => [
+                                                    'id' => ['type' => 'integer'],
+                                                    'checkpoint_name' => ['type' => 'string'],
+                                                    'route_id' => ['type' => 'integer'],
+                                                    'sequence_order' => ['type' => 'integer']
+                                                ]
+                                            ]
+                                        ]
+                                    ]
+                                ]
+                            ]
+                        ]
+                    ]
+                ]
+            ]
+        ],
+        // Fare Matrix Endpoints
+        '/fare-matrix' => [
+            'get' => [
+                'tags' => ['Fare Management'],
+                'summary' => 'Get Fare Matrix',
+                'description' => 'Retrieve the complete fare matrix',
+                'responses' => [
+                    '200' => [
+                        'description' => 'Fare matrix retrieved successfully',
+                        'content' => [
+                            'application/json' => [
+                                'schema' => [
+                                    'type' => 'object',
+                                    'properties' => [
+                                        'status' => ['type' => 'string'],
+                                        'data' => [
+                                            'type' => 'array',
+                                            'items' => [
+                                                'type' => 'object',
+                                                'properties' => [
+                                                    'id' => ['type' => 'integer'],
+                                                    'from_checkpoint' => ['type' => 'string'],
+                                                    'to_checkpoint' => ['type' => 'string'],
+                                                    'fare_amount' => ['type' => 'number']
+                                                ]
+                                            ]
+                                        ]
+                                    ]
+                                ]
+                            ]
+                        ]
+                    ]
+                ]
+            ]
+        ]
+    ],
+    'components' => [
+        'securitySchemes' => [
+            'bearerAuth' => [
+                'type' => 'http',
+                'scheme' => 'bearer',
+                'bearerFormat' => 'JWT'
+            ]
+        ]
+    ]
+];
+
+echo json_encode($openapi, JSON_PRETTY_PRINT);
+?>

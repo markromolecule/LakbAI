@@ -205,6 +205,12 @@ class LocalNotificationService {
   async notifyLocationUpdate(data: Omit<LocationNotificationData, 'id' | 'timestamp'>): Promise<void> {
     await this.initialize();
 
+    console.log('📱 LocalNotificationService: Sending location notification:', {
+      driver: data.driverName,
+      from: data.previousLocation,
+      to: data.currentLocation
+    });
+
     const notification: LocationNotificationData = {
       ...data,
       id: `location_${Date.now()}`,

@@ -78,6 +78,11 @@ if (empty($pathParts)) {
     $pathParts = [''];
 }
 
+// Debug logging (commented out for production)
+// error_log("🔍 API Path Debug - Original URI: " . $_SERVER['REQUEST_URI']);
+// error_log("🔍 API Path Debug - Parsed path: " . $path);
+// error_log("🔍 API Path Debug - Path parts: " . json_encode($pathParts));
+
 
 // Get request data
 $input = [];
@@ -983,6 +988,12 @@ try {
 if (end($pathParts) === 'docs' && $method === 'GET') {
     // Redirect to documentation
     header('Location: ../docs/index.html');
+    exit;
+}
+
+// Search routes
+if (count($pathParts) >= 2 && $pathParts[0] === 'search') {
+    include __DIR__ . '/search.php';
     exit;
 }
 
