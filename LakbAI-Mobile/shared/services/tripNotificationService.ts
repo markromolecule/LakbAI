@@ -3,7 +3,8 @@ import sessionManager from './sessionManager';
 import { getBaseUrl } from '../../config/apiConfig';
 
 export interface TripNotification {
-  type: 'driver_arrived' | 'trip_started' | 'trip_completed' | 'driver_at_destination';
+  id?: string;
+  type: 'driver_arrived' | 'trip_started' | 'trip_completed' | 'driver_at_destination' | 'location_update' | 'endpoint_reached';
   tripId: string;
   driverId: string;
   driverName: string;
@@ -11,6 +12,7 @@ export interface TripNotification {
   checkpointName?: string;
   timestamp: string;
   message: string;
+  data?: any;
 }
 
 class TripNotificationService {
@@ -29,11 +31,29 @@ class TripNotificationService {
       // In a real implementation, this would use WebSockets or push notifications
       // For now, we'll use polling to check for driver updates
       const interval = setInterval(async () => {
-        const notification = await this.checkForDriverUpdates(tripId);
-        if (notification) {
-          callback(notification);
+        console.log('🔍 Polling for notifications...');
+        
+        // Check for trip completion notifications
+        const completionNotification = await this.checkForDriverUpdates(tripId);
+        if (completionNotification) {
+          console.log('🔔 Trip completion notification found:', completionNotification);
+          callback(completionNotification);
         }
-      }, 5000); // Check every 5 seconds
+        
+        // Check for location update notifications
+        const locationNotification = await this.checkForLocationUpdates(tripId);
+        if (locationNotification) {
+          console.log('🔔 Location update notification found:', locationNotification);
+          callback(locationNotification);
+        }
+        
+        // Check for endpoint reached notifications
+        const endpointNotification = await this.checkForEndpointNotifications(tripId);
+        if (endpointNotification) {
+          console.log('🔔 Endpoint notification found:', endpointNotification);
+          callback(endpointNotification);
+        }
+      }, 1500); // Check every 1.5 seconds for more responsive updates
 
       return () => clearInterval(interval);
     } catch (error) {
@@ -68,6 +88,12 @@ class TripNotificationService {
 
         const data = await response.json();
         
+        // Handle route not found error gracefully
+        if (data.status === 'error' && data.message === 'Route not found') {
+          console.log('📡 Passenger notifications route not available, skipping notification check');
+          return null;
+        }
+        
         if (data.notifications && data.notifications.length > 0) {
           const notification = data.notifications[0];
           const notificationData = JSON.parse(notification.data || '{}');
@@ -88,6 +114,8 @@ class TripNotificationService {
             type: 'driver_at_destination',
             tripId: notificationData.trip_id || tripId,
             driverId: notificationData.driver_id,
+            driverName: notificationData.driver_name || 'Driver',
+            jeepneyNumber: notificationData.jeepney_number || 'Unknown',
             message: notification.message,
             timestamp: notification.created_at,
             data: notificationData
@@ -103,6 +131,157 @@ class TripNotificationService {
       return null;
     } catch (error) {
       console.error('Error checking for driver updates:', error);
+      return null;
+    }
+  }
+
+  // Check for location update notifications
+  private async checkForLocationUpdates(tripId: string): Promise<TripNotification | null> {
+    try {
+      // Get passenger ID from session
+      const session = await sessionManager.getUserSession();
+      if (!session?.dbUserData?.id) {
+        return null;
+      }
+
+      const passengerId = session.dbUserData.id;
+
+      // Check backend for location update notifications
+      // For location updates, don't filter by trip_id since they are general notifications
+      try {
+        const response = await fetch(`${getBaseUrl()}/mobile/passenger/notifications/${passengerId}?type=location_update&status=pending&limit=1`);
+        
+        if (!response.ok) {
+          console.log('📡 No location update notifications found (response not ok)');
+          return null;
+        }
+
+        const data = await response.json();
+        
+        // Handle route not found error gracefully
+        if (data.status === 'error' && data.message === 'Route not found') {
+          console.log('📡 Passenger notifications route not available, skipping location update check');
+          return null;
+        }
+        
+        if (data.notifications && data.notifications.length > 0) {
+          const notification = data.notifications[0];
+          const notificationData = JSON.parse(notification.data || '{}');
+          
+          console.log('🔔 Found location update notification:', notification);
+          console.log('🔔 Notification data:', notificationData);
+          
+          // Mark notification as read immediately to prevent duplicates
+          try {
+            await fetch(`${getBaseUrl()}/mobile/passenger/notifications/${notification.id}/read`, {
+              method: 'POST'
+            });
+            console.log('✅ Marked notification as read:', notification.id);
+          } catch (markReadError) {
+            console.warn('⚠️ Failed to mark location notification as read:', markReadError);
+          }
+          
+          // Determine notification type based on data
+          let notificationType: 'location_update' | 'endpoint_reached' = 'location_update';
+          if (notificationData.is_endpoint) {
+            notificationType = 'endpoint_reached';
+          }
+
+          return {
+            id: notification.id,
+            type: notificationType,
+            tripId: notificationData.trip_id || 'general',
+            driverId: notificationData.driver_id,
+            driverName: notificationData.driver_name || 'Driver',
+            jeepneyNumber: notificationData.jeepney_number || 'Unknown',
+            checkpointName: notificationData.current_location,
+            message: notification.message,
+            timestamp: notification.created_at,
+            data: notificationData
+          };
+        } else {
+          console.log('📡 No location update notifications found in response');
+        }
+      } catch (fetchError) {
+        console.error('📡 Failed to fetch location notifications from backend:', fetchError);
+        return null;
+      }
+      
+      return null;
+    } catch (error) {
+      console.error('Error checking for location updates:', error);
+      return null;
+    }
+  }
+
+  // Check for endpoint reached notifications
+  private async checkForEndpointNotifications(tripId: string): Promise<TripNotification | null> {
+    try {
+      // Get passenger ID from session
+      const session = await sessionManager.getUserSession();
+      if (!session?.dbUserData?.id) {
+        return null;
+      }
+
+      const passengerId = session.dbUserData.id;
+
+      // Check backend for endpoint notifications
+      try {
+        const response = await fetch(`${getBaseUrl()}/mobile/passenger/notifications/${passengerId}?type=endpoint_reached&status=pending&limit=1`);
+        
+        if (!response.ok) {
+          console.log('📡 No endpoint notifications found (response not ok)');
+          return null;
+        }
+
+        const data = await response.json();
+        
+        // Handle route not found error gracefully
+        if (data.status === 'error' && data.message === 'Route not found') {
+          console.log('📡 Passenger notifications route not available, skipping endpoint check');
+          return null;
+        }
+        
+        if (data.notifications && data.notifications.length > 0) {
+          const notification = data.notifications[0];
+          const notificationData = JSON.parse(notification.data || '{}');
+          
+          console.log('🔔 Found endpoint notification:', notification);
+          console.log('🔔 Endpoint notification data:', notificationData);
+          
+          // Mark notification as read immediately to prevent duplicates
+          try {
+            await fetch(`${getBaseUrl()}/mobile/passenger/notifications/${notification.id}/read`, {
+              method: 'POST'
+            });
+            console.log('✅ Marked endpoint notification as read:', notification.id);
+          } catch (markReadError) {
+            console.warn('⚠️ Failed to mark endpoint notification as read:', markReadError);
+          }
+
+          return {
+            id: notification.id,
+            type: 'endpoint_reached',
+            tripId: notificationData.trip_id || 'general',
+            driverId: notificationData.driver_id,
+            driverName: notificationData.driver_name || 'Driver',
+            jeepneyNumber: notificationData.jeepney_number || 'Unknown',
+            checkpointName: notificationData.current_location,
+            message: notification.message,
+            timestamp: notification.created_at,
+            data: notificationData
+          };
+        } else {
+          console.log('📡 No endpoint notifications found in response');
+        }
+      } catch (fetchError) {
+        console.error('📡 Failed to fetch endpoint notifications from backend:', fetchError);
+        return null;
+      }
+      
+      return null;
+    } catch (error) {
+      console.error('Error checking for endpoint notifications:', error);
       return null;
     }
   }

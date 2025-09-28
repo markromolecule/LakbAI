@@ -13,10 +13,11 @@ import { googleMapsService, Coordinates } from '../../../shared/services/googleM
 import { tripNotificationService, TripNotification } from '../../../shared/services/tripNotificationService';
 import { simpleTripNotificationService } from '../../../shared/services/simpleTripNotificationService';
 import { fareMatrixService } from '../../../shared/services/fareMatrixService';
+import { localNotificationService } from '../../../shared/services/localNotificationService';
 import styles from '../styles/HomeScreen.styles';
 import DriverLocationCard from '../components/DriverLocationCard';
 import { getBaseUrl } from '../../../config/apiConfig';
-import { searchService, RouteSearchResult } from '../../../shared/services/searchService';
+import { usePassengerState } from '../hooks/usePassengerState';
 import type { Href } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -24,6 +25,18 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 // AsyncStorage keys
 const SELECTED_ROUTE_KEY = 'selected_route';
 const ACTIVE_TRIP_KEY = 'active_trip';
+
+// Local type definition for route search results
+interface RouteSearchResult {
+  id: number;
+  route_name: string;
+  origin: string;
+  destination: string;
+  status: string;
+  created_at: string;
+  checkpoint_count: number;
+  fare_base?: string;
+}
 
 interface ActiveTrip {
   id: string;
@@ -88,14 +101,11 @@ interface HomeScreenProps {
 export const HomeScreen: React.FC<HomeScreenProps> = ({ onBackButtonPress, onShowBackButton, onHideActiveTripView }) => {
   const router = useRouter();
   const { isAuthenticated, isLoading } = useAuthContext();
+  const { passengerProfile } = usePassengerState();
   const [selectedRoute, setSelectedRoute] = useState<Route | null>(null);
   const [routes, setRoutes] = useState<Route[]>([]);
-  const [filteredRoutes, setFilteredRoutes] = useState<Route[]>([]);
   const [showRouteModal, setShowRouteModal] = useState(false);
   const [loadingRoutes, setLoadingRoutes] = useState(false);
-  const [routeSearchQuery, setRouteSearchQuery] = useState<string>('');
-  const [routeSearchResults, setRouteSearchResults] = useState<RouteSearchResult[]>([]);
-  const [isSearchingRoutes, setIsSearchingRoutes] = useState<boolean>(false);
   
   // Active trip state
   const [activeTrip, setActiveTrip] = useState<ActiveTrip | null>(null);
@@ -111,6 +121,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onBackButtonPress, onSho
   const [showActiveTripView, setShowActiveTripView] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
   const [isCompletingTrip, setIsCompletingTrip] = useState(false);
+  const [lastNotificationTime, setLastNotificationTime] = useState<number>(0);
 
   // Save selected route to AsyncStorage
   const saveSelectedRoute = async (route: Route) => {
@@ -161,7 +172,6 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onBackButtonPress, onSho
           console.log('🛣️ Setting routes in state...');
           
           setRoutes(data.routes);
-          setFilteredRoutes(data.routes);
           console.log('🛣️ Routes set in state successfully');
           
           // If there's an active trip, trigger immediate driver location update
@@ -210,79 +220,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onBackButtonPress, onSho
     }
   };
 
-  const handleRouteSearch = async (query: string) => {
-    setRouteSearchQuery(query);
-    
-    if (query.trim() === '') {
-      setFilteredRoutes(routes);
-      setRouteSearchResults([]);
-      return;
-    }
 
-    // First try local filtering for immediate results
-    const localFiltered = routes.filter(route => {
-      const nameMatch = route.route_name.toLowerCase().includes(query.toLowerCase());
-      const originMatch = route.origin.toLowerCase().includes(query.toLowerCase());
-      const destinationMatch = route.destination.toLowerCase().includes(query.toLowerCase());
-      const fareMatch = route.fare_base?.toString().includes(query);
-      
-      return nameMatch || originMatch || destinationMatch || fareMatch;
-    });
-    
-    setFilteredRoutes(localFiltered);
-
-    // Then search the database for more comprehensive results
-    if (query.length >= 2) { // Only search database for queries with 2+ characters
-      setIsSearchingRoutes(true);
-      try {
-        // For now, simulate database search with expanded route data
-        // This will be replaced with actual API call once the backend is fixed
-        const expandedResults = await simulateRouteDatabaseSearch(query);
-        setRouteSearchResults(expandedResults);
-        console.log('🔍 Simulated database route search found:', expandedResults.length, 'results');
-      } catch (error) {
-        console.error('❌ Database route search error:', error);
-        setRouteSearchResults([]);
-      } finally {
-        setIsSearchingRoutes(false);
-      }
-    }
-  };
-
-  const clearRouteSearch = () => {
-    setRouteSearchQuery('');
-    setFilteredRoutes(routes);
-    setRouteSearchResults([]);
-  };
-
-  // Simulate database search with comprehensive route data
-  const simulateRouteDatabaseSearch = async (query: string): Promise<RouteSearchResult[]> => {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    // Create comprehensive route data that would come from database
-    const comprehensiveRoutes: RouteSearchResult[] = [
-      { id: 1, route_name: 'SM Epza → SM Dasmariñas', origin: 'SM Epza', destination: 'SM Dasmariñas', status: 'active', created_at: '2024-01-01', checkpoint_count: 17 },
-      { id: 2, route_name: 'SM Dasmariñas → SM Epza', origin: 'SM Dasmariñas', destination: 'SM Epza', status: 'active', created_at: '2024-01-01', checkpoint_count: 17 },
-      { id: 3, route_name: 'Lancaster New City → SM Dasmariñas', origin: 'Lancaster New City', destination: 'SM Dasmariñas', status: 'active', created_at: '2024-01-01', checkpoint_count: 8 },
-      { id: 4, route_name: 'SM Dasmariñas → Lancaster New City', origin: 'SM Dasmariñas', destination: 'Lancaster New City', status: 'active', created_at: '2024-01-01', checkpoint_count: 8 },
-      { id: 5, route_name: 'Robinson Tejero → SM Epza', origin: 'Robinson Tejero', destination: 'SM Epza', status: 'active', created_at: '2024-01-01', checkpoint_count: 5 },
-      { id: 6, route_name: 'SM Epza → Robinson Tejero', origin: 'SM Epza', destination: 'Robinson Tejero', status: 'active', created_at: '2024-01-01', checkpoint_count: 5 },
-      { id: 7, route_name: 'Riverside → Lancaster New City', origin: 'Riverside', destination: 'Lancaster New City', status: 'active', created_at: '2024-01-01', checkpoint_count: 3 },
-      { id: 8, route_name: 'Lancaster New City → Riverside', origin: 'Lancaster New City', destination: 'Riverside', status: 'active', created_at: '2024-01-01', checkpoint_count: 3 },
-    ];
-    
-    // Filter the comprehensive data based on query
-    const filtered = comprehensiveRoutes.filter(route => {
-      const nameMatch = route.route_name.toLowerCase().includes(query.toLowerCase());
-      const originMatch = route.origin.toLowerCase().includes(query.toLowerCase());
-      const destinationMatch = route.destination.toLowerCase().includes(query.toLowerCase());
-      
-      return nameMatch || originMatch || destinationMatch;
-    });
-    
-    return filtered;
-  };
 
   // Active trip functions
   const checkForActiveTrip = async () => {
@@ -409,7 +347,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onBackButtonPress, onSho
           });
           
           // Check if trip should be completed when driver location updates
-          await checkTripCompletion(driverLocation.current_location);
+          // Disabled to prevent duplicate trip completion - handled by notification system
+          // await checkTripCompletion(driverLocation.current_location);
           console.log('📍 Driver location updated:', driverLocation.current_location);
         } else {
           console.log('📍 Driver not found in location data');
@@ -500,8 +439,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onBackButtonPress, onSho
         console.log('🏁 Driver has reached destination - completing trip');
         console.log('🏁 Match type:', isExactDestinationMatch ? 'exact name match' : 'sequence order match');
         
-        // Trigger trip completion notification
-        if (!notificationShown) {
+        // Only trigger trip completion if not already shown and not already completing
+        if (!notificationShown && !isCompletingTrip) {
           setNotificationShown(true);
           setTripStatus('completed');
           
@@ -514,6 +453,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onBackButtonPress, onSho
             console.log('🏁 Calling completeTrip() with isAutoComplete=true');
             completeTrip(true); // Explicitly pass true for automatic completion
           }, 1000);
+        } else {
+          console.log('🔄 Trip completion already in progress or already shown');
         }
       } else {
         console.log('📍 Driver not at destination yet - continuing trip');
@@ -687,6 +628,86 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onBackButtonPress, onSho
     }
   }, [activeTrip, notificationShown]);
 
+  // Listen for general location update notifications (for all passengers)
+  useEffect(() => {
+    if (isAuthenticated) {
+      let cleanup: (() => void) | undefined;
+      
+      const handleLocationUpdate = (notification: any) => {
+        console.log('🔔 Received location update notification:', notification);
+        
+        if (notification.type === 'location_update') {
+          // Driver location update notification
+          console.log('📍 Driver location update notification:', notification.data);
+          
+          // Update driver location
+          if (notification.data && notification.data.current_location) {
+            setDriverLocation({
+              checkpoint_name: notification.data.current_location,
+              coordinates: { latitude: 0, longitude: 0 },
+              lastUpdate: new Date().toISOString(),
+              status: 'active'
+            });
+            
+            // Debounce notifications to prevent spam (only show if 5+ seconds since last notification)
+            const now = Date.now();
+            const timeSinceLastNotification = now - (lastNotificationTime || 0);
+            
+            if (timeSinceLastNotification > 5000) { // 5 seconds debounce
+              setLastNotificationTime(now);
+              
+              // Show notification to user
+              Alert.alert(
+                'Jeepney Location Update',
+                `Driver is now at ${notification.data.current_location}`,
+                [{ text: 'OK' }]
+              );
+            } else {
+              console.log('🔇 Notification debounced - too soon since last notification');
+            }
+          }
+        } else if (notification.type === 'endpoint_reached') {
+          // Driver has reached the endpoint of the route
+          console.log('🏁 Driver reached endpoint notification:', notification.data);
+          
+          // Update driver location
+          if (notification.data && notification.data.current_location) {
+            setDriverLocation({
+              checkpoint_name: notification.data.current_location,
+              coordinates: { latitude: 0, longitude: 0 },
+              lastUpdate: new Date().toISOString(),
+              status: 'active'
+            });
+          }
+          
+          // Show special endpoint notification with higher priority
+          setTimeout(() => {
+            Alert.alert(
+              '🏁 Route Endpoint Reached',
+              `Driver ${notification.data.jeepney_number} has completed the route at ${notification.data.current_location}. This driver is now available for the return route.`,
+              [{ text: 'OK' }],
+              { cancelable: true }
+            );
+          }, 500); // Small delay to ensure proper display
+        }
+      };
+
+      // Set up general location update polling
+      tripNotificationService.listenForDriverNotifications(
+        'general', // Use a general trip ID for location updates
+        handleLocationUpdate
+      ).then((cleanupFn) => {
+        cleanup = cleanupFn;
+      }).catch((error) => {
+        console.warn('⚠️ General notification service failed:', error);
+      });
+
+      return () => {
+        if (cleanup) cleanup();
+      };
+    }
+  }, [isAuthenticated, lastNotificationTime]);
+
   // Listen for driver QR scan notifications (backup method)
   useEffect(() => {
     if (activeTrip) {
@@ -694,18 +715,20 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onBackButtonPress, onSho
       let simpleCleanup: (() => void) | undefined;
       
       const handleTripCompletion = (notification: any) => {
-        console.log('🔔 Received trip completion notification:', notification);
+        console.log('🔔 Received notification:', notification);
         
         if (notification.type === 'driver_at_destination' && !notificationShown) {
           // Driver has reached the destination - automatically complete the trip
           setNotificationShown(true);
           setTripStatus('completed');
+          setIsCompletingTrip(true);
           
           // Automatically complete the trip after a short delay
           setTimeout(() => {
-            completeTrip();
+            completeTrip(true);
           }, 1000);
         }
+        // Location update and endpoint notifications are now handled by the general notification handler above
       };
 
       // Try the main notification service first
@@ -748,6 +771,84 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onBackButtonPress, onSho
 
     return () => clearInterval(interval);
   }, []);
+
+
+  // Background location updates for trip completion (works even in My Trip section)
+  useEffect(() => {
+    if (!activeTrip || !routes.length) return;
+
+    const interval = setInterval(async () => {
+      try {
+        // Get current route
+        const currentRoute = routes.find(r => r.route_name === activeTrip.route);
+        if (!currentRoute) return;
+
+        console.log('🔄 Background location update check for trip:', activeTrip.id);
+
+        // Fetch driver location updates
+        const response = await fetch(`${getBaseUrl()}/mobile/passenger/real-time-drivers/${currentRoute.id}`);
+        const data = await response.json();
+        
+        if (data.status === 'success' && data.driver_locations) {
+          const driverLocation = data.driver_locations.find((driver: any) => driver.driver_id === activeTrip.driverId);
+          
+          if (driverLocation) {
+            console.log('🔄 Background update - driver location:', driverLocation.current_location);
+            
+            setDriverLocation({
+              checkpoint_name: driverLocation.current_location,
+              coordinates: { latitude: 0, longitude: 0 },
+              lastUpdate: driverLocation.last_updated,
+              status: 'active'
+            });
+            
+            // Check trip completion regardless of which view the user is on
+            // Disabled to prevent duplicate trip completion - handled by notification system
+            // await checkTripCompletion(driverLocation.current_location);
+          }
+        }
+      } catch (error) {
+        console.error('Error in background location update:', error);
+      }
+    }, 8000); // Check every 8 seconds to avoid conflicts with notification polling
+
+    return () => clearInterval(interval);
+  }, [activeTrip, routes]);
+
+  // Listen for trip completion events from LocationTrackingService
+  useEffect(() => {
+    const handleTripCompletion = () => {
+      console.log('🏁 Trip completion event received from LocationTrackingService');
+      if (activeTrip) {
+        setTripStatus('completed');
+        setIsCompletingTrip(true);
+        
+        // Automatically complete the trip after a short delay
+        setTimeout(() => {
+          console.log('🏁 Auto-completing trip from LocationTrackingService event');
+          completeTrip(true);
+        }, 1000);
+      }
+    };
+
+    // Listen for the custom event (for React Native, we'll use a different approach)
+    // In React Native, we'll use AsyncStorage to trigger events
+    const checkForTripCompletionEvent = async () => {
+      try {
+        const tripCompletionEvent = await AsyncStorage.getItem('trip_completion_event');
+        if (tripCompletionEvent === 'triggered') {
+          await AsyncStorage.removeItem('trip_completion_event');
+          handleTripCompletion();
+        }
+      } catch (error) {
+        console.error('Error checking trip completion event:', error);
+      }
+    };
+
+    const interval = setInterval(checkForTripCompletionEvent, 1000);
+
+    return () => clearInterval(interval);
+  }, [activeTrip]);
 
   // Removed empty useFocusEffect that wasn't doing anything
 
@@ -985,7 +1086,13 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onBackButtonPress, onSho
             </View>
           )}
           
-          
+        </View>
+        
+        {/* Driver Location Tracking for Active Trip */}
+        <View style={styles.driverLocationSection}>
+          <DriverLocationCard 
+            routeId={routes.find(r => r.route_name === activeTrip.route)?.id.toString() || '1'} 
+          />
         </View>
       </ScrollView>
     );
@@ -1026,13 +1133,25 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onBackButtonPress, onSho
                 {selectedRoute.route_name}
               </Text>
               <Text style={styles.compactRouteDetails} numberOfLines={1}>
-                Base fare: ₱{selectedRoute.fare_base || '13.00'} • Tap to change route
+                Base fare: ₱{selectedRoute.fare_base || '13.00'}
+                {passengerProfile?.fareDiscount?.status === 'approved' && 
+                  ` • ${passengerProfile.fareDiscount.percentage || 20}% discount applied`
+                } • Tap to change route
               </Text>
             </View>
             <View style={styles.compactRouteActions}>
               <Text style={styles.compactRouteFare}>
-                ₱{selectedRoute.fare_base || '13.00'}
+                ₱{
+                  passengerProfile?.fareDiscount?.status === 'approved' 
+                    ? ((Number(selectedRoute.fare_base) || 13) * (1 - (passengerProfile.fareDiscount.percentage || 20) / 100)).toFixed(2)
+                    : (selectedRoute.fare_base || '13.00')
+                }
               </Text>
+              {passengerProfile?.fareDiscount?.status === 'approved' && (
+                <Text style={styles.originalFare}>
+                  ₱{selectedRoute.fare_base || '13.00'}
+                </Text>
+              )}
               <TouchableOpacity 
                 style={styles.compactRouteButton}
                 onPress={() => {
@@ -1048,9 +1167,11 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onBackButtonPress, onSho
       )}
 
       {/* Driver Location Tracking */}
-      {isAuthenticated && selectedRoute && (
+      {isAuthenticated && (selectedRoute || activeTrip) && (
         <View style={styles.driverLocationSection}>
-          <DriverLocationCard routeId={selectedRoute.id.toString()} />
+          <DriverLocationCard 
+            routeId={activeTrip ? routes.find(r => r.route_name === activeTrip.route)?.id.toString() || '1' : selectedRoute?.id.toString() || '1'} 
+          />
         </View>
       )}
 
@@ -1082,38 +1203,6 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onBackButtonPress, onSho
               </TouchableOpacity>
             </View>
             
-            {/* Search Bar */}
-            <View style={styles.searchContainer}>
-              <View style={styles.searchInputContainer}>
-                <Ionicons name="search" size={20} color={COLORS.gray500} style={styles.searchIcon} />
-                <TextInput
-                  style={styles.searchInput}
-                  placeholder="Search routes, origins, destinations..."
-                  placeholderTextColor={COLORS.gray500}
-                  value={routeSearchQuery}
-                  onChangeText={handleRouteSearch}
-                  returnKeyType="search"
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                />
-                {routeSearchQuery.length > 0 && (
-                  <TouchableOpacity onPress={clearRouteSearch} style={styles.clearButton}>
-                    <Ionicons name="close-circle" size={20} color={COLORS.gray500} />
-                  </TouchableOpacity>
-                )}
-              </View>
-              {routeSearchQuery.length > 0 && (
-                <Text style={styles.searchResultsText}>
-                  {isSearchingRoutes 
-                    ? 'Searching database...' 
-                    : routeSearchResults.length > 0 
-                      ? `${routeSearchResults.length} database route${routeSearchResults.length !== 1 ? 's' : ''} found`
-                      : `${filteredRoutes.length} local route${filteredRoutes.length !== 1 ? 's' : ''} found`
-                  }
-                </Text>
-              )}
-            </View>
-            
             <ScrollView style={styles.routesList}>
               {loadingRoutes ? (
                 <Text style={styles.loadingText}>Loading routes...</Text>
@@ -1127,52 +1216,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onBackButtonPress, onSho
                     <Text style={styles.retryButtonText}>Retry</Text>
                   </TouchableOpacity>
                 </View>
-              ) : routeSearchResults.length > 0 ? (
-                // Show database search results
-                <View>
-                  <View style={styles.searchResultsHeader}>
-                    <Text style={styles.searchResultsTitle}>
-                      Database Results ({routeSearchResults.length})
-                    </Text>
-                    {isSearchingRoutes && (
-                      <ActivityIndicator size="small" color={COLORS.primary} />
-                    )}
-                  </View>
-                  {routeSearchResults.map((route) => (
-                    <TouchableOpacity
-                      key={`db-route-${route.id}`}
-                      style={[
-                        styles.routeItem,
-                        selectedRoute?.id === route.id && styles.selectedRouteItem
-                      ]}
-                      onPress={async () => {
-                        console.log('🛣️ Database route selected:', route);
-                        setSelectedRoute(route);
-                        await saveSelectedRoute(route);
-                        setShowRouteModal(false);
-                      }}
-                    >
-                      <View style={styles.routeItemContent}>
-                        <Text style={styles.routeItemName}>{route.route_name}</Text>
-                        <Text style={styles.routeItemDetails}>
-                          {route.origin} → {route.destination}
-                        </Text>
-                        <Text style={styles.routeItemFare}>₱{route.fare_base || '8.00'}</Text>
-                      </View>
-                      {selectedRoute?.id === route.id && (
-                        <Ionicons name="checkmark-circle" size={24} color={COLORS.success} />
-                      )}
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              ) : filteredRoutes.length === 0 ? (
-                <View style={styles.emptyState}>
-                  <Ionicons name="search" size={48} color={COLORS.gray400} />
-                  <Text style={styles.emptyStateText}>No routes found</Text>
-                  <Text style={styles.emptyStateSubtext}>Try searching for different keywords</Text>
-                </View>
               ) : (
-                filteredRoutes.map((route) => (
+                routes.map((route) => (
                   <TouchableOpacity
                     key={route.id}
                     style={[

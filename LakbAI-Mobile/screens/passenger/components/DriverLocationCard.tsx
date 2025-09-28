@@ -72,6 +72,11 @@ export const DriverLocationCard: React.FC<DriverLocationCardProps> = ({
         // Get data from LocationTrackingService (which handles change detection and notifications)
         const serviceLocations = await locationTrackingService.fetchDriverLocations(routeId);
         
+        console.log('🔄 DriverLocationCard: Received locations from LocationTrackingService:', serviceLocations.length);
+        serviceLocations.forEach(location => {
+          console.log(`🔄 Driver ${location.driverId}: ${location.driverName} at ${location.lastScannedCheckpoint} (${location.lastUpdate})`);
+        });
+        
         // Convert to UI format
         const driverInfos: DriverLocationInfo[] = serviceLocations.map((location) => ({
           driverId: location.driverId,
@@ -85,6 +90,7 @@ export const DriverLocationCard: React.FC<DriverLocationCardProps> = ({
         
         setDrivers(driverInfos);
         setLastRefresh(new Date().toLocaleTimeString());
+        console.log('🔄 DriverLocationCard: Updated UI with', driverInfos.length, 'drivers');
       } catch (error) {
         console.error('❌ Failed to sync with LocationTrackingService:', error);
       }

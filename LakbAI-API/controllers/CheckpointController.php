@@ -562,14 +562,28 @@ class CheckpointController {
             ");
             $stmt->execute([$checkpoint['checkpoint_name'], $driverId]);
 
+        // Also update driver_status_tracking table for real-time monitoring
+        error_log("🔄 Calling updateDriverStatusTracking for driver $driverId at {$checkpoint['checkpoint_name']}");
+        $this->updateDriverStatusTracking($driverId, $checkpoint, $scanTime);
+
             // Log the scan event for tracking and analytics
             $this->logCheckpointScan($driverId, $checkpoint, $scanTime);
 
             // Calculate estimated arrival times for passengers
             $arrivalEstimate = $this->calculateArrivalEstimate($checkpoint);
 
-            // Notify passengers about driver location update using the notification service
+            // Always notify passengers about driver location update - regardless of checkpoint type
+            error_log("🔔 Creating location update notifications for driver {$driver['jeepney_number']} at {$checkpoint['checkpoint_name']}");
             $this->notifyPassengersWithService($driver, $checkpoint, $arrivalEstimate);
+            
+            // Special handling for start point (origin) checkpoints
+            if ($checkpoint['is_origin'] == 1) {
+                error_log("🚀 Driver {$driver['jeepney_number']} scanned start point: {$checkpoint['checkpoint_name']}");
+                $this->handleStartPointScan($driver, $checkpoint, $scanTime);
+            }
+
+            // Check if driver has reached the endpoint of the route
+            $this->handleRouteEndpointReach($driver, $checkpoint, $scanTime);
 
             // Always check for passenger trip completion at any checkpoint
             // This handles cases where passengers book destinations that aren't marked as route endpoints
@@ -642,6 +656,63 @@ class CheckpointController {
         } catch (Exception $e) {
             // Log error but don't fail the main operation
             error_log("Failed to log checkpoint scan: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Update driver status tracking table for real-time monitoring
+     */
+    private function updateDriverStatusTracking($driverId, $checkpoint, $scanTime) {
+        try {
+            // Create driver_status_tracking table if it doesn't exist
+            $this->db->exec("
+                CREATE TABLE IF NOT EXISTS `driver_status_tracking` (
+                    `id` INT(11) NOT NULL AUTO_INCREMENT,
+                    `driver_id` INT(11) NOT NULL,
+                    `route_id` INT(11) NOT NULL,
+                    `current_checkpoint_name` VARCHAR(100) NOT NULL,
+                    `next_checkpoint_eta` VARCHAR(50) DEFAULT '5-7 mins',
+                    `passenger_count` INT(11) DEFAULT 0,
+                    `status` ENUM('online', 'offline', 'at_checkpoint', 'in_transit') DEFAULT 'at_checkpoint',
+                    `last_scan_timestamp` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                    PRIMARY KEY (`id`),
+                    UNIQUE KEY `unique_driver_route` (`driver_id`, `route_id`),
+                    INDEX `idx_driver_id` (`driver_id`),
+                    INDEX `idx_route_id` (`route_id`),
+                    INDEX `idx_status` (`status`),
+                    INDEX `idx_last_scan` (`last_scan_timestamp`)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+            ");
+
+            // Convert ISO timestamp to MySQL datetime format
+            $mysqlTimestamp = date('Y-m-d H:i:s', strtotime($scanTime));
+            
+            // Insert or update driver status tracking
+            $stmt = $this->db->prepare("
+                INSERT INTO driver_status_tracking 
+                (driver_id, route_id, current_checkpoint_name, next_checkpoint_eta, passenger_count, status, last_scan_timestamp) 
+                VALUES (?, ?, ?, ?, ?, 'at_checkpoint', ?)
+                ON DUPLICATE KEY UPDATE
+                current_checkpoint_name = VALUES(current_checkpoint_name),
+                next_checkpoint_eta = VALUES(next_checkpoint_eta),
+                status = VALUES(status),
+                last_scan_timestamp = VALUES(last_scan_timestamp),
+                updated_at = CURRENT_TIMESTAMP
+            ");
+            $stmt->execute([
+                $driverId,
+                $checkpoint['route_id'],
+                $checkpoint['checkpoint_name'],
+                '5-7 mins',
+                0,
+                $mysqlTimestamp
+            ]);
+            
+            error_log("✅ Updated driver_status_tracking for driver $driverId at {$checkpoint['checkpoint_name']} with timestamp $scanTime");
+        } catch (Exception $e) {
+            error_log("❌ Failed to update driver_status_tracking: " . $e->getMessage());
         }
     }
 
@@ -747,26 +818,69 @@ class CheckpointController {
                 $arrivalEstimate['next_checkpoint_eta']
             ]);
 
-            // Use the new notification service for real-time notifications
-            $notificationController = new NotificationController($this->db);
-            
-            $driverData = [
-                'driver_id' => $driver['id'],
-                'driver_name' => $driver['first_name'] . ' ' . $driver['last_name'],
-                'jeepney_number' => $driver['jeepney_number']
-            ];
+            // Create push_notifications table if it doesn't exist
+            $this->db->exec("
+                CREATE TABLE IF NOT EXISTS `push_notifications` (
+                    `id` INT(11) NOT NULL AUTO_INCREMENT,
+                    `passenger_id` INT(11) NOT NULL,
+                    `driver_id` INT(11) NOT NULL,
+                    `notification_type` VARCHAR(50) NOT NULL,
+                    `title` VARCHAR(200) NOT NULL,
+                    `message` TEXT NOT NULL,
+                    `data` JSON,
+                    `status` ENUM('pending', 'sent', 'read') DEFAULT 'pending',
+                    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    PRIMARY KEY (`id`),
+                    INDEX `idx_passenger_id` (`passenger_id`),
+                    INDEX `idx_driver_id` (`driver_id`),
+                    INDEX `idx_notification_type` (`notification_type`),
+                    INDEX `idx_status` (`status`)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+            ");
 
-            $checkpointData = [
-                'checkpoint_id' => $checkpoint['id'],
-                'checkpoint_name' => $checkpoint['checkpoint_name'],
-                'route_id' => $checkpoint['route_id'],
-                'route_name' => $checkpoint['route_name']
-            ];
+            // Get all passengers for this route (simplified approach)
+            $stmt = $this->db->prepare("
+                SELECT DISTINCT u.id as passenger_id
+                FROM users u
+                WHERE u.user_type = 'passenger'
+            ");
+            $stmt->execute();
+            $passengers = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-            $notificationResult = $notificationController->sendArrivalNotification($driverData, $checkpointData, $arrivalEstimate);
+            $notificationCount = 0;
+            foreach ($passengers as $passenger) {
+                // Create location update notification
+                $title = "🚍 Jeepney Location Update";
+                $message = "Driver {$driver['first_name']} {$driver['last_name']} ({$driver['jeepney_number']}) is now at {$checkpoint['checkpoint_name']}";
+                
+                $notificationData = [
+                    'driver_id' => $driver['id'],
+                    'driver_name' => $driver['first_name'] . ' ' . $driver['last_name'],
+                    'jeepney_number' => $driver['jeepney_number'],
+                    'current_location' => $checkpoint['checkpoint_name'],
+                    'route_name' => $checkpoint['route_name'],
+                    'timestamp' => date('c')
+                ];
+
+                // Insert notification
+                $stmt = $this->db->prepare("
+                    INSERT INTO push_notifications 
+                    (passenger_id, driver_id, notification_type, title, message, data, status) 
+                    VALUES (?, ?, 'location_update', ?, ?, ?, 'pending')
+                ");
+                $stmt->execute([
+                    $passenger['passenger_id'],
+                    $driver['id'],
+                    $title,
+                    $message,
+                    json_encode($notificationData)
+                ]);
+                
+                $notificationCount++;
+            }
             
             // Log notification result
-            error_log("NOTIFICATION SERVICE: " . json_encode($notificationResult));
+            error_log("LOCATION NOTIFICATIONS SENT: {$notificationCount} notifications created for driver {$driver['jeepney_number']} at {$checkpoint['checkpoint_name']}");
 
         } catch (Exception $e) {
             error_log("Failed to notify passengers via service: " . $e->getMessage());
@@ -814,17 +928,20 @@ class CheckpointController {
             ");
             $stmt->execute([$routeId]);
             $locations = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            // Add current_location field to match expected response format
+            foreach ($locations as &$location) {
+                $location['current_location'] = $location['last_scanned_checkpoint'] ?? 'Unknown Location';
+                $location['last_updated'] = $location['last_update'] ?? date('Y-m-d H:i:s');
+            }
 
             // Add status information
             foreach ($locations as &$location) {
                 $minutesSinceUpdate = $location['minutes_since_update'];
                 $shiftStatus = $location['shift_status'];
                 
-                // If driver is off shift, they are inactive regardless of location update time
-                if ($shiftStatus === 'off_shift') {
-                    $location['status'] = 'inactive';
-                    $location['status_message'] = 'Driver is off shift';
-                } elseif ($shiftStatus === 'on_shift') {
+                // Improved status logic to handle endpoint drivers
+                if ($shiftStatus === 'on_shift') {
                     // Driver is on shift - they are considered active
                     $location['status'] = 'active';
                     if ($minutesSinceUpdate === null) {
@@ -836,10 +953,14 @@ class CheckpointController {
                     } else {
                         $location['status_message'] = 'On shift - location data is old';
                     }
+                } elseif ($shiftStatus === 'off_shift' && $minutesSinceUpdate !== null && $minutesSinceUpdate <= 15) {
+                    // Driver is off shift but recently updated location (likely reached endpoint)
+                    $location['status'] = 'recently_active';
+                    $location['status_message'] = 'Recently completed route (may be available for return trip)';
                 } else {
-                    // Default case - driver not on shift
+                    // Driver is off shift and no recent updates
                     $location['status'] = 'inactive';
-                    $location['status_message'] = 'Driver is not on shift';
+                    $location['status_message'] = 'Driver is off shift';
                 }
             }
 
@@ -944,6 +1065,203 @@ class CheckpointController {
             
         } catch (Exception $e) {
             error_log("❌ Failed to complete passenger trips at destination: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Handle when driver scans start point QR code
+     */
+    private function handleStartPointScan($driver, $checkpoint, $scanTime) {
+        try {
+            error_log("🚀 Processing start point scan for driver {$driver['jeepney_number']} at {$checkpoint['checkpoint_name']}");
+            
+            // Create high-priority start point notification for all passengers
+            $stmt = $this->db->prepare("
+                SELECT DISTINCT u.id as passenger_id 
+                FROM users u 
+                WHERE u.user_type = 'passenger'
+            ");
+            $stmt->execute();
+            $passengers = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            foreach ($passengers as $passenger) {
+                // Create start point notification
+                $stmt = $this->db->prepare("
+                    INSERT INTO push_notifications (
+                        passenger_id,
+                        driver_id,
+                        notification_type,
+                        title,
+                        message,
+                        data,
+                        status,
+                        created_at
+                    ) VALUES (?, ?, 'location_update', ?, ?, ?, 'pending', NOW())
+                ");
+                
+                $title = "🚀 Route Started";
+                $message = "Driver {$driver['jeepney_number']} has started the route from {$checkpoint['checkpoint_name']}";
+                $data = json_encode([
+                    'driver_id' => $driver['id'],
+                    'driver_name' => $driver['first_name'] . ' ' . $driver['last_name'],
+                    'jeepney_number' => $driver['jeepney_number'],
+                    'current_location' => $checkpoint['checkpoint_name'],
+                    'is_origin' => true,
+                    'route_name' => $checkpoint['route_name'],
+                    'route_id' => $checkpoint['route_id'],
+                    'timestamp' => date('c'),
+                    'notification_priority' => 'high'
+                ]);
+                
+                $stmt->execute([
+                    $passenger['passenger_id'],
+                    $driver['id'],
+                    $title,
+                    $message,
+                    $data
+                ]);
+            }
+            
+            error_log("📱 Sent start point notifications to " . count($passengers) . " passengers");
+            
+        } catch (Exception $e) {
+            error_log("❌ Failed to handle start point scan: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Handle when driver reaches the endpoint of a route
+     */
+    private function handleRouteEndpointReach($driver, $checkpoint, $scanTime) {
+        try {
+            // Check if this checkpoint is the endpoint of the route
+            $stmt = $this->db->prepare("
+                SELECT 
+                    r.destination,
+                    c.checkpoint_name,
+                    c.sequence_order,
+                    (SELECT MAX(sequence_order) FROM checkpoints WHERE route_id = r.id) as max_sequence
+                FROM routes r
+                JOIN checkpoints c ON r.id = c.route_id
+                WHERE r.id = ? AND c.id = ?
+            ");
+            $stmt->execute([$checkpoint['route_id'], $checkpoint['id']]);
+            $routeInfo = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if ($routeInfo) {
+                $isEndpoint = (
+                    $checkpoint['checkpoint_name'] === $routeInfo['destination'] ||
+                    $checkpoint['sequence_order'] == $routeInfo['max_sequence']
+                );
+                
+                if ($isEndpoint) {
+                    error_log("🏁 Driver {$driver['jeepney_number']} has reached the endpoint of route: {$checkpoint['checkpoint_name']}");
+                    
+                    // Ensure driver remains visible to passengers for endpoint notifications
+                    // Update driver_status_tracking to keep them visible
+                    $this->updateDriverStatusTracking($driver['id'], $checkpoint, $scanTime);
+                    
+                    // Send special endpoint notification to all passengers on this route
+                    $this->sendEndpointReachedNotification($driver, $checkpoint);
+                }
+            }
+        } catch (Exception $e) {
+            error_log("❌ Failed to handle route endpoint reach: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Send notification when driver reaches route endpoint
+     */
+    private function sendEndpointReachedNotification($driver, $checkpoint) {
+        try {
+            // Get all passengers who might be interested in this route
+            $stmt = $this->db->prepare("
+                SELECT DISTINCT u.id as passenger_id 
+                FROM users u 
+                WHERE u.user_type = 'passenger'
+            ");
+            $stmt->execute();
+            $passengers = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            foreach ($passengers as $passenger) {
+                // Create both location_update and endpoint_reached notifications
+                // Location update notification for general tracking
+                $stmt = $this->db->prepare("
+                    INSERT INTO push_notifications (
+                        passenger_id,
+                        driver_id,
+                        notification_type,
+                        title,
+                        message,
+                        data,
+                        status,
+                        created_at
+                    ) VALUES (?, ?, 'location_update', ?, ?, ?, 'pending', NOW())
+                ");
+                
+                $locationTitle = "🚌 Driver Reached Endpoint";
+                $locationMessage = "Driver {$driver['jeepney_number']} has reached {$checkpoint['checkpoint_name']} (endpoint)";
+                $locationData = json_encode([
+                    'driver_id' => $driver['id'],
+                    'driver_name' => $driver['first_name'] . ' ' . $driver['last_name'],
+                    'jeepney_number' => $driver['jeepney_number'],
+                    'current_location' => $checkpoint['checkpoint_name'],
+                    'is_endpoint' => true,
+                    'route_name' => $checkpoint['route_name'],
+                    'route_id' => $checkpoint['route_id'],
+                    'timestamp' => date('c')
+                ]);
+                
+                $stmt->execute([
+                    $passenger['passenger_id'],
+                    $driver['id'],
+                    $locationTitle,
+                    $locationMessage,
+                    $locationData
+                ]);
+                
+                // Create endpoint_reached notification for special handling
+                $stmt = $this->db->prepare("
+                    INSERT INTO push_notifications (
+                        passenger_id,
+                        driver_id,
+                        notification_type,
+                        title,
+                        message,
+                        data,
+                        status,
+                        created_at
+                    ) VALUES (?, ?, 'endpoint_reached', ?, ?, ?, 'pending', NOW())
+                ");
+                
+                $endpointTitle = "🏁 Route Endpoint Reached";
+                $endpointMessage = "Driver {$driver['jeepney_number']} has completed the route at {$checkpoint['checkpoint_name']}";
+                $endpointData = json_encode([
+                    'driver_id' => $driver['id'],
+                    'driver_name' => $driver['first_name'] . ' ' . $driver['last_name'],
+                    'jeepney_number' => $driver['jeepney_number'],
+                    'current_location' => $checkpoint['checkpoint_name'],
+                    'is_endpoint' => true,
+                    'route_name' => $checkpoint['route_name'],
+                    'route_id' => $checkpoint['route_id'],
+                    'timestamp' => date('c'),
+                    'notification_priority' => 'high' // Mark as high priority
+                ]);
+                
+                $stmt->execute([
+                    $passenger['passenger_id'],
+                    $driver['id'],
+                    $endpointTitle,
+                    $endpointMessage,
+                    $endpointData
+                ]);
+            }
+            
+            error_log("📱 Sent endpoint reached notifications to " . count($passengers) . " passengers");
+            
+        } catch (Exception $e) {
+            error_log("❌ Failed to send endpoint reached notification: " . $e->getMessage());
         }
     }
 

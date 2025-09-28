@@ -15,9 +15,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
-// Parse the request path
-$request_uri = $_SERVER['REQUEST_URI'];
-$path_parts = explode('/', trim($request_uri, '/'));
+// Parse the request path - use the same logic as main API
+$path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+$rawParts = array_values(array_filter(explode('/', trim($path, '/'))));
+
+// Normalize path: support both /LakbAI/LakbAI-API/routes/api.php/... and /api/...
+$idxApiRoot = array_search('LakbAI-API', $rawParts, true);
+if ($idxApiRoot !== false) {
+    $rawParts = array_slice($rawParts, $idxApiRoot + 1);
+}
+// Remove 'routes' and 'api.php' from the path
+if (isset($rawParts[0]) && $rawParts[0] === 'routes') {
+    $rawParts = array_slice($rawParts, 1);
+}
+if (isset($rawParts[0]) && $rawParts[0] === 'api.php') {
+    $rawParts = array_slice($rawParts, 1);
+}
+if (isset($rawParts[0]) && $rawParts[0] === 'api') {
+    $rawParts = array_slice($rawParts, 1);
+}
+
+$path_parts = $rawParts;
 
 try {
     // Route: GET /mobile/passenger/notifications/{passenger_id}
@@ -40,8 +58,11 @@ try {
         $params = [$passengerId];
         
         if ($tripId) {
-            $sql .= " AND JSON_EXTRACT(data, '$.trip_id') = ?";
-            $params[] = $tripId;
+            // Only filter by trip_id for trip-specific notifications (not location updates)
+            if ($type !== 'location_update') {
+                $sql .= " AND JSON_EXTRACT(data, '$.trip_id') = ?";
+                $params[] = $tripId;
+            }
         }
         
         if ($type) {

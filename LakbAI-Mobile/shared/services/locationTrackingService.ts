@@ -97,8 +97,16 @@ class LocationTrackingService {
   async fetchDriverLocations(routeId?: string): Promise<DriverLocationInfo[]> {
     try {
       const route = routeId || this.routeId;
-      const url = `${getBaseUrl()}/mobile/passenger/real-time-drivers/${route}?t=${Date.now()}`;
-      const response = await fetch(url);
+      const url = `${getBaseUrl()}/mobile/passenger/real-time-drivers/${route}?t=${Date.now()}&cache=${Math.random()}`;
+      console.log('🔍 LocationTrackingService: Fetching from URL:', url);
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        }
+      });
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -106,8 +114,18 @@ class LocationTrackingService {
       
       const data = await response.json();
       
+      console.log('🔍 LocationTrackingService: API response:', {
+        status: data.status,
+        driverCount: data.driver_locations?.length || 0,
+        routeId: data.route_id
+      });
+      console.log('🔍 LocationTrackingService: Raw driver_locations:', data.driver_locations);
+      console.log('🔍 LocationTrackingService: Full API response:', JSON.stringify(data, null, 2));
+      console.log('🔍 LocationTrackingService: Timestamp check - API last_updated:', data.last_updated);
+      console.log('🔍 LocationTrackingService: Current time:', new Date().toISOString());
+      
       if (data.driver_locations && Array.isArray(data.driver_locations)) {
-        return data.driver_locations.map((location: any) => ({
+        const locations = data.driver_locations.map((location: any) => ({
           driverId: location.driver_id.toString(),
           driverName: `${location.first_name} ${location.last_name}` || 'Unknown Driver',
           jeepneyNumber: location.jeepney_number || 'Unknown',
@@ -122,8 +140,18 @@ class LocationTrackingService {
           route: location.route_name || `Route ${route}`,
           coordinates: location.coordinates
         }));
+        
+        console.log('🔍 LocationTrackingService: Mapped locations:', locations.map(l => ({
+          id: l.driverId,
+          name: l.driverName,
+          location: l.lastScannedCheckpoint,
+          time: l.lastUpdate
+        })));
+        
+        return locations;
       }
       
+      console.log('🔍 LocationTrackingService: No driver_locations in response');
       return [];
     } catch (error) {
       console.error('❌ Failed to fetch driver locations:', error);
@@ -140,6 +168,7 @@ class LocationTrackingService {
     try {
       const currentLocations = await this.fetchDriverLocations();
       console.log(`🔍 LocationTrackingService: Checking ${currentLocations.length} drivers for location changes`);
+      console.log(`🔍 Current locations:`, currentLocations.map(l => ({ id: l.driverId, location: l.lastScannedCheckpoint, time: l.lastUpdate })));
       
       for (const currentLocation of currentLocations) {
         const previousLocation = this.previousLocations.get(currentLocation.driverId);
@@ -163,7 +192,16 @@ class LocationTrackingService {
           });
           
           // Trigger local notification for passengers
+          console.log('🔔 TRIGGERING NOTIFICATION: Driver moved from', previousLocation.lastScannedCheckpoint, 'to', currentLocation.lastScannedCheckpoint);
           await this.notifyLocationChange(previousLocation, currentLocation);
+        } else if (previousLocation) {
+          console.log('📍 No location change detected for driver:', currentLocation.driverId, '- same location:', currentLocation.lastScannedCheckpoint);
+        } else {
+          console.log('📍 First time seeing driver:', currentLocation.driverId, 'at location:', currentLocation.lastScannedCheckpoint);
+          
+          // Send notification for new driver appearance (when driver starts shift)
+          console.log('🔔 TRIGGERING NOTIFICATION: New driver appeared at', currentLocation.lastScannedCheckpoint);
+          await this.notifyLocationChange(null, currentLocation);
         }
         
         // Update previous location cache
@@ -201,16 +239,65 @@ class LocationTrackingService {
   /**
    * Send location change notification (passenger app only)
    */
-  private async notifyLocationChange(previous: DriverLocationInfo, current: DriverLocationInfo): Promise<void> {
+  private async notifyLocationChange(previous: DriverLocationInfo | null, current: DriverLocationInfo): Promise<void> {
     if (!this.isPassengerApp) return;
     
     try {
+      // Handle new driver appearance (when driver starts shift)
+      if (!previous) {
+        console.log('🔔 Preparing to send new driver notification:', {
+          driver: current.driverName,
+          jeepney: current.jeepneyNumber,
+          location: current.lastScannedCheckpoint
+        });
+        console.log('🔔 NOTIFICATION: New driver appeared at', current.lastScannedCheckpoint);
+
+        // Create unique notification key for new driver appearance
+        const newDriverKey = `new_driver_${current.driverId}_${current.lastScannedCheckpoint}`;
+        
+        if (this.sentNotifications.has(newDriverKey)) {
+          console.log('🔔 Duplicate new driver notification prevented for:', newDriverKey);
+          return;
+        }
+
+        // Mark notification as sent
+        this.sentNotifications.add(newDriverKey);
+
+        // Ensure notification service is initialized
+        await localNotificationService.initialize();
+        
+        await localNotificationService.notifyLocationUpdate({
+          type: 'location_update',
+          driverId: current.driverId,
+          driverName: current.driverName,
+          jeepneyNumber: current.jeepneyNumber,
+          route: current.route,
+          currentLocation: current.lastScannedCheckpoint,
+          previousLocation: null,
+          coordinates: current.coordinates,
+          title: '🚌 Driver Started Shift',
+          body: `${current.driverName} (${current.jeepneyNumber}) started their shift at ${current.lastScannedCheckpoint}`,
+          data: {
+            driverId: current.driverId,
+            driverName: current.driverName,
+            jeepneyNumber: current.jeepneyNumber,
+            route: current.route,
+            currentLocation: current.lastScannedCheckpoint,
+            previousLocation: null,
+            type: 'new_driver'
+          }
+        });
+        return;
+      }
+
+      // Handle regular location changes
       console.log('🔔 Preparing to send location notification:', {
         from: previous.lastScannedCheckpoint,
         to: current.lastScannedCheckpoint,
         driver: current.driverName,
         jeepney: current.jeepneyNumber
       });
+      console.log('🔔 NOTIFICATION: Driver location changed from', previous.lastScannedCheckpoint, 'to', current.lastScannedCheckpoint);
 
       // Create unique notification key for regular location updates
       const locationKey = `location_${current.driverId}_${previous.lastScannedCheckpoint}_${current.lastScannedCheckpoint}`;

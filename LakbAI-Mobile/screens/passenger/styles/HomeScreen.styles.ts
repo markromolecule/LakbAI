@@ -150,6 +150,13 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginRight: SPACING.sm,
   },
+  originalFare: {
+    fontSize: 12,
+    color: COLORS.gray500,
+    textDecorationLine: 'line-through',
+    marginTop: -2,
+    textAlign: 'right',
+  },
   compactRouteButton: {
     backgroundColor: COLORS.primaryLight,
     padding: SPACING.sm,
