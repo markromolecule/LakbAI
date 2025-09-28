@@ -6,7 +6,6 @@ import UserService from '../../services/userService';
 import PendingUsersContainer from '../../components/users/PendingUsersContainer';
 import AllUsersContainer from '../../components/users/AllUsersContainer';
 import UserStatsCards from '../../components/users/UserStatsCards';
-import ApiTestComponent from '../../components/debug/ApiTestComponent';
 
 const Users = () => {
   const location = useLocation();
@@ -77,8 +76,6 @@ const Users = () => {
         </Alert>
       )}
 
-      {/* Debug Component - Remove in production */}
-      {error && <ApiTestComponent />}
 
       {/* User Statistics Cards */}
       <UserStatsCards stats={stats} loading={loading} />
