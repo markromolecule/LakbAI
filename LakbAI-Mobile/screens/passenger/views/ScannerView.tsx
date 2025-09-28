@@ -135,41 +135,69 @@ export const ScannerScreen: React.FC = () => {
       isOpeningBrowserRef.current = true;
       setProcessing(true);
       
-      // Try multiple base URLs for different environments
-      const possibleBases = [
-        'http://localhost',      // iOS Simulator
-        'http://10.0.2.2',      // Android Emulator  
-        'http://127.0.0.1',     // Alternative localhost
-        'http://192.168.1.100'  // Replace with your computer's IP
-      ];
+      console.log('Creating Xendit payment with data:', paymentData);
       
-      // Simple fallback to the static Xendit link
-      console.log('Payment data:', paymentData);
+      // Use the API configuration to get the base URL
+      const { getBaseUrl } = require('../../../config/apiConfig');
+      const baseUrl = getBaseUrl().replace('/routes/api.php', '');
+      const xenditUrl = `${baseUrl}/public/create_xendit_invoice.php`;
       
-      // Directly open the static Xendit checkout for now
-      await WebBrowser.openBrowserAsync('https://checkout-staging.xendit.co/od/lakbai');
-      return;
-
-      // TODO: Uncomment when backend is accessible
-      // const response = await fetch(url, {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({
-      //     amount: paymentData.amount,
-      //     description: paymentData.description || `Fare payment for ${paymentData.jeepneyId}`,
-      //     jeepneyId: paymentData.jeepneyId || 'LKB-001',
-      //     customerName: 'LakbAI Passenger',
-      //     customerEmail: 'passenger@lakbai.com'
-      //   })
-      // });
-      // const result = await response.json();
-      // if (response.ok && result.invoice_url) {
-      //   await WebBrowser.openBrowserAsync(result.invoice_url);
-      // } else {
-      //   throw new Error(result.error || 'Failed to create payment');
-      // }
+      console.log('Xendit API URL:', xenditUrl);
+      
+      // Prepare payment data
+      const requestPayload = {
+        amount: paymentData.amount || 25.00,
+        description: paymentData.description || `LakbAI Fare Payment for ${paymentData.jeepneyId || 'LKB-001'}`,
+        customerEmail: paymentData.customerEmail || 'passenger@lakbai.com',
+        customerName: paymentData.customerName || 'LakbAI Passenger',
+        jeepneyId: paymentData.jeepneyId || 'LKB-001'
+      };
+      
+      console.log('Payment request payload:', requestPayload);
+      
+      // Make API call to create Xendit invoice
+      const response = await fetch(xenditUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify(requestPayload)
+      });
+      
+      console.log('Xendit API response status:', response.status);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      const result = await response.json();
+      console.log('Xendit API response:', result);
+      
+      if (result.success && result.data?.invoice_url) {
+        // Open the real Xendit invoice URL
+        await WebBrowser.openBrowserAsync(result.data.invoice_url);
+      } else if (result.fallback && result.data?.invoice_url) {
+        // Fallback URL provided
+        console.log('Using fallback payment URL');
+        await WebBrowser.openBrowserAsync(result.data.invoice_url);
+      } else {
+        throw new Error(result.error || 'Failed to create payment invoice');
+      }
+      
     } catch (error: any) {
-      Alert.alert('Payment Error', error.message || 'Failed to create payment');
+      console.error('Xendit payment error:', error);
+      
+      // Fallback to static link if API fails
+      console.log('Falling back to static Xendit link');
+      try {
+        await WebBrowser.openBrowserAsync('https://checkout-staging.xendit.co/od/lakbai');
+      } catch (fallbackError) {
+        Alert.alert(
+          'Payment Error', 
+          `Failed to create payment: ${error.message || 'Unknown error'}`
+        );
+      }
     } finally {
       setProcessing(false);
       isOpeningBrowserRef.current = false;

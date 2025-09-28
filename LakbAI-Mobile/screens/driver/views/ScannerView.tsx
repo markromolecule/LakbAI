@@ -284,69 +284,9 @@ export const ScannerView: React.FC<ScannerViewProps> = ({
     }
   };
 
-  const notifyPassengers = async (locationName: string, coordinates?: { latitude: number; longitude: number }) => {
-    try {
-      // Use real driver data
-      const realDriverName = driverProfile?.name || driverInfo.name;
-      const realJeepneyNumber = driverProfile?.jeepneyNumber || driverInfo.jeepneyNumber;
-      const realRoute = driverProfile?.route || driverInfo.route;
-      
-      console.log(`📢 Notifying passengers of driver location: ${locationName} (Driver: ${realDriverName})`);
-      
-      // Send location notification to passengers
-      const locationNotification: DriverLocationNotification = {
-        type: 'driver_location_update',
-        driverId: driverInfo.id,
-        driverName: realDriverName,
-        jeepneyNumber: realJeepneyNumber,
-        route: realRoute,
-        currentLocation: locationName,
-        coordinates: coordinates,
-        timestamp: new Date().toISOString(),
-      };
-
-      // Send immediate notification to passenger apps
-      const { localNotificationService } = await import('../../../shared/services/localNotificationService');
-      await localNotificationService.notifyLocationUpdate({
-        type: 'location_update',
-        driverId: driverInfo.id,
-        driverName: realDriverName,
-        jeepneyNumber: realJeepneyNumber,
-        route: realRoute,
-        currentLocation: locationName,
-        previousLocation: driverLocation || 'Unknown',
-        coordinates: coordinates,
-        title: '📍 Jeepney Location Update',
-        body: `${realDriverName} (${realJeepneyNumber}) is now at ${locationName}`,
-        data: {
-          driverId: driverInfo.id,
-          driverName: realDriverName,
-          jeepneyNumber: realJeepneyNumber,
-          route: realRoute,
-          currentLocation: locationName,
-          previousLocation: driverLocation || 'Unknown',
-          coordinates: coordinates,
-          timestamp: new Date().toISOString()
-        }
-      });
-
-      // Location update stored in database - passenger apps will detect via API polling
-      console.log(`📍 Location update sent immediately and stored in database: ${realDriverName} at ${locationName}`);
-      
-      return {
-        success: true,
-        notificationsSent: 1,
-        message: `Notification sent: ${realDriverName} at ${locationName}`
-      };
-    } catch (error) {
-      console.error('❌ Failed to notify passengers:', error);
-      return {
-        success: false,
-        notificationsSent: 0,
-        error: error instanceof Error ? error.message : 'Unknown error'
-      };
-    }
-  };
+  // REMOVED: notifyPassengers function 
+  // Notifications should be triggered by passenger app when it detects location changes
+  // The driver app only updates the location in the database
 
   const handleRouteCheckpointScan = async (qrData: RouteCheckpointQRData) => {
     setProcessing(true);
@@ -573,16 +513,12 @@ export const ScannerView: React.FC<ScannerViewProps> = ({
       // Update driver location
       onLocationUpdate(qrData.locationName);
       
-      // Send notifications to passengers
-      const notificationResult = await notifyPassengers(qrData.locationName, qrData.coordinates);
-      
-      const successMessage = notificationResult.success
-        ? `\n\n✅ ${notificationResult.notificationsSent} passengers have been notified!`
-        : `\n\n⚠️ Notification failed: ${notificationResult.error}`;
+      // Location update stored in database - passenger apps will detect via API polling
+      console.log(`📍 Location updated in database: ${qrData.locationName}`);
       
       Alert.alert(
         'Location Updated! 📍',
-        `You are now at: ${qrData.locationName}${successMessage}`,
+        `You are now at: ${qrData.locationName}\n\n📱 Passengers will be notified automatically when their apps detect the location change.`,
         [{ text: 'OK' }]
       );
       

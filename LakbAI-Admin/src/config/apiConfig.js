@@ -32,12 +32,7 @@ const getBaseUrl = () => {
 
 // Helper to log current configuration
 const logCurrentConfig = () => {
-  console.log('Admin Panel API Configuration:');
-  console.log('Developer:', CURRENT_DEVELOPER);
-  console.log('IP:', getCurrentDeveloperIP());
-  console.log('API URL:', buildApiUrl());
-  console.log('Base URL:', getBaseUrl());
-  console.log('Make sure your XAMPP server is running on this IP!');
+  // Configuration logging removed for production
 };
 
 // Export the configuration

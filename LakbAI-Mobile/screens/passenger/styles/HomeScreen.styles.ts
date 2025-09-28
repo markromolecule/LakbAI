@@ -556,6 +556,37 @@ const styles = StyleSheet.create({
     gap: SPACING.md,
   },
 
+  // Trip Completion Loading Overlay Styles
+  tripCompletionOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: COLORS.white,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 9999,
+  },
+  tripCompletionContent: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: SPACING.xl,
+  },
+  tripCompletionTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: COLORS.gray800,
+    marginTop: SPACING.lg,
+    marginBottom: SPACING.sm,
+    textAlign: 'center',
+  },
+  tripCompletionSubtitle: {
+    fontSize: 16,
+    color: COLORS.gray600,
+    textAlign: 'center',
+    lineHeight: 22,
+  },
 
 });
 

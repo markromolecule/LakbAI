@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import sessionManager from './sessionManager';
 import { getBaseUrl } from '../../config/apiConfig';
 
 export interface TripNotification {
@@ -40,23 +41,65 @@ class TripNotificationService {
     }
   }
 
-  // Check for driver updates (simulated - in real app this would be from server)
+  // Check for driver updates from backend API
   private async checkForDriverUpdates(tripId: string): Promise<TripNotification | null> {
     try {
-      // This would normally check with the server for driver location updates
-      // For now, we'll only return notifications when explicitly triggered
-      // (e.g., when driver scans QR code at destination)
       const activeTrip = await this.getActiveTrip();
       if (!activeTrip || activeTrip.id !== tripId) {
         return null;
       }
 
-      // In a real implementation, this would check the server for:
-      // 1. Driver's current location
-      // 2. Whether driver scanned QR at passenger's destination
-      // 3. Whether driver exceeded passenger's destination
+      // Get passenger ID from session
+      const session = await sessionManager.getUserSession();
+      if (!session?.dbUserData?.id) {
+        return null;
+      }
+
+      const passengerId = session.dbUserData.id;
+
+      // Check backend for trip completion notifications
+      try {
+        const response = await fetch(`${getBaseUrl()}/mobile/passenger/notifications/${passengerId}?trip_id=${tripId}&type=driver_at_destination&limit=1`);
+        
+        if (!response.ok) {
+          console.log('📡 No trip completion notifications found (response not ok)');
+          return null;
+        }
+
+        const data = await response.json();
+        
+        if (data.notifications && data.notifications.length > 0) {
+          const notification = data.notifications[0];
+          const notificationData = JSON.parse(notification.data || '{}');
+          
+          console.log('🔔 Found trip completion notification:', notification);
+          
+          // Mark notification as read
+          try {
+            await fetch(`${getBaseUrl()}/mobile/passenger/notifications/${notification.id}/read`, {
+              method: 'POST'
+            });
+          } catch (markReadError) {
+            console.warn('⚠️ Failed to mark notification as read:', markReadError);
+          }
+          
+          return {
+            id: notification.id,
+            type: 'driver_at_destination',
+            tripId: notificationData.trip_id || tripId,
+            driverId: notificationData.driver_id,
+            message: notification.message,
+            timestamp: notification.created_at,
+            data: notificationData
+          };
+        } else {
+          console.log('📡 No trip completion notifications found in response');
+        }
+      } catch (fetchError) {
+        console.error('📡 Failed to fetch notifications from backend:', fetchError);
+        return null;
+      }
       
-      // For now, return null to prevent automatic trip completion
       return null;
     } catch (error) {
       console.error('Error checking for driver updates:', error);

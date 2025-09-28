@@ -118,33 +118,61 @@ class EarningsService {
       
       console.log('💰 Fetching earnings from API:', apiUrl);
       
-      const response = await fetch(apiUrl);
+      // Create AbortController for timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
       
-      if (response.ok) {
-        const result = await response.json();
-        console.log('💰 API earnings response:', result);
+      try {
+        const response = await fetch(apiUrl, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          signal: controller.signal,
+        });
         
-        if (result.status === 'success' && result.earnings) {
-          return {
-            todayEarnings: result.earnings.todayEarnings,
-            todayTrips: result.earnings.todayTrips,
-            weeklyEarnings: result.earnings.weeklyEarnings,
-            weeklyTrips: result.earnings.weeklyTrips || 0,
-            monthlyEarnings: result.earnings.monthlyEarnings,
-            monthlyTrips: result.earnings.monthlyTrips || 0,
-            yearlyEarnings: result.earnings.yearlyEarnings || 0,
-            yearlyTrips: result.earnings.yearlyTrips || 0,
-            totalEarnings: result.earnings.totalEarnings || 0,
-            totalTrips: result.earnings.totalTrips,
-            averageFarePerTrip: result.earnings.averageFarePerTrip,
-            lastUpdate: result.earnings.lastUpdate,
-          };
+        clearTimeout(timeoutId);
+        
+        if (response.ok) {
+          const result = await response.json();
+          console.log('💰 API earnings response:', result);
+          
+          if (result.status === 'success' && result.earnings) {
+            return {
+              todayEarnings: result.earnings.todayEarnings,
+              todayTrips: result.earnings.todayTrips,
+              weeklyEarnings: result.earnings.weeklyEarnings,
+              weeklyTrips: result.earnings.weeklyTrips || 0,
+              monthlyEarnings: result.earnings.monthlyEarnings,
+              monthlyTrips: result.earnings.monthlyTrips || 0,
+              yearlyEarnings: result.earnings.yearlyEarnings || 0,
+              yearlyTrips: result.earnings.yearlyTrips || 0,
+              totalEarnings: result.earnings.totalEarnings || 0,
+              totalTrips: result.earnings.totalTrips,
+              averageFarePerTrip: result.earnings.averageFarePerTrip,
+              lastUpdate: result.earnings.lastUpdate,
+            };
+          }
+        } else {
+          console.warn('⚠️ Earnings API error:', response.status, response.statusText);
         }
-      } else {
-        console.warn('⚠️ Earnings API error:', response.status, response.statusText);
+      } catch (fetchError: any) {
+        clearTimeout(timeoutId);
+        
+        if (fetchError.name === 'AbortError') {
+          console.error('❌ Earnings API request timed out after 10 seconds');
+        } else {
+          console.error('❌ Earnings API fetch error:', fetchError);
+        }
+        throw fetchError;
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ Failed to fetch earnings from API:', error);
+      
+      // Check if it's a network timeout error
+      if (error.message?.includes('timeout') || error.name === 'AbortError') {
+        console.warn('⚠️ Network timeout detected - will retry with fallback data');
+      }
     }
     
     return null;
@@ -509,11 +537,34 @@ class EarningsService {
   }
 
   /**
-   * Get current earnings for a driver (async version - tries API first)
+   * Get current earnings for a driver (async version - tries API first with retry logic)
    */
   async getEarningsAsync(driverId: string, senderName?: string): Promise<DriverEarnings> {
-    // Try to get from API first
-    const apiEarnings = await this.getDriverEarningsFromAPI(driverId);
+    // Try to get from API first with retry logic
+    let apiEarnings = null;
+    let retryCount = 0;
+    const maxRetries = 2;
+    
+    while (retryCount <= maxRetries && !apiEarnings) {
+      try {
+        console.log(`💰 Attempting to fetch earnings from API (attempt ${retryCount + 1}/${maxRetries + 1})`);
+        apiEarnings = await this.getDriverEarningsFromAPI(driverId);
+        
+        if (apiEarnings) {
+          console.log('💰 Successfully fetched earnings from API');
+          break;
+        }
+      } catch (error: any) {
+        console.warn(`⚠️ API fetch attempt ${retryCount + 1} failed:`, error.message);
+        
+        if (retryCount < maxRetries) {
+          console.log(`🔄 Retrying in ${(retryCount + 1) * 2} seconds...`);
+          await new Promise(resolve => setTimeout(resolve, (retryCount + 1) * 2000));
+        }
+      }
+      
+      retryCount++;
+    }
     
     if (apiEarnings) {
       // Initialize previous earnings if not set (first time loading)
@@ -536,7 +587,7 @@ class EarningsService {
     }
     
     // Fallback to local cache
-    console.log('💰 Using fallback local earnings for driver:', driverId);
+    console.log('💰 API failed after retries, using fallback local earnings for driver:', driverId);
     const localEarnings = this.getDriverEarnings(driverId);
     
     // Initialize previous earnings if not set (first time loading)

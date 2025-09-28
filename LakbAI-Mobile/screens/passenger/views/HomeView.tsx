@@ -1,22 +1,24 @@
 // screens/passenger/views/HomeScreen.tsx
 import React, { useCallback, useState, useEffect } from 'react';
-import { ScrollView, View, Text, TouchableOpacity, Alert, Modal, Platform } from 'react-native';
+import { ScrollView, View, Text, TouchableOpacity, Alert, Modal, Platform, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import MapView, { Marker, Polyline } from 'react-native-maps';
 import { PassengerRoutes, PassengerRouteHref } from '../../../routes/PassengerRoutes';
-import { COLORS } from '../../../shared/styles';
+import { COLORS, SPACING } from '../../../shared/styles';
 import { globalStyles } from '../../../shared/styles/globalStyles';
 import { useAuthContext } from '../../../shared/providers/AuthProvider';
 import { LocationNotificationDisplay } from '../../../components/passenger/LocationNotificationDisplay';
 import { googleMapsService, Coordinates } from '../../../shared/services/googleMapsService';
 import { tripNotificationService, TripNotification } from '../../../shared/services/tripNotificationService';
+import { simpleTripNotificationService } from '../../../shared/services/simpleTripNotificationService';
 import { fareMatrixService } from '../../../shared/services/fareMatrixService';
 import styles from '../styles/HomeScreen.styles';
 import DriverLocationCard from '../components/DriverLocationCard';
 import { getBaseUrl } from '../../../config/apiConfig';
 import type { Href } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+
 
 // AsyncStorage keys
 const SELECTED_ROUTE_KEY = 'selected_route';
@@ -103,6 +105,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onBackButtonPress, onSho
   const [notificationShown, setNotificationShown] = useState(false);
   const [showActiveTripView, setShowActiveTripView] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [isCompletingTrip, setIsCompletingTrip] = useState(false);
 
   // Save selected route to AsyncStorage
   const saveSelectedRoute = async (route: Route) => {
@@ -324,10 +327,10 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onBackButtonPress, onSho
             lastUpdate: driverLocation.last_updated,
             status: 'active'
           });
-          console.log('📍 Driver location updated:', driverLocation.current_location);
           
-          // Check if driver has reached or passed passenger's destination
+          // Check if trip should be completed when driver location updates
           await checkTripCompletion(driverLocation.current_location);
+          console.log('📍 Driver location updated:', driverLocation.current_location);
         } else {
           console.log('📍 Driver not found in location data');
         }
@@ -398,18 +401,38 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onBackButtonPress, onSho
         shouldComplete: driverCheckpoint.sequence_order >= destinationCheckpoint.sequence_order
       });
 
-      // If driver has reached or passed the passenger's destination, complete the trip
-      if (driverCheckpoint.sequence_order >= destinationCheckpoint.sequence_order) {
-        console.log('🏁 Driver has reached or passed destination - completing trip');
+      // Check if driver has reached the passenger's destination
+      // For endpoint destinations, use exact name matching as primary check
+      const isExactDestinationMatch = driverCurrentLocation === activeTrip.destination;
+      const hasReachedOrPassedDestination = driverCheckpoint.sequence_order >= destinationCheckpoint.sequence_order;
+      
+      console.log('🔍 Destination matching analysis:', {
+        exactMatch: isExactDestinationMatch,
+        sequenceMatch: hasReachedOrPassedDestination,
+        driverLocation: driverCurrentLocation,
+        passengerDestination: activeTrip.destination,
+        driverSequence: driverCheckpoint.sequence_order,
+        destinationSequence: destinationCheckpoint.sequence_order
+      });
+      
+      // Complete trip if driver is at exact destination OR has reached/passed it in sequence
+      if (isExactDestinationMatch || hasReachedOrPassedDestination) {
+        console.log('🏁 Driver has reached destination - completing trip');
+        console.log('🏁 Match type:', isExactDestinationMatch ? 'exact name match' : 'sequence order match');
         
         // Trigger trip completion notification
         if (!notificationShown) {
           setNotificationShown(true);
           setTripStatus('completed');
           
+          // Show loading screen immediately
+          setIsCompletingTrip(true);
+          console.log('🔄 Loading screen triggered for trip completion');
+          
           // Automatically complete the trip after a short delay
           setTimeout(() => {
-            completeTrip();
+            console.log('🏁 Calling completeTrip() with isAutoComplete=true');
+            completeTrip(true); // Explicitly pass true for automatic completion
           }, 1000);
         }
       } else {
@@ -432,13 +455,10 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onBackButtonPress, onSho
           style: 'destructive',
           onPress: async () => {
             try {
-              // Remove active trip from storage
-              await AsyncStorage.removeItem(ACTIVE_TRIP_KEY);
-              setActiveTrip(null);
-              setDriverLocation(null);
-              setTripStatus('waiting');
+              // Use completeTrip with isAutoComplete=false to avoid thank you message
+              await completeTrip(false);
               
-              // TODO: Notify driver about cancellation
+              // Show cancellation message instead
               Alert.alert('Trip Cancelled', 'Your trip has been cancelled.');
             } catch (error) {
               console.error('Error cancelling trip:', error);
@@ -450,19 +470,43 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onBackButtonPress, onSho
     );
   };
 
-  const completeTrip = async () => {
+
+  const completeTrip = async (isAutoComplete: boolean = true) => {
     try {
+      console.log('🔄 completeTrip called with isAutoComplete:', isAutoComplete);
+      console.log('🔄 Current isCompletingTrip state:', isCompletingTrip);
+      
+      // Show loading screen for automatic completion
+      if (isAutoComplete) {
+        console.log('🔄 Setting isCompletingTrip to true for loading screen');
+        setIsCompletingTrip(true);
+        console.log('🔄 Starting trip completion process...');
+        
+        // Add a small delay to show the loading screen
+        await new Promise(resolve => setTimeout(resolve, 1500));
+      }
+
       // Remove active trip from storage
       await AsyncStorage.removeItem(ACTIVE_TRIP_KEY);
       setActiveTrip(null);
-      setDriverLocation(null);
+      // Don't clear driver location - driver might still be on route serving other passengers
+      // setDriverLocation(null);
       setTripStatus('waiting');
       setShowActiveTripView(false);
+      setIsCompletingTrip(false); // Hide loading screen
       onBackButtonPress?.(); // Notify parent to hide back button
       
-      Alert.alert('You have reached your destination.', 'Thank you for using LakbAI!');
+      // Only show thank you message for automatic completion (when driver reaches destination)
+      if (isAutoComplete) {
+        console.log('✅ Trip completion process finished, showing thank you alert');
+        // Add a small delay after hiding loading to ensure smooth transition
+        setTimeout(() => {
+          Alert.alert('You have reached your destination.', 'Thank you for using LakbAI!');
+        }, 300);
+      }
     } catch (error) {
       console.error('Error completing trip:', error);
+      setIsCompletingTrip(false); // Make sure to hide loading on error
     }
   };
 
@@ -525,34 +569,91 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onBackButtonPress, onSho
     }
   }, [activeTrip, routes]);
 
-  // Listen for driver QR scan notifications
+  // Check for trip completion events from location tracking service
+  useEffect(() => {
+    if (activeTrip) {
+      const checkForCompletionEvents = async () => {
+        try {
+          const eventData = await AsyncStorage.getItem('trip_completion_event');
+          if (eventData) {
+            const event = JSON.parse(eventData);
+            if (!event.processed) {
+              console.log('🎯 Processing trip completion event:', event);
+              
+              // Mark event as processed
+              event.processed = true;
+              await AsyncStorage.setItem('trip_completion_event', JSON.stringify(event));
+              
+              // Trigger trip completion with loading screen
+              if (!notificationShown) {
+                setNotificationShown(true);
+                setTripStatus('completed');
+                
+                setTimeout(() => {
+                  completeTrip(); // This will show the loading screen
+                }, 500);
+              }
+            }
+          }
+        } catch (error) {
+          console.error('Error checking for completion events:', error);
+        }
+      };
+
+      // Check for completion events every 2 seconds
+      const completionInterval = setInterval(checkForCompletionEvents, 2000);
+      
+      return () => clearInterval(completionInterval);
+    }
+  }, [activeTrip, notificationShown]);
+
+  // Listen for driver QR scan notifications (backup method)
   useEffect(() => {
     if (activeTrip) {
       let cleanup: (() => void) | undefined;
+      let simpleCleanup: (() => void) | undefined;
       
+      const handleTripCompletion = (notification: any) => {
+        console.log('🔔 Received trip completion notification:', notification);
+        
+        if (notification.type === 'driver_at_destination' && !notificationShown) {
+          // Driver has reached the destination - automatically complete the trip
+          setNotificationShown(true);
+          setTripStatus('completed');
+          
+          // Automatically complete the trip after a short delay
+          setTimeout(() => {
+            completeTrip();
+          }, 1000);
+        }
+      };
+
+      // Try the main notification service first
       tripNotificationService.listenForDriverNotifications(
         activeTrip.id,
-        (notification: TripNotification) => {
-          console.log('🔔 Received driver notification:', notification);
-          
-          if (notification.type === 'driver_at_destination' && !notificationShown) {
-            // Driver has reached the destination - automatically complete the trip
-            setNotificationShown(true);
-            setTripStatus('completed');
-            
-            // Automatically complete the trip after a short delay
-            setTimeout(() => {
-              completeTrip();
-            }, 1000);
-          }
-        }
+        handleTripCompletion
       ).then((cleanupFn) => {
         cleanup = cleanupFn;
+      }).catch((error) => {
+        console.warn('⚠️ Main notification service failed, using simple fallback:', error);
+      });
+
+      // Also set up simple notification service as fallback
+      simpleTripNotificationService.listenForDriverNotifications(
+        activeTrip.id,
+        handleTripCompletion
+      ).then((cleanupFn) => {
+        simpleCleanup = cleanupFn;
+      }).catch((error) => {
+        console.warn('⚠️ Simple notification service failed:', error);
       });
 
       return () => {
         if (cleanup) {
           cleanup();
+        }
+        if (simpleCleanup) {
+          simpleCleanup();
         }
       };
     }
@@ -946,6 +1047,29 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onBackButtonPress, onSho
           </View>
         </View>
       </Modal>
+
+      {/* Trip Completion Loading Overlay */}
+      {isCompletingTrip && (
+        <View style={styles.tripCompletionOverlay}>
+          <View style={styles.tripCompletionContent}>
+            <Ionicons 
+              name="checkmark-circle" 
+              size={80} 
+              color={COLORS.success} 
+            />
+            <Text style={styles.tripCompletionTitle}>Trip Completed!</Text>
+            <Text style={styles.tripCompletionSubtitle}>
+              Your journey has been completed successfully
+            </Text>
+            <ActivityIndicator 
+              size="large" 
+              color={COLORS.primary} 
+              style={{ marginTop: SPACING.lg }} 
+            />
+          </View>
+        </View>
+      )}
+      
     </ScrollView>
   );
 };

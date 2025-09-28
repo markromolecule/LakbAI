@@ -1,9 +1,16 @@
 <?php
+// Load environment variables
+require_once __DIR__ . '/../vendor/autoload.php';
+if (file_exists(__DIR__ . '/../.env')) {
+    $dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/..');
+    $dotenv->load();
+}
+
 // Database configuration: provide BOTH mysqli (legacy) and PDO (new)
-$host = '127.0.0.1';
-$user = 'root';          // XAMPP default
-$pass = '';              // XAMPP default (empty)
-$db   = 'lakbai_db';     // Replace with your database name
+$host = $_ENV['DB_HOST'] ?? '127.0.0.1';
+$user = $_ENV['DB_USERNAME'] ?? 'root';          // XAMPP default
+$pass = $_ENV['DB_PASSWORD'] ?? '';              // XAMPP default (empty)
+$db   = $_ENV['DB_DATABASE'] ?? 'lakbai_db';     // Replace with your database name
 
 // 1) Legacy mysqli connection (expected by repositories/Auth flows)
 $conn = @new mysqli($host, $user, $pass, $db);

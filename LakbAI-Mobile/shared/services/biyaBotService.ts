@@ -25,12 +25,20 @@ const CHECKPOINTS = [
   'Robinson Dasmariñas', 'SM Dasmariñas'
 ];
 
-// Language patterns for detection
+// Enhanced language patterns for better Taglish detection
 const TAGALOG_PATTERNS = [
+  // Question words
   'magkano', 'saan', 'paano', 'ilan', 'nasaan', 'kelan', 'kailan', 'ano', 'sino',
-  'bayad', 'pamasahe', 'presyo', 'ruta', 'daan', 'direksyon',
-  'jeep', 'sasakyan', 'sakay', 'sumakay', 'baba', 'tawid',
-  'terminal', 'biyahe', 'oras', 'galing', 'papunta', 'malapit'
+  // Fare/money related
+  'bayad', 'pamasahe', 'presyo', 'gastos', 'piso', 'pesos', 'singkwenta', 'tatlumpu',
+  // Transportation
+  'jeep', 'sasakyan', 'sakay', 'sumakay', 'baba', 'bumaba', 'tawid', 'terminal',
+  'biyahe', 'ruta', 'daan', 'direksyon', 'papunta', 'galing', 'mula',
+  // Common words
+  'malapit', 'malayo', 'oras', 'tapos', 'hanggang', 'kaya', 'pwede', 'gusto',
+  // Taglish patterns
+  'mga', 'yung', 'yong', 'nung', 'nang', 'lang', 'din', 'rin', 'ba', 'po', 'opo',
+  'kasi', 'pero', 'tapos', 'eh', 'ay', 'ng', 'sa', 'na', 'ni', 'nang'
 ];
 
 const FARE_KEYWORDS_EN = [
@@ -102,19 +110,41 @@ class BiyaBotService {
   }
 
   /**
-   * Detect if the message is in Tagalog
+   * Enhanced language detection for Taglish and constructed Tagalog
    */
   private detectLanguage(message: string): boolean {
-    const words = message.split(' ');
-    let tagalogWords = 0;
+    const lowerMessage = message.toLowerCase();
+    let tagalogScore = 0;
+    let totalWords = message.split(' ').length;
     
-    words.forEach(word => {
-      if (TAGALOG_PATTERNS.some(pattern => word.includes(pattern))) {
-        tagalogWords++;
+    // Check for exact Tagalog words
+    TAGALOG_PATTERNS.forEach(pattern => {
+      if (lowerMessage.includes(pattern.toLowerCase())) {
+        tagalogScore += 2; // Higher weight for exact matches
       }
     });
     
-    return tagalogWords > 0;
+    // Check for common Taglish patterns
+    const taglishPatterns = [
+      /\b(yung|yong|mga|lang|din|rin|ba|po|opo|kasi|pero|eh|ay)\b/g,
+      /\b(sa|ng|na|ni|nang|mula|galing|papunta)\b/g,
+      /\b(magkano|paano|saan|nasaan|kelan)\b/g
+    ];
+    
+    taglishPatterns.forEach(pattern => {
+      const matches = lowerMessage.match(pattern);
+      if (matches) {
+        tagalogScore += matches.length;
+      }
+    });
+    
+    // Check for Filipino sentence structures
+    if (lowerMessage.includes('mula') && lowerMessage.includes('sa')) tagalogScore += 1;
+    if (lowerMessage.includes('galing') && lowerMessage.includes('papunta')) tagalogScore += 1;
+    if (lowerMessage.includes('magkano') && (lowerMessage.includes('to') || lowerMessage.includes('sa'))) tagalogScore += 2;
+    
+    // Return true if we found significant Tagalog content
+    return tagalogScore >= 1 || (tagalogScore > 0 && totalWords <= 6);
   }
 
   /**
@@ -299,38 +329,22 @@ class BiyaBotService {
   }
 
   /**
-   * Calculate fare between two locations using backend data
+   * Calculate fare between two locations using the same method as fare calculator
    */
   private async calculateFare(from: string, to: string): Promise<number | null> {
     try {
-      // Get routes with checkpoint data
-      const routes = await this.getAvailableRoutes();
+      // Import the fare calculator to ensure consistency
+      const { calculateFare } = await import('../utils/fareCalculator');
       
-      for (const route of routes) {
-        if (route.checkpoints) {
-          const fromCheckpoint = route.checkpoints.find((cp: any) => 
-            cp.checkpoint_name?.toLowerCase() === from.toLowerCase()
-          );
-          const toCheckpoint = route.checkpoints.find((cp: any) => 
-            cp.checkpoint_name?.toLowerCase() === to.toLowerCase()
-          );
-          
-          if (fromCheckpoint && toCheckpoint) {
-            // Calculate fare based on sequence order difference
-            const fromSequence = fromCheckpoint.sequence_order;
-            const toSequence = toCheckpoint.sequence_order;
-            const distance = Math.abs(toSequence - fromSequence);
-            
-            // Use the base fare and calculate additional fare
-            const baseFare = parseFloat(route.fare_base || '13');
-            const additionalFare = Math.max(0, (distance - 1) * 2);
-            
-            return baseFare + additionalFare;
-          }
-        }
-      }
+      // Use the same calculation method as the fare calculator
+      const fare = await calculateFare(from, to, 1); // Route 1 by default
       
-      // Fallback calculation if not found in routes
+      console.log(`🎯 BiyaBot calculated fare from ${from} to ${to}: ₱${fare}`);
+      return fare;
+    } catch (error) {
+      console.error('Error calculating fare:', error);
+      
+      // Fallback to simple calculation if import fails
       const fromIndex = CHECKPOINTS.indexOf(from);
       const toIndex = CHECKPOINTS.indexOf(to);
       
@@ -341,9 +355,6 @@ class BiyaBotService {
       const additionalFare = Math.max(0, (distance - 1) * 2);
       
       return baseFare + additionalFare;
-    } catch (error) {
-      console.error('Error calculating fare:', error);
-      return null;
     }
   }
 

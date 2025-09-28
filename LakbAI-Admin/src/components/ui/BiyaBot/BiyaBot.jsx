@@ -209,9 +209,6 @@ const BiyaBot = () => {
         }
       }
       
-      // Debug logging
-      console.log('User message:', userMessage);
-      console.log('Available checkpoints:', checkpoints.map(cp => cp.checkpoint_name));
       console.log('Mentioned checkpoints:', mentionedCheckpoints);
       
       if (mentionedCheckpoints.length >= 2) {

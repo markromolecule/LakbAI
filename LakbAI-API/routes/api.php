@@ -972,6 +972,26 @@ try {
         exit;
     }
     
+    // Xendit Webhook route
+    if (end($pathParts) === 'webhook' && $method === 'POST') {
+        // Include the webhook handler
+        include __DIR__ . '/../webhooks/xendit.php';
+        exit;
+    }
+    
+// API Documentation route
+if (end($pathParts) === 'docs' && $method === 'GET') {
+    // Redirect to documentation
+    header('Location: ../docs/index.html');
+    exit;
+}
+
+// Passenger Notifications routes
+if (count($pathParts) >= 3 && $pathParts[0] === 'mobile' && $pathParts[1] === 'passenger' && $pathParts[2] === 'notifications') {
+    include __DIR__ . '/passenger_notifications.php';
+    exit;
+}
+    
     // Test route
     if (end($pathParts) === 'test' && $method === 'GET') {
         echo json_encode([
@@ -1057,6 +1077,24 @@ try {
         }
     }
 
+    /**
+     * @OA\Get(
+     *     path="/",
+     *     tags={"System"},
+     *     summary="API Health Check",
+     *     description="Check if the API is running and get available endpoints",
+     *     @OA\Response(
+     *         response=200,
+     *         description="API is running successfully",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="status", type="string", example="success"),
+     *             @OA\Property(property="message", type="string", example="LakbAI API is running"),
+     *             @OA\Property(property="timestamp", type="string", format="date-time"),
+     *             @OA\Property(property="endpoints", type="object")
+     *         )
+     *     )
+     * )
+     */
     // Health check route
     if (empty($pathParts) || $pathParts[0] === '' && $method === 'GET') {
         echo json_encode([

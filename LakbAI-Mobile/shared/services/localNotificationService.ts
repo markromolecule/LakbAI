@@ -43,6 +43,14 @@ class LocalNotificationService {
     if (this.initialized) return;
 
     try {
+      // Request notification permissions first
+      const { status } = await Notifications.requestPermissionsAsync();
+      console.log('📱 Notification permission status:', status);
+      
+      if (status !== 'granted') {
+        console.warn('⚠️ Notification permissions not granted, notifications may not work');
+      }
+
       // Configure notification settings for Expo notifications
       await Notifications.setNotificationHandler({
         handleNotification: async () => ({
@@ -230,7 +238,13 @@ class LocalNotificationService {
 
     // Show Expo notification
     try {
-      await Notifications.scheduleNotificationAsync({
+      console.log('📱 Attempting to show Expo notification:', {
+        title: notification.title,
+        body: notification.body,
+        type: notification.type
+      });
+      
+      const notificationRequest = await Notifications.scheduleNotificationAsync({
         content: {
           title: notification.title,
           body: notification.body,
@@ -238,11 +252,21 @@ class LocalNotificationService {
         },
         trigger: null,
       });
-      console.log(`📱 ${notification.type} Expo notification sent:`, notification.title);
+      
+      console.log(`✅ Expo notification scheduled successfully:`, {
+        id: notificationRequest,
+        title: notification.title,
+        body: notification.body
+      });
     } catch (error) {
       console.error('❌ Failed to show Expo notification:', error);
-      // Fallback to alert
-      Alert.alert(notification.title, notification.body);
+      console.error('❌ Error details:', error.message);
+      
+      // Fallback to alert for debugging
+      Alert.alert(
+        `🔔 ${notification.title}`, 
+        `${notification.body}\n\n(Notification failed: ${error.message})`
+      );
     }
   }
 

@@ -11,8 +11,8 @@
  * 4. Passenger app receives notifications and updates UI
  */
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getBaseUrl } from '../../config/apiConfig';
-import { NetworkUtils } from '../utils/networkUtils';
 import { localNotificationService } from './localNotificationService';
 
 export interface DriverLocationInfo {
@@ -46,6 +46,7 @@ class LocationTrackingService {
   private isPassengerApp: boolean = false;
   private refreshInterval: NodeJS.Timeout | null = null;
   private routeId: string = '1'; // Default route
+  private sentNotifications: Set<string> = new Set(); // Track sent notifications to prevent duplicates
 
   /**
    * Initialize the service
@@ -96,25 +97,29 @@ class LocationTrackingService {
   async fetchDriverLocations(routeId?: string): Promise<DriverLocationInfo[]> {
     try {
       const route = routeId || this.routeId;
-      const url = NetworkUtils.getApiUrl(`/mobile/locations/route/${route}?t=${Date.now()}`);
-      const response = await NetworkUtils.get(url);
+      const url = `${getBaseUrl()}/mobile/passenger/real-time-drivers/${route}?t=${Date.now()}`;
+      const response = await fetch(url);
       
-      const data = response.data;
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
       
       if (data.driver_locations && Array.isArray(data.driver_locations)) {
         return data.driver_locations.map((location: any) => ({
           driverId: location.driver_id.toString(),
-          driverName: location.driver_name || 'Unknown Driver',
+          driverName: `${location.first_name} ${location.last_name}` || 'Unknown Driver',
           jeepneyNumber: location.jeepney_number || 'Unknown',
           plateNumber: location.plate_number || 'Unknown',
           shiftStatus: location.shift_status || 'unknown',
-          lastScannedCheckpoint: location.last_scanned_checkpoint || 'Unknown Location',
+          lastScannedCheckpoint: location.current_location || 'Unknown Location', // Use current_location field
           estimatedArrival: location.estimated_arrival || 'Unknown',
-          lastUpdate: location.last_update || new Date().toISOString(),
+          lastUpdate: location.last_update_formatted || new Date().toISOString(),
           minutesSinceUpdate: location.minutes_since_update || 0,
-          status: location.status || 'unknown',
-          statusMessage: location.status_message || 'Unknown status',
-          route: data.route_name || `Route ${route}`,
+          status: location.shift_status === 'on_shift' ? 'active' : 'inactive',
+          statusMessage: location.shift_status === 'on_shift' ? 'On Duty' : 'Off Duty',
+          route: location.route_name || `Route ${route}`,
           coordinates: location.coordinates
         }));
       }
@@ -134,9 +139,18 @@ class LocationTrackingService {
     
     try {
       const currentLocations = await this.fetchDriverLocations();
+      console.log(`🔍 LocationTrackingService: Checking ${currentLocations.length} drivers for location changes`);
       
       for (const currentLocation of currentLocations) {
         const previousLocation = this.previousLocations.get(currentLocation.driverId);
+        
+        console.log(`🔍 Driver ${currentLocation.driverId} (${currentLocation.driverName}):`, {
+          currentLocation: currentLocation.lastScannedCheckpoint,
+          previousLocation: previousLocation?.lastScannedCheckpoint || 'NONE',
+          currentUpdate: currentLocation.lastUpdate,
+          previousUpdate: previousLocation?.lastUpdate || 'NONE',
+          hasChanged: previousLocation ? this.hasLocationChanged(previousLocation, currentLocation) : false
+        });
         
         if (previousLocation && this.hasLocationChanged(previousLocation, currentLocation)) {
           console.log('📍 Location change detected for driver:', {
@@ -144,7 +158,8 @@ class LocationTrackingService {
             driverName: currentLocation.driverName,
             previousLocation: previousLocation.lastScannedCheckpoint,
             currentLocation: currentLocation.lastScannedCheckpoint,
-            timestamp: currentLocation.lastUpdate
+            previousUpdate: previousLocation.lastUpdate,
+            currentUpdate: currentLocation.lastUpdate
           });
           
           // Trigger local notification for passengers
@@ -167,6 +182,19 @@ class LocationTrackingService {
     const locationChanged = previous.lastScannedCheckpoint !== current.lastScannedCheckpoint;
     const timeChanged = previous.lastUpdate !== current.lastUpdate;
     
+    console.log(`🔍 Change detection for driver ${current.driverId}:`, {
+      locationChanged: locationChanged,
+      timeChanged: timeChanged,
+      previous: {
+        location: previous.lastScannedCheckpoint,
+        time: previous.lastUpdate
+      },
+      current: {
+        location: current.lastScannedCheckpoint,
+        time: current.lastUpdate
+      }
+    });
+    
     return locationChanged || timeChanged;
   }
 
@@ -177,6 +205,27 @@ class LocationTrackingService {
     if (!this.isPassengerApp) return;
     
     try {
+      console.log('🔔 Preparing to send location notification:', {
+        from: previous.lastScannedCheckpoint,
+        to: current.lastScannedCheckpoint,
+        driver: current.driverName,
+        jeepney: current.jeepneyNumber
+      });
+
+      // Create unique notification key for regular location updates
+      const locationKey = `location_${current.driverId}_${previous.lastScannedCheckpoint}_${current.lastScannedCheckpoint}`;
+      
+      if (this.sentNotifications.has(locationKey)) {
+        console.log('🔔 Duplicate location notification prevented for:', locationKey);
+        return;
+      }
+
+      // Mark notification as sent
+      this.sentNotifications.add(locationKey);
+
+      // Ensure notification service is initialized
+      await localNotificationService.initialize();
+      
       await localNotificationService.notifyLocationUpdate({
         type: 'location_update',
         driverId: current.driverId,
@@ -186,7 +235,7 @@ class LocationTrackingService {
         currentLocation: current.lastScannedCheckpoint,
         previousLocation: previous.lastScannedCheckpoint,
         coordinates: current.coordinates,
-        title: '📍 Jeepney Location',
+        title: '📍 Jeepney Location Update',
         body: `${current.driverName} (${current.jeepneyNumber}) moved from ${previous.lastScannedCheckpoint} to ${current.lastScannedCheckpoint}`,
         data: {
           driverId: current.driverId,
@@ -196,13 +245,155 @@ class LocationTrackingService {
           currentLocation: current.lastScannedCheckpoint,
           previousLocation: previous.lastScannedCheckpoint,
           coordinates: current.coordinates,
-          timestamp: current.lastUpdate
+          timestamp: current.lastUpdate,
+          notificationKey: locationKey
         }
       });
       
-      console.log('🔔 Location notification sent to passenger app');
+      console.log('✅ Location notification sent with key:', locationKey);
+      
+      // Special handling for endpoint destinations
+      await this.handleEndpointNotification(current);
     } catch (error) {
       console.error('❌ Failed to send location notification:', error);
+      console.error('❌ Error details:', error.message);
+    }
+  }
+
+  /**
+   * Handle special notification for route endpoints
+   */
+  private async handleEndpointNotification(location: DriverLocationInfo): Promise<void> {
+    try {
+      // Get passenger's active trip to determine their destination
+      const storedTrip = await AsyncStorage.getItem('active_trip');
+      if (!storedTrip) {
+        console.log('🏁 No active trip found - skipping endpoint notification');
+        return;
+      }
+
+      const activeTrip = JSON.parse(storedTrip);
+      console.log('🏁 Checking endpoint for active trip:', {
+        destination: activeTrip.destination,
+        driverCurrentLocation: location.lastScannedCheckpoint,
+        driverRoute: location.route
+      });
+
+      // The key insight: Only notify when driver reaches the PASSENGER'S destination
+      // Not based on route endpoints, but on where the passenger is actually going
+      
+      if (!activeTrip.destination) {
+        console.log('🏁 No destination in active trip - skipping endpoint notification');
+        return;
+      }
+
+      // Normalize location names for comparison
+      const normalizeLocation = (loc: string): string => {
+        return loc.toLowerCase()
+          .replace(/\s+/g, ' ')
+          .trim()
+          .replace('sm dasmariñas', 'sm dasmarinas')
+          .replace('sm das', 'sm dasmarinas')
+          .replace('sm dasma', 'sm dasmarinas')
+          .replace('lancaster new city', 'lancaster')
+          .replace('pasong camachile i', 'pasong camachile')
+          .replace('robinson dasmariñas', 'robinson dasmarinas')
+          .replace('robinson das', 'robinson dasmarinas');
+      };
+
+      const passengerDestination = normalizeLocation(activeTrip.destination);
+      const driverCurrentLocation = normalizeLocation(location.lastScannedCheckpoint);
+
+      console.log('🏁 Normalized comparison:', {
+        passengerDestination,
+        driverCurrentLocation,
+        match: passengerDestination === driverCurrentLocation
+      });
+
+      // Only notify if driver reached the passenger's actual destination
+      if (passengerDestination === driverCurrentLocation) {
+        console.log('🏁 Driver reached passenger destination:', location.lastScannedCheckpoint);
+        
+        // Create unique notification key to prevent duplicates
+        const notificationKey = `endpoint_${location.driverId}_${passengerDestination}_${Date.now().toString().slice(-6)}`;
+        
+        if (this.sentNotifications.has(notificationKey)) {
+          console.log('🏁 Duplicate endpoint notification prevented for:', notificationKey);
+          return;
+        }
+        
+        // Mark notification as sent
+        this.sentNotifications.add(notificationKey);
+        
+        // Clean up old notifications (keep only last 10)
+        if (this.sentNotifications.size > 10) {
+          const oldestKeys = Array.from(this.sentNotifications).slice(0, this.sentNotifications.size - 10);
+          oldestKeys.forEach(key => this.sentNotifications.delete(key));
+        }
+        
+        // Send special endpoint notification
+        await localNotificationService.notifyLocationUpdate({
+          type: 'location_update',
+          driverId: location.driverId,
+          driverName: location.driverName,
+          jeepneyNumber: location.jeepneyNumber,
+          route: location.route,
+          currentLocation: location.lastScannedCheckpoint,
+          previousLocation: 'En Route',
+          coordinates: location.coordinates,
+          title: '🎯 Your Destination Reached',
+          body: `${location.driverName} (${location.jeepneyNumber}) has arrived at your destination: ${location.lastScannedCheckpoint}`,
+          data: {
+            driverId: location.driverId,
+            driverName: location.driverName,
+            jeepneyNumber: location.jeepneyNumber,
+            route: location.route,
+            currentLocation: location.lastScannedCheckpoint,
+            isEndpoint: true,
+            isPassengerDestination: true,
+            timestamp: location.lastUpdate,
+            notificationKey: notificationKey
+          }
+        });
+
+        // Also trigger trip completion directly
+        await this.triggerTripCompletion(location);
+        
+        console.log('🏁 Passenger destination notification sent with key:', notificationKey);
+      } else {
+        console.log('🏁 Driver at', location.lastScannedCheckpoint, 'but passenger destination is', activeTrip.destination, '- no endpoint notification');
+      }
+    } catch (error) {
+      console.error('❌ Failed to send endpoint notification:', error);
+    }
+  }
+
+  /**
+   * Trigger trip completion directly (for passenger app)
+   */
+  private async triggerTripCompletion(location: DriverLocationInfo): Promise<void> {
+    if (!this.isPassengerApp) return;
+
+    try {
+      console.log('🎯 Triggering direct trip completion for passenger');
+
+      // Store trip completion event in AsyncStorage for HomeView to pick up
+      const completionEvent = {
+        type: 'trip_completion',
+        driverId: location.driverId,
+        driverName: location.driverName,
+        jeepneyNumber: location.jeepneyNumber,
+        destination: location.lastScannedCheckpoint,
+        timestamp: new Date().toISOString(),
+        processed: false
+      };
+
+      await AsyncStorage.setItem('trip_completion_event', JSON.stringify(completionEvent));
+      
+      console.log('🎯 Trip completion event stored for HomeView to process');
+      
+    } catch (error) {
+      console.error('❌ Failed to trigger trip completion:', error);
     }
   }
 
@@ -225,6 +416,30 @@ class LocationTrackingService {
    */
   getPreviousLocations(): Map<string, DriverLocationInfo> {
     return new Map(this.previousLocations);
+  }
+
+  /**
+   * Check if monitoring is active
+   */
+  isMonitoring(): boolean {
+    return this.refreshInterval !== null;
+  }
+
+  /**
+   * Get service status for debugging
+   */
+  getStatus(): {
+    isPassengerApp: boolean;
+    isMonitoring: boolean;
+    routeId: string;
+    cachedLocationsCount: number;
+  } {
+    return {
+      isPassengerApp: this.isPassengerApp,
+      isMonitoring: this.isMonitoring(),
+      routeId: this.routeId,
+      cachedLocationsCount: this.previousLocations.size
+    };
   }
 
   /**

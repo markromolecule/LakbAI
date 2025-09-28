@@ -571,6 +571,10 @@ class CheckpointController {
             // Notify passengers about driver location update using the notification service
             $this->notifyPassengersWithService($driver, $checkpoint, $arrivalEstimate);
 
+            // Always check for passenger trip completion at any checkpoint
+            // This handles cases where passengers book destinations that aren't marked as route endpoints
+            $this->completePassengerTripsAtDestination($driver, $checkpoint);
+
             return [
                 "status" => "success",
                 "message" => "Location updated successfully",
@@ -850,6 +854,140 @@ class CheckpointController {
                 "status" => "error",
                 "message" => "Failed to get driver locations: " . $e->getMessage()
             ];
+        }
+    }
+
+    /**
+     * Complete passenger trips when driver reaches destination checkpoint
+     */
+    private function completePassengerTripsAtDestination($driver, $checkpoint) {
+        try {
+            error_log("🏁 Completing passenger trips at destination: {$checkpoint['checkpoint_name']} for driver: {$driver['jeepney_number']}");
+            
+            // Find all pending earnings records for this driver with this destination
+            // These represent active passenger trips that haven't been completed yet
+            // Use flexible matching for destination names (exact match OR similar names)
+            $stmt = $this->db->prepare("
+                SELECT 
+                    e.id as earnings_id,
+                    e.driver_id,
+                    e.passenger_id,
+                    e.trip_id,
+                    e.pickup_location,
+                    e.destination,
+                    e.original_fare,
+                    e.final_fare,
+                    e.counts_as_trip,
+                    e.created_at,
+                    u.first_name,
+                    u.last_name,
+                    u.email
+                FROM driver_earnings e
+                JOIN users u ON e.passenger_id = u.id
+                WHERE e.driver_id = ? 
+                AND (
+                    e.destination = ? 
+                    OR (? LIKE 'SM Das%' AND e.destination LIKE 'SM Das%')
+                    OR (? LIKE 'Robinson Das%' AND e.destination LIKE 'Robinson Das%')
+                    OR (? LIKE 'SM Epza%' AND e.destination LIKE 'SM Epza%')
+                    OR (? LIKE 'Lancaster%' AND e.destination LIKE 'Lancaster%')
+                )
+                AND e.counts_as_trip = 0
+                AND e.created_at >= DATE_SUB(NOW(), INTERVAL 2 HOUR)
+            ");
+            $stmt->execute([
+                $driver['id'], 
+                $checkpoint['checkpoint_name'],
+                $checkpoint['checkpoint_name'],
+                $checkpoint['checkpoint_name'],
+                $checkpoint['checkpoint_name']
+            ]);
+            $pendingTrips = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            error_log("🏁 Found " . count($pendingTrips) . " pending trips to complete");
+            
+            // Log details about what we're looking for
+            error_log("🏁 Looking for trips with driver_id: {$driver['id']}, checkpoint: {$checkpoint['checkpoint_name']}");
+            foreach ($pendingTrips as $trip) {
+                error_log("🏁 Found pending trip: ID {$trip['earnings_id']}, Passenger: {$trip['first_name']} {$trip['last_name']}, Destination: {$trip['destination']}");
+            }
+            
+            if (empty($pendingTrips)) {
+                error_log("🏁 No pending trips found for completion");
+                return;
+            }
+            
+            $completedCount = 0;
+            foreach ($pendingTrips as $trip) {
+                try {
+                    // Update the earnings record to mark trip as completed and paid
+                    $updateStmt = $this->db->prepare("
+                        UPDATE driver_earnings 
+                        SET counts_as_trip = 1,
+                            updated_at = NOW()
+                        WHERE id = ?
+                    ");
+                    $updateStmt->execute([$trip['earnings_id']]);
+                    
+                    $completedCount++;
+                    error_log("✅ Completed trip {$trip['trip_id']} for passenger {$trip['first_name']} {$trip['last_name']}");
+                    
+                    // Send completion notification to passenger
+                    $this->sendTripCompletionNotification($trip, $driver, $checkpoint);
+                    
+                } catch (Exception $e) {
+                    error_log("❌ Failed to complete trip {$trip['trip_id']}: " . $e->getMessage());
+                }
+            }
+            
+            error_log("🏁 Successfully completed {$completedCount} passenger trips at destination");
+            
+        } catch (Exception $e) {
+            error_log("❌ Failed to complete passenger trips at destination: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Send trip completion notification to passenger
+     */
+    private function sendTripCompletionNotification($trip, $driver, $checkpoint) {
+        try {
+            // Create notification record in push_notifications table
+            $stmt = $this->db->prepare("
+                INSERT INTO push_notifications (
+                    passenger_id,
+                    driver_id,
+                    notification_type,
+                    title,
+                    message,
+                    data,
+                    status,
+                    created_at
+                ) VALUES (?, ?, 'driver_at_destination', ?, ?, ?, 'pending', NOW())
+            ");
+            
+            $title = "Trip Completed! 🎉";
+            $message = "You have arrived at {$checkpoint['checkpoint_name']}. Thank you for riding with {$driver['jeepney_number']}!";
+            $data = json_encode([
+                'trip_id' => $trip['trip_id'],
+                'driver_id' => $driver['id'],
+                'destination' => $checkpoint['checkpoint_name'],
+                'fare_paid' => $trip['final_fare'],
+                'completed_at' => date('Y-m-d H:i:s')
+            ]);
+            
+            $stmt->execute([
+                $trip['passenger_id'],
+                $driver['id'],
+                $title,
+                $message,
+                $data
+            ]);
+            
+            error_log("📱 Sent trip completion notification to passenger {$trip['passenger_id']}");
+            
+        } catch (Exception $e) {
+            error_log("❌ Failed to send trip completion notification: " . $e->getMessage());
         }
     }
 }

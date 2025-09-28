@@ -73,17 +73,31 @@ export const ModernLocationSelector: React.FC<ModernLocationSelectorProps> = ({
       }
     }
     
-    // Fallback to original logic
-    if (pickup === 'SM Epza' || ROUTE_SEQUENCES.route1.includes(pickup)) {
+    // Fallback to original logic - prioritize routes where pickup is the START
+    if (pickup === 'SM Epza' || ROUTE_SEQUENCES.route1[0] === pickup) {
       return ROUTE_SEQUENCES.route1;
-    } else if (pickup === 'SM Dasmariñas' || ROUTE_SEQUENCES.route2.includes(pickup)) {
+    } else if (pickup === 'SM Dasmariñas' || ROUTE_SEQUENCES.route2[0] === pickup) {
       return ROUTE_SEQUENCES.route2;
     }
+    
+    // If pickup is not the start of either route, determine by which route it appears first
+    const route1Index = ROUTE_SEQUENCES.route1.indexOf(pickup);
+    const route2Index = ROUTE_SEQUENCES.route2.indexOf(pickup);
+    
+    if (route1Index !== -1 && route2Index !== -1) {
+      // If pickup appears in both routes, use the one where it appears earlier (closer to start)
+      return route1Index < route2Index ? ROUTE_SEQUENCES.route1 : ROUTE_SEQUENCES.route2;
+    } else if (route1Index !== -1) {
+      return ROUTE_SEQUENCES.route1;
+    } else if (route2Index !== -1) {
+      return ROUTE_SEQUENCES.route2;
+    }
+    
     return ROUTE_SEQUENCES.route1;
   };
 
   // Get available destinations based on pickup location
-  const getAvailableDestinations = (pickup: string): string[] => {
+  const getAvailableDestinations = (pickup: string): readonly string[] => {
     if (!pickup || !isDestination) return CHECKPOINTS;
     
     const routeSequence = getRouteSequence(pickup);
@@ -91,12 +105,12 @@ export const ModernLocationSelector: React.FC<ModernLocationSelectorProps> = ({
     
     if (pickupIndex === -1) return CHECKPOINTS;
     
-    return routeSequence.slice(pickupIndex + 1) as string[];
+    return routeSequence.slice(pickupIndex + 1);
   };
 
   // Filter locations based on search text, exclude specified location, and adaptive filtering
   const filteredLocations = useMemo(() => {
-    let availableLocations = CHECKPOINTS;
+    let availableLocations: readonly string[] = CHECKPOINTS;
     
     if (isDestination && pickupLocation) {
       availableLocations = getAvailableDestinations(pickupLocation);

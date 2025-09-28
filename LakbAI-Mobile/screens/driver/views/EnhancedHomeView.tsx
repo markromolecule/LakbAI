@@ -52,13 +52,13 @@ export const EnhancedHomeView: React.FC<EnhancedHomeViewProps> = ({
     // Note: We don't clear active trips on mount anymore to allow trips to persist
     // Active trips should only be cleared when explicitly ending a shift
     
-    // Set up frequent auto-refresh interval for real-time database sync
+    // Set up auto-refresh interval for database sync (reduced frequency to prevent timeouts)
     const interval = setInterval(async () => {
       if (driverProfile.id && onRefresh) {
         console.log('🔄 Enhanced HomeView database auto-refresh - checking for earnings updates...');
         onRefresh();
       }
-    }, 3000); // Refresh every 3 seconds for faster updates
+    }, 10000); // Refresh every 10 seconds to prevent API overload
     
     // Set up earnings listener for immediate updates
     const unsubscribe = earningsService.addListener((driverId) => {

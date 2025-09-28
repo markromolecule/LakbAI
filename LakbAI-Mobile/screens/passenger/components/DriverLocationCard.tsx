@@ -29,23 +29,66 @@ export const DriverLocationCard: React.FC<DriverLocationCardProps> = ({
 
   // Initialize location tracking service for auto-polling and Expo notifications
   useEffect(() => {
-    // Initialize location tracking service for passenger app (handles Expo notifications)
-    locationTrackingService.initialize(true, routeId || '1');
+    const initializeService = async () => {
+      // Initialize location tracking service for passenger app (handles Expo notifications)
+      await locationTrackingService.initialize(true, routeId || '1');
+      
+      // Initial load using LocationTrackingService
+      try {
+        const serviceLocations = await locationTrackingService.fetchDriverLocations(routeId);
+        
+        // Convert to UI format
+        const driverInfos: DriverLocationInfo[] = serviceLocations.map((location) => ({
+          driverId: location.driverId,
+          driverName: location.driverName,
+          jeepneyNumber: location.jeepneyNumber,
+          route: location.route,
+          currentLocation: location.lastScannedCheckpoint,
+          lastUpdate: location.lastUpdate,
+          isActive: location.shiftStatus === 'on_shift'
+        }));
+        
+        setDrivers(driverInfos);
+        setLastRefresh(new Date().toLocaleTimeString());
+      } catch (error) {
+        console.error('❌ Failed to load initial driver locations:', error);
+      }
+    };
     
-    // Initial load
-    loadDriverLocations();
+    initializeService();
     
     return () => {
       locationTrackingService.stopLocationMonitoring();
     };
   }, [routeId]);
 
-  // Auto-refresh driver locations every 5 seconds
+  // Listen for location updates from LocationTrackingService
   useEffect(() => {
-    const interval = setInterval(() => {
-      console.log('🔄 Auto-refreshing driver locations...');
-      loadDriverLocations();
-    }, 5000); // Auto-refresh every 5 seconds
+    // The LocationTrackingService handles both auto-refresh and notifications
+    // We sync with its data instead of making separate API calls
+    const interval = setInterval(async () => {
+      console.log('🔄 Syncing UI with LocationTrackingService data...');
+      try {
+        // Get data from LocationTrackingService (which handles change detection and notifications)
+        const serviceLocations = await locationTrackingService.fetchDriverLocations(routeId);
+        
+        // Convert to UI format
+        const driverInfos: DriverLocationInfo[] = serviceLocations.map((location) => ({
+          driverId: location.driverId,
+          driverName: location.driverName,
+          jeepneyNumber: location.jeepneyNumber,
+          route: location.route,
+          currentLocation: location.lastScannedCheckpoint,
+          lastUpdate: location.lastUpdate,
+          isActive: location.shiftStatus === 'on_shift'
+        }));
+        
+        setDrivers(driverInfos);
+        setLastRefresh(new Date().toLocaleTimeString());
+      } catch (error) {
+        console.error('❌ Failed to sync with LocationTrackingService:', error);
+      }
+    }, 3000); // Sync every 3 seconds (between the 2s monitoring interval)
 
     return () => clearInterval(interval);
   }, [routeId]);
@@ -87,7 +130,22 @@ export const DriverLocationCard: React.FC<DriverLocationCardProps> = ({
     
     try {
       console.log('🔄 Manual refresh of driver locations...');
-      await loadDriverLocations();
+      // Use LocationTrackingService for both change detection and UI data
+      const serviceLocations = await locationTrackingService.refreshLocations(routeId);
+      
+      // Convert to UI format
+      const driverInfos: DriverLocationInfo[] = serviceLocations.map((location) => ({
+        driverId: location.driverId,
+        driverName: location.driverName,
+        jeepneyNumber: location.jeepneyNumber,
+        route: location.route,
+        currentLocation: location.lastScannedCheckpoint,
+        lastUpdate: location.lastUpdate,
+        isActive: location.shiftStatus === 'on_shift'
+      }));
+      
+      setDrivers(driverInfos);
+      setLastRefresh(new Date().toLocaleTimeString());
     } catch (error) {
       console.error('❌ Failed to refresh driver locations:', error);
       Alert.alert('Error', 'Failed to refresh driver locations');

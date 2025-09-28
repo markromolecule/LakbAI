@@ -148,11 +148,19 @@ export const TripBookingView: React.FC<TripBookingViewProps> = ({
         const discountPercentage = hasApprovedDiscount ? passengerProfile.fareDiscount.percentage : undefined;
         
         try {
-          // Get route ID from driver info if available
-          const routeId = driverInfo.route ? getRouteIdFromRouteName(driverInfo.route) : undefined;
+          // Get route ID from driver info if available, default to Route 1 for consistency
+          const routeId = driverInfo.route ? getRouteIdFromRouteName(driverInfo.route) : 1;
+          
+          console.log('🎯 TripBookingView fare calculation:', {
+            from: pickupLocation,
+            to: destination,
+            driverRoute: driverInfo.route,
+            routeId: routeId
+          });
           
           // Use dynamic fare calculation
           const calculatedFare = await calculateFare(pickupLocation, destination, routeId);
+          console.log('💰 TripBookingView calculated fare:', calculatedFare);
           setFare(calculatedFare);
           
           console.log('🎯 Discount Check:', {
@@ -189,9 +197,11 @@ export const TripBookingView: React.FC<TripBookingViewProps> = ({
           await loadDestinationCoordinates(destination);
         } catch (error) {
           console.error('Error calculating fare:', error);
-          // Fallback to legacy calculation
+          // Fallback to legacy calculation with Route 1 for consistency
           try {
-            const calculatedFare = await calculateFare(pickupLocation, destination);
+            console.log('🔄 Using fallback fare calculation with Route 1');
+            const calculatedFare = await calculateFare(pickupLocation, destination, 1);
+            console.log('💰 Fallback calculated fare:', calculatedFare);
             setFare(calculatedFare);
             
             if (calculatedFare && hasApprovedDiscount) {
@@ -220,14 +230,38 @@ export const TripBookingView: React.FC<TripBookingViewProps> = ({
   }, [pickupLocation, destination, passengerProfile.fareDiscount, driverInfo.route]);
 
   // Helper function to get route ID from route name
-  const getRouteIdFromRouteName = (routeName: string): number | undefined => {
-    // This is a simplified mapping - in a real implementation, 
-    // you would fetch this from the API
+  const getRouteIdFromRouteName = (routeName: string): number => {
+    // Expanded mapping to handle various route name formats
     const routeMap: { [key: string]: number } = {
       'SM Epza → SM Dasmariñas': 1,
       'SM Dasmariñas → SM Epza': 2,
+      'Route 1': 1,
+      'Route 2': 2,
+      // Handle any route that goes from SM Epza to SM Dasmariñas
+      'Epza → Dasmariñas': 1,
+      'Dasmariñas → Epza': 2,
     };
-    return routeMap[routeName];
+    
+    // Check exact match first
+    if (routeMap[routeName]) {
+      console.log('🗺️ Route mapping:', routeName, '→', routeMap[routeName]);
+      return routeMap[routeName];
+    }
+    
+    // Check if route name contains direction indicators
+    if (routeName.includes('Epza') && routeName.includes('Dasmariñas')) {
+      if (routeName.indexOf('Epza') < routeName.indexOf('Dasmariñas')) {
+        console.log('🗺️ Route direction detected: Epza → Dasmariñas (Route 1)');
+        return 1;
+      } else {
+        console.log('🗺️ Route direction detected: Dasmariñas → Epza (Route 2)');
+        return 2;
+      }
+    }
+    
+    // Default to Route 1 for consistency with BiyaBot
+    console.log('🗺️ Using default Route 1 for:', routeName);
+    return 1;
   };
 
   const estimateDistance = (from: string, to: string): string => {
@@ -379,35 +413,6 @@ export const TripBookingView: React.FC<TripBookingViewProps> = ({
       // Generate unique booking/external ID
       const externalId = `lakbai_trip_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       
-      // Construct enhanced payment URL with all trip details auto-filled
-      const paymentParams = new URLSearchParams({
-        amount: finalFare.toString(),
-        description: description,
-        external_id: externalId,
-        payer_email: passengerProfile.email || 'passenger@lakbai.com',
-        customer_name: `${passengerProfile.firstName} ${passengerProfile.lastName}` || 'LakbAI Passenger',
-        success_redirect_url: 'lakbai://payment-success',
-        failure_redirect_url: 'lakbai://payment-failure',
-        // Custom data for webhook processing
-        custom_data: JSON.stringify({
-          type: 'jeepney_fare',
-          driver_id: tripData.driver.id,
-          driver_name: tripData.driver.name,
-          jeepney_number: tripData.driver.jeepneyNumber,
-          pickup_location: tripData.pickupLocation,
-          destination: tripData.destination,
-          original_fare: originalFare,
-          discount_amount: discountAmount,
-          final_fare: finalFare,
-          passenger_id: 'passenger_001', // TODO: Get from real passenger session
-          booking_timestamp: new Date().toISOString(),
-          distance: tripData.distance,
-          estimated_time: tripData.estimatedTime
-        })
-      });
-      
-      const paymentUrl = `https://checkout-staging.xendit.co/od/lakbai?${paymentParams.toString()}`;
-      
       // Log payment creation for debugging
       console.log('💳 Creating Xendit payment:', {
         externalId,
@@ -416,33 +421,89 @@ export const TripBookingView: React.FC<TripBookingViewProps> = ({
         customerName: `${passengerProfile.firstName} ${passengerProfile.lastName}`,
         customerEmail: passengerProfile.email
       });
+
+      // Use the API configuration to get the base URL
+      const { getBaseUrl } = require('../../../config/apiConfig');
+      const baseUrl = getBaseUrl().replace('/routes/api.php', '');
+      const xenditUrl = `${baseUrl}/public/create_xendit_invoice.php`;
+      
+      console.log('Xendit API URL:', xenditUrl);
+      
+      // Prepare payment data for API call
+      const requestPayload = {
+        amount: finalFare,
+        description: description,
+        customerEmail: passengerProfile.email || 'passenger@lakbai.com',
+        customerName: `${passengerProfile.firstName} ${passengerProfile.lastName}` || 'LakbAI Passenger',
+        jeepneyId: tripData.driver.jeepneyNumber || 'LKB-001'
+      };
+      
+      // Make API call to create Xendit invoice
+      const response = await fetch(xenditUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify(requestPayload)
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      const result = await response.json();
+      console.log('Xendit API response:', result);
+      
+      if (result.success && result.data?.invoice_url) {
+        // Real API response
+        return {
+          success: true,
+          paymentUrl: result.data.invoice_url,
+          bookingId: externalId,
+          amount: finalFare,
+          description,
+          externalId,
+          invoiceId: result.data.id
+        };
+      } else if (result.fallback && result.data?.invoice_url) {
+        // Fallback response
+        console.log('Using fallback payment URL');
+        return {
+          success: true,
+          paymentUrl: result.data.invoice_url,
+          bookingId: externalId,
+          amount: finalFare,
+          description,
+          externalId,
+          fallback: true
+        };
+      } else {
+        throw new Error(result.error || 'Failed to create payment invoice');
+      }
+
+    } catch (error: any) {
+      console.error('Xendit payment creation error:', error);
+      
+      // Fallback to static URL construction
+      const paymentParams = new URLSearchParams({
+        amount: (tripData.discountedFare ?? tripData.fare).toString(),
+        description: `LakbAI Fare Payment`,
+        customer_name: `${passengerProfile.firstName} ${passengerProfile.lastName}` || 'LakbAI Passenger',
+        customer_email: passengerProfile.email || 'passenger@lakbai.com'
+      });
+      
+      const fallbackUrl = `https://checkout-staging.xendit.co/od/lakbai?${paymentParams.toString()}`;
       
       return {
         success: true,
-        paymentUrl,
-        bookingId: externalId,
-        amount: finalFare,
-        description,
-        externalId
-      };
-
-      // TODO: Replace with actual API call when backend is available
-      // const response = await fetch('/api/create-trip-payment', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({
-      //     tripData,
-      //     passengerProfile,
-      //     amount: finalFare,
-      //     externalId,
-      //     description,
-      //   })
-      // });
-      // return await response.json();
-    } catch (error) {
-      return {
-        success: false,
-        error: 'Failed to create payment',
+        paymentUrl: fallbackUrl,
+        bookingId: `lakbai_fallback_${Date.now()}`,
+        amount: tripData.discountedFare ?? tripData.fare,
+        description: 'LakbAI Fare Payment',
+        externalId: `lakbai_fallback_${Date.now()}`,
+        fallback: true,
+        error: error.message
       };
     }
   };

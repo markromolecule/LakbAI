@@ -59,8 +59,11 @@ class FareMatrixService {
   private baseUrl: string;
 
   constructor() {
-    this.baseUrl = `${getBaseUrl()}/fare-matrix`;
+    // Get base URL and remove the /routes/api.php part for direct API calls
+    const apiUrl = getBaseUrl();
+    this.baseUrl = apiUrl.replace('/routes/api.php', '');
     console.log('🏗️ FareMatrixService: Base URL constructed:', this.baseUrl);
+    console.log('🏗️ FareMatrixService: Original API URL:', apiUrl);
   }
 
   /**
@@ -72,7 +75,7 @@ class FareMatrixService {
     routeId?: number
   ): Promise<{ status: string; fare_info?: FareInfo; message?: string }> {
     try {
-      const url = `${this.baseUrl}/fare/${fromCheckpointId}/${toCheckpointId}${
+      const url = `${this.baseUrl}/fare-matrix/fare/${fromCheckpointId}/${toCheckpointId}${
         routeId ? `?route_id=${routeId}` : ''
       }`;
       
@@ -88,7 +91,9 @@ class FareMatrixService {
       console.log('📡 FareMatrixService: Response status:', response.status);
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorText = await response.text();
+        console.error('📡 FareMatrixService: Error response:', errorText);
+        throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
       }
 
       const data = await response.json();
@@ -108,7 +113,7 @@ class FareMatrixService {
    */
   async getFareMatrixForRoute(routeId: number): Promise<{ status: string; route?: RouteFareMatrix; fare_matrix?: FareMatrixEntry[]; checkpoints?: any[]; matrix_size?: number; message?: string }> {
     try {
-      const url = `${this.baseUrl}/route/${routeId}`;
+      const url = `${this.baseUrl}/fare-matrix/route/${routeId}`;
       console.log('🌐 FareMatrixService: Fetching from URL:', url);
       
       const response = await fetch(url, {
@@ -141,7 +146,7 @@ class FareMatrixService {
    */
   async getAllFareMatrices(): Promise<{ status: string; fare_matrices?: RouteFareMatrix[]; total_routes?: number; message?: string }> {
     try {
-      const url = this.baseUrl;
+      const url = `${this.baseUrl}/fare-matrix`;
       
       const response = await fetch(url, {
         method: 'GET',
@@ -173,7 +178,7 @@ class FareMatrixService {
     baseFare: number = 13.00
   ): Promise<{ status: string; message?: string; created_entries?: number; total_possible_entries?: number; errors?: string[] }> {
     try {
-      const url = `${this.baseUrl}/generate/${routeId}`;
+      const url = `${this.baseUrl}/fare-matrix/generate/${routeId}`;
       
       const response = await fetch(url, {
         method: 'POST',
@@ -214,7 +219,7 @@ class FareMatrixService {
     status?: string;
   }): Promise<{ status: string; message?: string; fare_matrix_id?: number }> {
     try {
-      const url = `${this.baseUrl}/create`;
+      const url = `${this.baseUrl}/fare-matrix/create`;
       
       const response = await fetch(url, {
         method: 'POST',
@@ -253,7 +258,7 @@ class FareMatrixService {
     }
   ): Promise<{ status: string; message?: string }> {
     try {
-      const url = `${this.baseUrl}/${fareMatrixId}`;
+      const url = `${this.baseUrl}/fare-matrix/${fareMatrixId}`;
       
       const response = await fetch(url, {
         method: 'PUT',
@@ -283,7 +288,7 @@ class FareMatrixService {
    */
   async deleteFareEntry(fareMatrixId: number): Promise<{ status: string; message?: string }> {
     try {
-      const url = `${this.baseUrl}/${fareMatrixId}`;
+      const url = `${this.baseUrl}/fare-matrix/${fareMatrixId}`;
       
       const response = await fetch(url, {
         method: 'DELETE',
@@ -312,7 +317,7 @@ class FareMatrixService {
    */
   async getFareMatrixStats(): Promise<{ status: string; stats?: FareMatrixStats; message?: string }> {
     try {
-      const url = `${this.baseUrl}/stats`;
+      const url = `${this.baseUrl}/fare-matrix/stats`;
       
       const response = await fetch(url, {
         method: 'GET',
@@ -345,8 +350,8 @@ class FareMatrixService {
   ): Promise<{ status: string; history?: any[]; count?: number; message?: string }> {
     try {
       const url = fareMatrixId 
-        ? `${this.baseUrl}/history/${fareMatrixId}?limit=${limit}`
-        : `${this.baseUrl}/history?limit=${limit}`;
+        ? `${this.baseUrl}/fare-matrix/history/${fareMatrixId}?limit=${limit}`
+        : `${this.baseUrl}/fare-matrix/history?limit=${limit}`;
       
       const response = await fetch(url, {
         method: 'GET',

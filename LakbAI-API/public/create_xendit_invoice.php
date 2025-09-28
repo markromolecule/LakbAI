@@ -1,4 +1,45 @@
 <?php
+/**
+ * @OA\Post(
+ *     path="/public/create_xendit_invoice.php",
+ *     tags={"Payments"},
+ *     summary="Create Xendit Payment Invoice",
+ *     description="Creates a payment invoice using Xendit API for jeepney fare payments",
+ *     @OA\RequestBody(
+ *         required=true,
+ *         @OA\JsonContent(
+ *             @OA\Property(property="amount", type="number", format="float", example=25.50, description="Payment amount in PHP"),
+ *             @OA\Property(property="description", type="string", example="LakbAI Jeepney Fare Payment", description="Payment description"),
+ *             @OA\Property(property="customerEmail", type="string", format="email", example="passenger@lakbai.com", description="Customer email address"),
+ *             @OA\Property(property="customerName", type="string", example="Juan Dela Cruz", description="Customer name"),
+ *             @OA\Property(property="jeepneyId", type="string", example="LKB-001", description="Jeepney identifier")
+ *         )
+ *     ),
+ *     @OA\Response(
+ *         response=200,
+ *         description="Invoice created successfully",
+ *         @OA\JsonContent(
+ *             @OA\Property(property="success", type="boolean", example=true),
+ *             @OA\Property(property="data", ref="#/components/schemas/XenditInvoice")
+ *         )
+ *     ),
+ *     @OA\Response(
+ *         response=400,
+ *         description="Invalid request parameters",
+ *         @OA\JsonContent(ref="#/components/schemas/ErrorResponse")
+ *     ),
+ *     @OA\Response(
+ *         response=500,
+ *         description="Xendit API error - fallback response provided",
+ *         @OA\JsonContent(
+ *             @OA\Property(property="success", type="boolean", example=false),
+ *             @OA\Property(property="fallback", type="boolean", example=true),
+ *             @OA\Property(property="data", ref="#/components/schemas/XenditInvoice"),
+ *             @OA\Property(property="error", type="string", example="Using fallback payment method")
+ *         )
+ *     )
+ * )
+ */
 // LakbAI-API/create_xendit_invoice.php
 declare(strict_types=1);
 
@@ -13,7 +54,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 require __DIR__ . '/../vendor/autoload.php';
-if (file_exists(__DIR__ . '/.env')) {
+if (file_exists(__DIR__ . '/../.env')) {
     Dotenv\Dotenv::createImmutable(__DIR__ . '/..')->load();
 }
 
