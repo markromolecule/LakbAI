@@ -1,0 +1,7 @@
+# Allow direct access to test files
+RewriteEngine Off
+
+# Allow access to all files in this directory
+<RequireAll>
+    Require all granted
+</RequireAll>

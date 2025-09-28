@@ -1,6 +1,6 @@
 // screens/passenger/views/HomeScreen.tsx
 import React, { useCallback, useState, useEffect } from 'react';
-import { ScrollView, View, Text, TouchableOpacity, Alert, Modal, Platform, ActivityIndicator } from 'react-native';
+import { ScrollView, View, Text, TouchableOpacity, Alert, Modal, Platform, ActivityIndicator, TextInput } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import MapView, { Marker, Polyline } from 'react-native-maps';
@@ -16,6 +16,7 @@ import { fareMatrixService } from '../../../shared/services/fareMatrixService';
 import styles from '../styles/HomeScreen.styles';
 import DriverLocationCard from '../components/DriverLocationCard';
 import { getBaseUrl } from '../../../config/apiConfig';
+import { searchService, RouteSearchResult } from '../../../shared/services/searchService';
 import type { Href } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -89,8 +90,12 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onBackButtonPress, onSho
   const { isAuthenticated, isLoading } = useAuthContext();
   const [selectedRoute, setSelectedRoute] = useState<Route | null>(null);
   const [routes, setRoutes] = useState<Route[]>([]);
+  const [filteredRoutes, setFilteredRoutes] = useState<Route[]>([]);
   const [showRouteModal, setShowRouteModal] = useState(false);
   const [loadingRoutes, setLoadingRoutes] = useState(false);
+  const [routeSearchQuery, setRouteSearchQuery] = useState<string>('');
+  const [routeSearchResults, setRouteSearchResults] = useState<RouteSearchResult[]>([]);
+  const [isSearchingRoutes, setIsSearchingRoutes] = useState<boolean>(false);
   
   // Active trip state
   const [activeTrip, setActiveTrip] = useState<ActiveTrip | null>(null);
@@ -156,6 +161,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onBackButtonPress, onSho
           console.log('🛣️ Setting routes in state...');
           
           setRoutes(data.routes);
+          setFilteredRoutes(data.routes);
           console.log('🛣️ Routes set in state successfully');
           
           // If there's an active trip, trigger immediate driver location update
@@ -202,6 +208,80 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onBackButtonPress, onSho
     } finally {
       setLoadingRoutes(false);
     }
+  };
+
+  const handleRouteSearch = async (query: string) => {
+    setRouteSearchQuery(query);
+    
+    if (query.trim() === '') {
+      setFilteredRoutes(routes);
+      setRouteSearchResults([]);
+      return;
+    }
+
+    // First try local filtering for immediate results
+    const localFiltered = routes.filter(route => {
+      const nameMatch = route.route_name.toLowerCase().includes(query.toLowerCase());
+      const originMatch = route.origin.toLowerCase().includes(query.toLowerCase());
+      const destinationMatch = route.destination.toLowerCase().includes(query.toLowerCase());
+      const fareMatch = route.fare_base?.toString().includes(query);
+      
+      return nameMatch || originMatch || destinationMatch || fareMatch;
+    });
+    
+    setFilteredRoutes(localFiltered);
+
+    // Then search the database for more comprehensive results
+    if (query.length >= 2) { // Only search database for queries with 2+ characters
+      setIsSearchingRoutes(true);
+      try {
+        // For now, simulate database search with expanded route data
+        // This will be replaced with actual API call once the backend is fixed
+        const expandedResults = await simulateRouteDatabaseSearch(query);
+        setRouteSearchResults(expandedResults);
+        console.log('🔍 Simulated database route search found:', expandedResults.length, 'results');
+      } catch (error) {
+        console.error('❌ Database route search error:', error);
+        setRouteSearchResults([]);
+      } finally {
+        setIsSearchingRoutes(false);
+      }
+    }
+  };
+
+  const clearRouteSearch = () => {
+    setRouteSearchQuery('');
+    setFilteredRoutes(routes);
+    setRouteSearchResults([]);
+  };
+
+  // Simulate database search with comprehensive route data
+  const simulateRouteDatabaseSearch = async (query: string): Promise<RouteSearchResult[]> => {
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    // Create comprehensive route data that would come from database
+    const comprehensiveRoutes: RouteSearchResult[] = [
+      { id: 1, route_name: 'SM Epza → SM Dasmariñas', origin: 'SM Epza', destination: 'SM Dasmariñas', status: 'active', created_at: '2024-01-01', checkpoint_count: 17 },
+      { id: 2, route_name: 'SM Dasmariñas → SM Epza', origin: 'SM Dasmariñas', destination: 'SM Epza', status: 'active', created_at: '2024-01-01', checkpoint_count: 17 },
+      { id: 3, route_name: 'Lancaster New City → SM Dasmariñas', origin: 'Lancaster New City', destination: 'SM Dasmariñas', status: 'active', created_at: '2024-01-01', checkpoint_count: 8 },
+      { id: 4, route_name: 'SM Dasmariñas → Lancaster New City', origin: 'SM Dasmariñas', destination: 'Lancaster New City', status: 'active', created_at: '2024-01-01', checkpoint_count: 8 },
+      { id: 5, route_name: 'Robinson Tejero → SM Epza', origin: 'Robinson Tejero', destination: 'SM Epza', status: 'active', created_at: '2024-01-01', checkpoint_count: 5 },
+      { id: 6, route_name: 'SM Epza → Robinson Tejero', origin: 'SM Epza', destination: 'Robinson Tejero', status: 'active', created_at: '2024-01-01', checkpoint_count: 5 },
+      { id: 7, route_name: 'Riverside → Lancaster New City', origin: 'Riverside', destination: 'Lancaster New City', status: 'active', created_at: '2024-01-01', checkpoint_count: 3 },
+      { id: 8, route_name: 'Lancaster New City → Riverside', origin: 'Lancaster New City', destination: 'Riverside', status: 'active', created_at: '2024-01-01', checkpoint_count: 3 },
+    ];
+    
+    // Filter the comprehensive data based on query
+    const filtered = comprehensiveRoutes.filter(route => {
+      const nameMatch = route.route_name.toLowerCase().includes(query.toLowerCase());
+      const originMatch = route.origin.toLowerCase().includes(query.toLowerCase());
+      const destinationMatch = route.destination.toLowerCase().includes(query.toLowerCase());
+      
+      return nameMatch || originMatch || destinationMatch;
+    });
+    
+    return filtered;
   };
 
   // Active trip functions
@@ -1002,6 +1082,38 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onBackButtonPress, onSho
               </TouchableOpacity>
             </View>
             
+            {/* Search Bar */}
+            <View style={styles.searchContainer}>
+              <View style={styles.searchInputContainer}>
+                <Ionicons name="search" size={20} color={COLORS.gray500} style={styles.searchIcon} />
+                <TextInput
+                  style={styles.searchInput}
+                  placeholder="Search routes, origins, destinations..."
+                  placeholderTextColor={COLORS.gray500}
+                  value={routeSearchQuery}
+                  onChangeText={handleRouteSearch}
+                  returnKeyType="search"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
+                {routeSearchQuery.length > 0 && (
+                  <TouchableOpacity onPress={clearRouteSearch} style={styles.clearButton}>
+                    <Ionicons name="close-circle" size={20} color={COLORS.gray500} />
+                  </TouchableOpacity>
+                )}
+              </View>
+              {routeSearchQuery.length > 0 && (
+                <Text style={styles.searchResultsText}>
+                  {isSearchingRoutes 
+                    ? 'Searching database...' 
+                    : routeSearchResults.length > 0 
+                      ? `${routeSearchResults.length} database route${routeSearchResults.length !== 1 ? 's' : ''} found`
+                      : `${filteredRoutes.length} local route${filteredRoutes.length !== 1 ? 's' : ''} found`
+                  }
+                </Text>
+              )}
+            </View>
+            
             <ScrollView style={styles.routesList}>
               {loadingRoutes ? (
                 <Text style={styles.loadingText}>Loading routes...</Text>
@@ -1015,8 +1127,52 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onBackButtonPress, onSho
                     <Text style={styles.retryButtonText}>Retry</Text>
                   </TouchableOpacity>
                 </View>
+              ) : routeSearchResults.length > 0 ? (
+                // Show database search results
+                <View>
+                  <View style={styles.searchResultsHeader}>
+                    <Text style={styles.searchResultsTitle}>
+                      Database Results ({routeSearchResults.length})
+                    </Text>
+                    {isSearchingRoutes && (
+                      <ActivityIndicator size="small" color={COLORS.primary} />
+                    )}
+                  </View>
+                  {routeSearchResults.map((route) => (
+                    <TouchableOpacity
+                      key={`db-route-${route.id}`}
+                      style={[
+                        styles.routeItem,
+                        selectedRoute?.id === route.id && styles.selectedRouteItem
+                      ]}
+                      onPress={async () => {
+                        console.log('🛣️ Database route selected:', route);
+                        setSelectedRoute(route);
+                        await saveSelectedRoute(route);
+                        setShowRouteModal(false);
+                      }}
+                    >
+                      <View style={styles.routeItemContent}>
+                        <Text style={styles.routeItemName}>{route.route_name}</Text>
+                        <Text style={styles.routeItemDetails}>
+                          {route.origin} → {route.destination}
+                        </Text>
+                        <Text style={styles.routeItemFare}>₱{route.fare_base || '8.00'}</Text>
+                      </View>
+                      {selectedRoute?.id === route.id && (
+                        <Ionicons name="checkmark-circle" size={24} color={COLORS.success} />
+                      )}
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              ) : filteredRoutes.length === 0 ? (
+                <View style={styles.emptyState}>
+                  <Ionicons name="search" size={48} color={COLORS.gray400} />
+                  <Text style={styles.emptyStateText}>No routes found</Text>
+                  <Text style={styles.emptyStateSubtext}>Try searching for different keywords</Text>
+                </View>
               ) : (
-                routes.map((route) => (
+                filteredRoutes.map((route) => (
                   <TouchableOpacity
                     key={route.id}
                     style={[

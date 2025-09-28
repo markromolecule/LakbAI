@@ -588,6 +588,66 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
 
+  // Search styles
+  searchContainer: {
+    marginBottom: SPACING.lg,
+    paddingHorizontal: SPACING.lg,
+  },
+  searchInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.white,
+    borderRadius: SPACING.md,
+    borderWidth: 1,
+    borderColor: COLORS.gray300,
+    paddingHorizontal: SPACING.md,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  searchIcon: {
+    marginRight: SPACING.sm,
+  },
+  searchInput: {
+    flex: 1,
+    paddingVertical: SPACING.md,
+    fontSize: 16,
+    color: COLORS.gray800,
+  },
+  clearButton: {
+    padding: SPACING.xs,
+    marginLeft: SPACING.sm,
+  },
+  searchResultsText: {
+    fontSize: 14,
+    color: COLORS.gray600,
+    marginTop: SPACING.sm,
+    textAlign: 'center',
+  },
+  emptyStateSubtext: {
+    fontSize: 14,
+    color: COLORS.gray500,
+    marginTop: SPACING.xs,
+    textAlign: 'center',
+  },
+  searchResultsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.sm,
+    backgroundColor: COLORS.blue50,
+    borderTopLeftRadius: SPACING.md,
+    borderTopRightRadius: SPACING.md,
+  },
+  searchResultsTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.blue800,
+  },
+
 });
 
 export default styles;

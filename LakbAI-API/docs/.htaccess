@@ -1,0 +1,7 @@
+# Allow direct access to Swagger documentation files
+RewriteEngine Off
+
+# Allow access to all files in this directory
+<RequireAll>
+    Require all granted
+</RequireAll>

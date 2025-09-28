@@ -986,6 +986,12 @@ if (end($pathParts) === 'docs' && $method === 'GET') {
     exit;
 }
 
+// Search routes
+if (count($pathParts) >= 2 && $pathParts[0] === 'search') {
+    include __DIR__ . '/search.php';
+    exit;
+}
+
 // Passenger Notifications routes
 if (count($pathParts) >= 3 && $pathParts[0] === 'mobile' && $pathParts[1] === 'passenger' && $pathParts[2] === 'notifications') {
     include __DIR__ . '/passenger_notifications.php';
