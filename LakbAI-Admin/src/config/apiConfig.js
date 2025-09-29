@@ -5,13 +5,13 @@
 
 // Developer configurations - each developer should update their IP here
 const DEVELOPER_CONFIGS = {
-  joseph: '192.168.254.102',
+  joseph: '192.168.254.115',
   jiro: '192.168.254.111',
   localhost: 'localhost'
 };
 
 // Current developer - change this to your name
-const CURRENT_DEVELOPER = 'localhost';
+const CURRENT_DEVELOPER = 'joseph';
 
 // Get the current developer's IP
 const getCurrentDeveloperIP = () => {

@@ -1,9 +1,9 @@
-import { Platform } from 'react-native';
-import Constants from 'expo-constants';
+// import { Platform } from 'react-native';
+// import Constants from 'expo-constants';
 
 // Network configuration for different developers
 const DEVELOPER_CONFIGS: { [key: string]: string } = {
-  joseph: '192.168.254.102',
+  joseph: '192.168.254.115',
   jiro: '192.168.254.111',
   localhost: 'localhost'
 };
@@ -19,7 +19,7 @@ const getCurrentDeveloper = (): string => {
   // You can use different methods to detect who's running the app
   
   // Method 1: Based on device name/ID (if available)
-  const deviceId = Constants.deviceId;
+  // const deviceId = Constants.deviceId;
   // You could map device IDs to developers
   
   // Method 2: Based on network (check if certain IPs are reachable)
@@ -73,7 +73,7 @@ export const API_CONFIG = {
 // Also export a function to get the base URL dynamically
 export const getBaseUrl = (): string => {
   const url = getApiBaseUrl();
-  console.log('🌐 getBaseUrl() returning:', url);
+  console.log('getBaseUrl() returning:', url);
   return url;
 };
 

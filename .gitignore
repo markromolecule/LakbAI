@@ -5,3 +5,7 @@ LakbAI-API/uploads/
 LakbAI-API/.env
 
 LakbAI-Admin/.vite/
+
+LakbAI-Mobile/.expo/
+LakbAI-Mobile/config/apiConfig.ts
+LakbAI-Mobile/config/developerConfig.ts
