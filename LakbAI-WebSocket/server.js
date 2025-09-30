@@ -90,7 +90,7 @@ io.on('connection', (socket) => {
       }
 
     } catch (error) {
-      console.error('❌ Authentication error:', error);
+      console.error('Authentication error:', error);
       socket.emit('authentication-error', { error: error.message });
     }
   });
@@ -480,9 +480,9 @@ app.get('/api/status', (req, res) => {
 
 const PORT = process.env.PORT || 8080;
 server.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 LakbAI WebSocket Server running on port ${PORT}`);
-  console.log(`📱 Mobile app should connect to: ws://192.168.8.104:${PORT}`);
-  console.log(`💻 Admin dashboard should connect to: ws://localhost:${PORT}`);
-  console.log(`🔗 Health check: http://localhost:${PORT}/health`);
-  console.log(`📊 Status endpoint: http://localhost:${PORT}/api/status`);
+  console.log(`LakbAI WebSocket Server running on port ${PORT}`);
+  console.log(`Mobile app should connect to: ws://192.168.8.104:${PORT}`);
+  console.log(`Admin dashboard should connect to: ws://localhost:${PORT}`);
+  console.log(`Health check: http://localhost:${PORT}/health`);
+  console.log(`Status endpoint: http://localhost:${PORT}/api/status`);
 });
