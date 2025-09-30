@@ -46,10 +46,6 @@ LakbAI consists of four integrated applications:
 2. **Trip Completion** - Automatic trip ending when driver reaches destination
 3. **Earnings Updates** - Real-time driver earnings display
 4. **Push Notifications** - Instant notifications for all events
-5. **Location Notifications** - Special notifications for:
-   - 🚀 Driver started shift
-   - 🏁 Route endpoint reached
-   - 📍 Regular checkpoint updates
 
 ## 🚀 Key Features
 
@@ -82,7 +78,7 @@ LakbAI consists of four integrated applications:
 - **Document Verification**: Approve discount documents and licenses
 - **Real-Time Monitoring**: Live system status and activity
 
-## 📋 System Requirements
+## System Requirements
 
 ### Minimum System Requirements
 
@@ -122,9 +118,9 @@ LakbAI consists of four integrated applications:
 - **Web Server**: Apache 2.4+ or Nginx 1.18+
 - **Database**: MySQL 5.7+ or MariaDB 10.3+
 
-## 🔧 Integrations & Third-Party Services
+## Integrations & Third-Party Services
 
-### 🔐 Authentication & Security
+### Authentication & Security
 - **Auth0**: Primary authentication provider
   - Google OAuth integration
   - Facebook OAuth integration
@@ -132,7 +128,7 @@ LakbAI consists of four integrated applications:
   - PKCE (Proof Key for Code Exchange) security
   - JWT token management
 
-### 📱 Mobile Services
+### Mobile Services
 - **Expo SDK**: Cross-platform mobile development
   - Camera access for QR code scanning
   - Push notifications
@@ -143,18 +139,18 @@ LakbAI consists of four integrated applications:
   - Analytics (optional)
   - Cloud messaging
 
-### 💳 Payment & QR System
+### Payment & QR System
 - **QR Code Generation**: `react-native-qrcode-svg`
 - **Camera Integration**: `expo-camera` for QR scanning
 - **Custom Payment Logic**: Built-in fare calculation system
 
-### 📧 Communication
+### Communication
 - **PHPMailer**: Email functionality
   - User verification emails
   - Password reset notifications
   - System alerts
 
-### 🗄️ Database & Storage
+### Database & Storage
 - **MySQL**: Primary database
   - User management
   - Route and checkpoint data
@@ -165,19 +161,19 @@ LakbAI consists of four integrated applications:
   - Document uploads (licenses, discount certificates)
   - Image storage for profiles
 
-### 🌐 Web Services
+### Web Services
 - **Vite**: Modern build tool for React admin
 - **Bootstrap 5**: UI framework
 - **Tailwind CSS**: Utility-first CSS framework
 - **React Router**: Client-side routing
 
-### 📊 Development Tools
+### Development Tools
 - **TypeScript**: Type safety for mobile app
 - **ESLint**: Code linting and formatting
 - **Babel**: JavaScript transpilation
 - **PostCSS**: CSS processing
 
-## 🚀 Quick Start
+## Quick Start
 
 ### 1. Clone Repository
 ```bash
@@ -360,7 +356,7 @@ The WebSocket server will run on `http://localhost:8080`
 - **API**: `DB_HOST`, `DB_NAME`, `DB_USER`, `DB_PASS`
 - **Auth0**: `AUTH0_DOMAIN`, `AUTH0_CLIENT_ID`, `AUTH0_CLIENT_SECRET`
 
-## 🔄 Recent Updates
+## Recent Updates
 
 ### v2.0.0 - WebSocket Integration
 - ✅ Real-time WebSocket communication
