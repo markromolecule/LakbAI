@@ -1,9 +1,13 @@
 <?php
 
 require_once __DIR__ . '/../config/db.php';
+require_once __DIR__ . '/../src/WebSocketNotifier.php';
+
+use Joseph\LakbAiApi\WebSocketNotifier;
 
 class EarningsController {
     private $db;
+    private $wsNotifier;
 
     public function __construct($db = null) {
         if ($db) {
@@ -13,6 +17,7 @@ class EarningsController {
             $this->db = new PDO('mysql:host=127.0.0.1;dbname=lakbai_db', 'root', '');
             $this->db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         }
+        $this->wsNotifier = new WebSocketNotifier();
     }
 
     /**
@@ -150,6 +155,14 @@ class EarningsController {
             if ($result) {
                 // Get updated earnings summary
                 $updatedEarnings = $this->getDriverEarnings($data['driverId']);
+                
+                // Send WebSocket earnings notification
+                $this->sendEarningsWebSocketNotification(
+                    $data['driverId'],
+                    $data['finalFare'],
+                    $updatedEarnings['earnings']['todayEarnings'] ?? 0,
+                    $updatedEarnings['earnings']['totalTrips'] ?? 0
+                );
                 
                 return [
                     "status" => "success",
@@ -579,6 +592,29 @@ class EarningsController {
         } catch (Exception $e) {
             // Don't throw error for reset check - just log it
             error_log("⚠️ Error checking daily earnings reset for driver {$driverId}: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Send WebSocket earnings notification
+     */
+    private function sendEarningsWebSocketNotification($driverId, $amount, $totalEarnings, $tripCount) {
+        try {
+            $success = $this->wsNotifier->notifyEarningsUpdate(
+                $driverId,
+                $amount,
+                $totalEarnings,
+                $tripCount
+            );
+
+            if ($success) {
+                error_log("🔌 WebSocket earnings notification sent: Driver $driverId earned ₱$amount (Total: ₱$totalEarnings)");
+            } else {
+                error_log("⚠️ WebSocket earnings notification failed: Driver $driverId");
+            }
+
+        } catch (Exception $e) {
+            error_log("❌ Error sending WebSocket earnings notification: " . $e->getMessage());
         }
     }
 }

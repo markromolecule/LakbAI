@@ -1,9 +1,18 @@
 <?php
+require_once __DIR__ . '/../src/WebSocketNotifier.php';
+require_once __DIR__ . '/TripController.php';
+
+use Joseph\LakbAiApi\WebSocketNotifier;
+
 class CheckpointController {
     private $db;
+    private $wsNotifier;
+    private $tripController;
 
     public function __construct($db) {
         $this->db = $db;
+        $this->wsNotifier = new WebSocketNotifier();
+        $this->tripController = new TripController($db);
     }
 
     /**
@@ -575,6 +584,9 @@ class CheckpointController {
             // Always notify passengers about driver location update - regardless of checkpoint type
             error_log("🔔 Creating location update notifications for driver {$driver['jeepney_number']} at {$checkpoint['checkpoint_name']}");
             $this->notifyPassengersWithService($driver, $checkpoint, $arrivalEstimate);
+
+            // Send real-time WebSocket notification
+            $this->sendWebSocketLocationNotification($driver, $checkpoint);
             
             // Special handling for start point (origin) checkpoints
             if ($checkpoint['is_origin'] == 1) {
@@ -985,86 +997,17 @@ class CheckpointController {
         try {
             error_log("🏁 Completing passenger trips at destination: {$checkpoint['checkpoint_name']} for driver: {$driver['jeepney_number']}");
             
-            // Find all pending earnings records for this driver with this destination
-            // These represent active passenger trips that haven't been completed yet
-            // Use flexible matching for destination names (exact match OR similar names)
-            $stmt = $this->db->prepare("
-                SELECT 
-                    e.id as earnings_id,
-                    e.driver_id,
-                    e.passenger_id,
-                    e.trip_id,
-                    e.pickup_location,
-                    e.destination,
-                    e.original_fare,
-                    e.final_fare,
-                    e.counts_as_trip,
-                    e.created_at,
-                    u.first_name,
-                    u.last_name,
-                    u.email
-                FROM driver_earnings e
-                JOIN users u ON e.passenger_id = u.id
-                WHERE e.driver_id = ? 
-                AND (
-                    e.destination = ? 
-                    OR (? LIKE 'SM Das%' AND e.destination LIKE 'SM Das%')
-                    OR (? LIKE 'Robinson Das%' AND e.destination LIKE 'Robinson Das%')
-                    OR (? LIKE 'SM Epza%' AND e.destination LIKE 'SM Epza%')
-                    OR (? LIKE 'Lancaster%' AND e.destination LIKE 'Lancaster%')
-                )
-                AND e.counts_as_trip = 0
-                AND e.created_at >= DATE_SUB(NOW(), INTERVAL 2 HOUR)
-            ");
-            $stmt->execute([
-                $driver['id'], 
-                $checkpoint['checkpoint_name'],
-                $checkpoint['checkpoint_name'],
-                $checkpoint['checkpoint_name'],
-                $checkpoint['checkpoint_name']
-            ]);
-            $pendingTrips = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            // Use the new TripController to complete trips
+            $result = $this->tripController->completeTrip($driver['id'], $checkpoint['checkpoint_name']);
             
-            error_log("🏁 Found " . count($pendingTrips) . " pending trips to complete");
-            
-            // Log details about what we're looking for
-            error_log("🏁 Looking for trips with driver_id: {$driver['id']}, checkpoint: {$checkpoint['checkpoint_name']}");
-            foreach ($pendingTrips as $trip) {
-                error_log("🏁 Found pending trip: ID {$trip['earnings_id']}, Passenger: {$trip['first_name']} {$trip['last_name']}, Destination: {$trip['destination']}");
+            if ($result['status'] === 'success') {
+                error_log("✅ Trip completion result: " . $result['message']);
+            } else {
+                error_log("❌ Trip completion failed: " . $result['message']);
             }
-            
-            if (empty($pendingTrips)) {
-                error_log("🏁 No pending trips found for completion");
-                return;
-            }
-            
-            $completedCount = 0;
-            foreach ($pendingTrips as $trip) {
-                try {
-                    // Update the earnings record to mark trip as completed and paid
-                    $updateStmt = $this->db->prepare("
-                        UPDATE driver_earnings 
-                        SET counts_as_trip = 1,
-                            updated_at = NOW()
-                        WHERE id = ?
-                    ");
-                    $updateStmt->execute([$trip['earnings_id']]);
-                    
-                    $completedCount++;
-                    error_log("✅ Completed trip {$trip['trip_id']} for passenger {$trip['first_name']} {$trip['last_name']}");
-                    
-                    // Send completion notification to passenger
-                    $this->sendTripCompletionNotification($trip, $driver, $checkpoint);
-                    
-                } catch (Exception $e) {
-                    error_log("❌ Failed to complete trip {$trip['trip_id']}: " . $e->getMessage());
-                }
-            }
-            
-            error_log("🏁 Successfully completed {$completedCount} passenger trips at destination");
             
         } catch (Exception $e) {
-            error_log("❌ Failed to complete passenger trips at destination: " . $e->getMessage());
+            error_log("❌ Error completing passenger trips at destination: " . $e->getMessage());
         }
     }
 
@@ -1306,6 +1249,150 @@ class CheckpointController {
             
         } catch (Exception $e) {
             error_log("❌ Failed to send trip completion notification: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Send WebSocket location notification
+     */
+    private function sendWebSocketLocationNotification($driver, $checkpoint) {
+        try {
+            // Get checkpoint coordinates if available
+            $coordinates = null;
+            if (isset($checkpoint['latitude']) && isset($checkpoint['longitude'])) {
+                $coordinates = [
+                    'latitude' => (float)$checkpoint['latitude'],
+                    'longitude' => (float)$checkpoint['longitude']
+                ];
+            }
+
+            // Send WebSocket notification with special flags
+            $success = $this->wsNotifier->notifyDriverLocationUpdate(
+                $driver['id'],
+                $checkpoint['route_id'],
+                $checkpoint['checkpoint_name'],
+                $coordinates,
+                $driver['jeepney_number'] ?? 'Unknown',
+                $checkpoint['is_origin'] == 1, // isOrigin flag
+                $this->isCheckpointEndpoint($checkpoint), // isEndpoint flag
+                $driver['first_name'] . ' ' . $driver['last_name'] // driverName
+            );
+
+            if ($success) {
+                error_log("🔌 WebSocket location notification sent: Driver {$driver['id']} at {$checkpoint['checkpoint_name']}");
+            } else {
+                error_log("⚠️ WebSocket location notification failed: Driver {$driver['id']} at {$checkpoint['checkpoint_name']}");
+            }
+
+        } catch (Exception $e) {
+            error_log("❌ Error sending WebSocket location notification: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Check if a checkpoint is the endpoint of its route
+     */
+    private function isCheckpointEndpoint($checkpoint) {
+        try {
+            // Get route info to check if this is the endpoint
+            $stmt = $this->db->prepare("
+                SELECT 
+                    destination,
+                    MAX(sequence_order) as max_sequence
+                FROM routes r
+                LEFT JOIN checkpoints c ON r.id = c.route_id
+                WHERE r.id = ?
+                GROUP BY r.id, r.destination
+            ");
+            $stmt->execute([$checkpoint['route_id']]);
+            $routeInfo = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if ($routeInfo) {
+                return (
+                    $checkpoint['checkpoint_name'] === $routeInfo['destination'] ||
+                    $checkpoint['sequence_order'] == $routeInfo['max_sequence']
+                );
+            }
+            
+            return false;
+        } catch (Exception $e) {
+            error_log("❌ Error checking if checkpoint is endpoint: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Send WebSocket QR scan notification
+     */
+    private function sendWebSocketQRScanNotification($driverId, $passengerId, $amount, $checkpoint, $tripId = null) {
+        try {
+            $success = $this->wsNotifier->notifyQRScan(
+                $driverId,
+                $passengerId,
+                $amount,
+                $checkpoint['checkpoint_name'],
+                $tripId
+            );
+
+            if ($success) {
+                error_log("🔌 WebSocket QR scan notification sent: Driver $driverId → Passenger $passengerId");
+            } else {
+                error_log("⚠️ WebSocket QR scan notification failed: Driver $driverId → Passenger $passengerId");
+            }
+
+        } catch (Exception $e) {
+            error_log("❌ Error sending WebSocket QR scan notification: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Send WebSocket trip completion notification
+     */
+    private function sendWebSocketTripCompletionNotification($tripId, $driverId, $routeId, $passengerId, $earnings) {
+        try {
+            $success = $this->wsNotifier->notifyTripCompleted(
+                $tripId,
+                $driverId,
+                $routeId,
+                $passengerId,
+                $earnings
+            );
+
+            if ($success) {
+                error_log("🔌 WebSocket trip completion notification sent: Trip $tripId");
+            } else {
+                error_log("⚠️ WebSocket trip completion notification failed: Trip $tripId");
+            }
+
+        } catch (Exception $e) {
+            error_log("❌ Error sending WebSocket trip completion notification: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Send fallback trip completion notification when no specific trips are found
+     */
+    private function sendFallbackTripCompletionNotification($driver, $checkpoint) {
+        try {
+            // Generate a generic trip completion notification for this checkpoint
+            $tripId = 'fallback_' . $driver['id'] . '_' . time();
+            
+            $success = $this->wsNotifier->notifyTripCompleted(
+                $tripId,
+                $driver['id'],
+                $checkpoint['route_id'],
+                'all_passengers', // Generic passenger ID for broadcast
+                0 // No specific earnings amount
+            );
+
+            if ($success) {
+                error_log("🔌 Fallback WebSocket trip completion notification sent for checkpoint: {$checkpoint['checkpoint_name']}");
+            } else {
+                error_log("⚠️ Fallback WebSocket trip completion notification failed for checkpoint: {$checkpoint['checkpoint_name']}");
+            }
+
+        } catch (Exception $e) {
+            error_log("❌ Error sending fallback trip completion notification: " . $e->getMessage());
         }
     }
 }

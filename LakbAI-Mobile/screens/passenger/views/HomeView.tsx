@@ -14,6 +14,9 @@ import { tripNotificationService, TripNotification } from '../../../shared/servi
 import { simpleTripNotificationService } from '../../../shared/services/simpleTripNotificationService';
 import { fareMatrixService } from '../../../shared/services/fareMatrixService';
 import { localNotificationService } from '../../../shared/services/localNotificationService';
+import { tripBookingService } from '../../../shared/services/tripBookingService';
+import WebSocketInitializer from '../../../shared/services/webSocketInitializer';
+import sessionManager from '../../../shared/services/sessionManager';
 import styles from '../styles/HomeScreen.styles';
 import DriverLocationCard from '../components/DriverLocationCard';
 import { getBaseUrl } from '../../../config/apiConfig';
@@ -122,6 +125,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onBackButtonPress, onSho
   const [isInitialized, setIsInitialized] = useState(false);
   const [isCompletingTrip, setIsCompletingTrip] = useState(false);
   const [lastNotificationTime, setLastNotificationTime] = useState<number>(0);
+  const [tripCompletionTriggered, setTripCompletionTriggered] = useState(false);
 
   // Save selected route to AsyncStorage
   const saveSelectedRoute = async (route: Route) => {
@@ -233,6 +237,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onBackButtonPress, onSho
         if (storedTrip.id && storedTrip.driverId && storedTrip.pickupLocation && storedTrip.destination) {
           setActiveTrip(storedTrip);
           setTripStatus(storedTrip.status);
+          setTripCompletionTriggered(false); // Reset completion flag for new trip
           
           // Check if this is a new trip (created within the last 30 seconds)
           const tripAge = Date.now() - new Date(storedTrip.startTime).getTime();
@@ -440,9 +445,10 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onBackButtonPress, onSho
         console.log('🏁 Match type:', isExactDestinationMatch ? 'exact name match' : 'sequence order match');
         
         // Only trigger trip completion if not already shown and not already completing
-        if (!notificationShown && !isCompletingTrip) {
+        if (!notificationShown && !isCompletingTrip && !tripCompletionTriggered) {
           setNotificationShown(true);
           setTripStatus('completed');
+          setTripCompletionTriggered(true);
           
           // Show loading screen immediately
           setIsCompletingTrip(true);
@@ -496,6 +502,16 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onBackButtonPress, onSho
     try {
       console.log('🔄 completeTrip called with isAutoComplete:', isAutoComplete);
       console.log('🔄 Current isCompletingTrip state:', isCompletingTrip);
+      console.log('🔄 Current tripCompletionTriggered state:', tripCompletionTriggered);
+      
+      // Prevent duplicate completions
+      if (tripCompletionTriggered || isCompletingTrip) {
+        console.log('🔄 Trip completion already in progress or completed, ignoring duplicate call');
+        return;
+      }
+      
+      // Mark as triggered immediately to prevent duplicates
+      setTripCompletionTriggered(true);
       
       // Show loading screen for automatic completion
       if (isAutoComplete) {
@@ -503,8 +519,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onBackButtonPress, onSho
         setIsCompletingTrip(true);
         console.log('🔄 Starting trip completion process...');
         
-        // Add a small delay to show the loading screen
-        await new Promise(resolve => setTimeout(resolve, 1500));
+        // Show completion screen for longer duration (4 seconds)
+        await new Promise(resolve => setTimeout(resolve, 4000));
       }
 
       // Remove active trip from storage
@@ -523,11 +539,63 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onBackButtonPress, onSho
         // Add a small delay after hiding loading to ensure smooth transition
         setTimeout(() => {
           Alert.alert('You have reached your destination.', 'Thank you for using LakbAI!');
-        }, 300);
+        }, 500);
       }
+      
+      // Reset completion trigger flag
+      setTripCompletionTriggered(false);
     } catch (error) {
       console.error('Error completing trip:', error);
       setIsCompletingTrip(false); // Make sure to hide loading on error
+      setTripCompletionTriggered(false); // Reset on error
+    }
+  };
+
+  // Debug function to clear all trip data
+  const clearAllTripData = async () => {
+    try {
+      Alert.alert(
+        'Clear Trip Data',
+        'This will clear all active trip data. Are you sure?',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Clear',
+            style: 'destructive',
+            onPress: async () => {
+              try {
+                // Clear trips from API
+                console.log('🧹 Clearing trips from API...');
+                const clearResult = await tripBookingService.clearActiveTrips(21); // TODO: Get from auth
+                console.log('API clear result:', clearResult);
+              } catch (error) {
+                console.error('❌ Error clearing trips from API:', error);
+              }
+
+              // Clear AsyncStorage
+              await AsyncStorage.multiRemove([
+                ACTIVE_TRIP_KEY,
+                SELECTED_ROUTE_KEY,
+                'trip_notifications',
+                'driver_locations',
+                'passenger_trips'
+              ]);
+              
+              // Reset state
+              setActiveTrip(null);
+              setShowActiveTripView(false);
+              setTripStatus('waiting');
+              setDriverLocation(null);
+              
+              console.log('🧹 All trip data cleared');
+              Alert.alert('Success', 'All trip data has been cleared');
+            }
+          }
+        ]
+      );
+    } catch (error) {
+      console.error('❌ Error clearing trip data:', error);
+      Alert.alert('Error', 'Failed to clear trip data');
     }
   };
 
@@ -576,6 +644,54 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onBackButtonPress, onSho
     setNotificationShown(false); // Reset notification flag
   }, []);
 
+  // Initialize WebSocket when user becomes authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      console.log('🔌 User authenticated, initializing WebSocket...');
+      initializeWebSocket();
+    } else {
+      console.log('🔌 User not authenticated, disconnecting WebSocket...');
+      WebSocketInitializer.disconnect();
+    }
+  }, [isAuthenticated]);
+
+  // Initialize WebSocket connection
+  const initializeWebSocket = async () => {
+    try {
+      console.log('🔌 Starting WebSocket initialization...');
+      
+      // Check if user is authenticated first
+      if (!isAuthenticated) {
+        console.log('⚠️ User not authenticated, skipping WebSocket initialization');
+        return;
+      }
+      
+      // Check session
+      const session = await sessionManager.getUserSession();
+      if (!session) {
+        console.log('⚠️ No user session found, skipping WebSocket initialization');
+        return;
+      }
+      
+      console.log('🔍 User session found:', {
+        userId: session.userId,
+        userType: session.userType,
+        isAuthenticated
+      });
+      
+      const wsConnected = await WebSocketInitializer.initialize();
+      if (wsConnected) {
+        console.log('✅ WebSocket connected - real-time trip notifications enabled');
+      } else {
+        console.log('⚠️ WebSocket connection failed - using fallback polling');
+        console.log('🔍 WebSocket status:', WebSocketInitializer.getStatus());
+      }
+    } catch (error) {
+      console.error('❌ Error initializing WebSocket:', error);
+      console.log('🔍 WebSocket status after error:', WebSocketInitializer.getStatus());
+    }
+  };
+
   // Listen for driver location updates
   useEffect(() => {
     if (activeTrip && routes && routes.length > 0) {
@@ -605,15 +721,15 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onBackButtonPress, onSho
               event.processed = true;
               await AsyncStorage.setItem('trip_completion_event', JSON.stringify(event));
               
-              // Trigger trip completion with loading screen
-              if (!notificationShown) {
-                setNotificationShown(true);
-                setTripStatus('completed');
-                
-                setTimeout(() => {
-                  completeTrip(); // This will show the loading screen
-                }, 500);
-              }
+              // Trigger trip completion with loading screen - DISABLED to prevent duplicates
+              // if (!notificationShown) {
+              //   setNotificationShown(true);
+              //   setTripStatus('completed');
+              //   
+              //   setTimeout(() => {
+              //     completeTrip(); // This will show the loading screen
+              //   }, 500);
+              // }
             }
           }
         } catch (error) {
@@ -628,82 +744,147 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onBackButtonPress, onSho
     }
   }, [activeTrip, notificationShown]);
 
+  // Listen for WebSocket trip completion notifications
+  useEffect(() => {
+    if (isAuthenticated && activeTrip) {
+      console.log('🔌 Setting up trip notifications for trip ID:', activeTrip.id);
+      
+      // Add general WebSocket event listener for debugging
+      const { webSocketService } = require('../../../shared/services/webSocketService');
+      console.log('🔌 WebSocket connection status:', webSocketService.isSocketConnected());
+      webSocketService.on('trip-completed', (data: any) => {
+        console.log('🔔 GENERAL WebSocket trip-completed event received:', data);
+      });
+      
+      const setupTripNotifications = async () => {
+        const cleanup = await tripNotificationService.listenForDriverNotifications(
+          activeTrip.id,
+          (notification) => {
+            console.log('🔔 Received trip notification:', notification);
+            console.log('🔔 Notification type:', notification.type);
+            console.log('🔔 Active trip ID:', activeTrip.id);
+            
+            if (notification.type === 'trip_completed') {
+              console.log('✅ Trip completion notification received via WebSocket');
+              console.log('✅ Trip ID match:', notification.tripId === activeTrip.id);
+              
+              // Only trigger if not already completing
+              if (!tripCompletionTriggered && !isCompletingTrip) {
+                setTripStatus('completed');
+                setTripCompletionTriggered(true);
+                
+                // Complete the trip and close the view
+                setTimeout(() => {
+                  console.log('🔄 Calling completeTrip() from WebSocket notification');
+                  completeTrip();
+                }, 1000);
+              } else {
+                console.log('🔄 Trip completion already triggered, ignoring WebSocket notification');
+              }
+            } else if (notification.type === 'location_update') {
+              console.log('📍 Location update notification received (trip-specific) - DISABLED to prevent duplicates');
+              // DISABLED: Trip-specific location notifications to prevent duplicates with general listener
+              // The general WebSocket listener already handles all location updates
+            } else {
+              console.log('🔔 Other notification type received:', notification.type);
+            }
+          }
+        );
+        return cleanup;
+      };
+
+      let cleanupPromise: Promise<(() => void) | undefined>;
+      cleanupPromise = setupTripNotifications();
+
+      return () => {
+        cleanupPromise.then(cleanup => {
+          if (cleanup && typeof cleanup === 'function') {
+            cleanup();
+          }
+        });
+      };
+    }
+  }, [isAuthenticated, activeTrip]);
+
   // Listen for general location update notifications (for all passengers)
   useEffect(() => {
     if (isAuthenticated) {
-      let cleanup: (() => void) | undefined;
+      console.log('🔌 Setting up general location update listener...');
       
-      const handleLocationUpdate = (notification: any) => {
-        console.log('🔔 Received location update notification:', notification);
+      // Set up WebSocket listener for all driver location updates
+      const { webSocketService } = require('../../../shared/services/webSocketService');
+      
+      const handleDriverLocationUpdate = (data: any) => {
+        console.log('🔔 Received general driver location update:', data);
         
-        if (notification.type === 'location_update') {
-          // Driver location update notification
-          console.log('📍 Driver location update notification:', notification.data);
+        // Update driver location in UI
+        if (data && data.location) {
+          setDriverLocation({
+            checkpoint_name: data.location,
+            coordinates: data.coordinates || { latitude: 0, longitude: 0 },
+            lastUpdate: data.timestamp || new Date().toISOString(),
+            status: 'active'
+          });
           
-          // Update driver location
-          if (notification.data && notification.data.current_location) {
-            setDriverLocation({
-              checkpoint_name: notification.data.current_location,
-              coordinates: { latitude: 0, longitude: 0 },
-              lastUpdate: new Date().toISOString(),
-              status: 'active'
-            });
+          // Show Expo notification (with debouncing)
+          const now = Date.now();
+          const timeSinceLastNotification = now - (lastNotificationTime || 0);
+          
+          if (timeSinceLastNotification > 3000) { // 3 seconds debounce
+            setLastNotificationTime(now);
             
-            // Debounce notifications to prevent spam (only show if 5+ seconds since last notification)
-            const now = Date.now();
-            const timeSinceLastNotification = now - (lastNotificationTime || 0);
+            // Determine notification type and content based on data
+            let title = 'Jeepney Location Update';
+            let body = `Driver is now at ${data.location}`;
             
-            if (timeSinceLastNotification > 5000) { // 5 seconds debounce
-              setLastNotificationTime(now);
-              
-              // Show notification to user
-              Alert.alert(
-                'Jeepney Location Update',
-                `Driver is now at ${notification.data.current_location}`,
-                [{ text: 'OK' }]
-              );
-            } else {
-              console.log('🔇 Notification debounced - too soon since last notification');
+            // Check for special notification types
+            if (data.is_origin || data.notification_priority === 'high') {
+              title = '🚀 Driver Started Shift';
+              body = `Driver ${data.jeepneyNumber || 'Unknown'} has started the route from ${data.location}`;
+            } else if (data.is_endpoint) {
+              title = '🏁 Route Endpoint Reached';
+              body = `Driver ${data.jeepneyNumber || 'Unknown'} has reached the endpoint at ${data.location}`;
             }
-          }
-        } else if (notification.type === 'endpoint_reached') {
-          // Driver has reached the endpoint of the route
-          console.log('🏁 Driver reached endpoint notification:', notification.data);
-          
-          // Update driver location
-          if (notification.data && notification.data.current_location) {
-            setDriverLocation({
-              checkpoint_name: notification.data.current_location,
-              coordinates: { latitude: 0, longitude: 0 },
-              lastUpdate: new Date().toISOString(),
-              status: 'active'
+            
+            // Send proper Expo notification
+            localNotificationService.notifyLocationUpdate({
+              type: 'location_update',
+              driverId: data.driverId || 'unknown',
+              driverName: data.driverName || 'Driver',
+              jeepneyNumber: data.jeepneyNumber || 'Unknown',
+              route: data.routeId || '1',
+              currentLocation: data.location,
+              previousLocation: undefined,
+              coordinates: data.coordinates,
+              title: title,
+              body: body,
+              data: {
+                driverId: data.driverId,
+                driverName: data.driverName,
+                jeepneyNumber: data.jeepneyNumber,
+                route: data.routeId,
+                currentLocation: data.location,
+                timestamp: data.timestamp,
+                type: 'general_location_update',
+                is_origin: data.is_origin,
+                is_endpoint: data.is_endpoint,
+                notification_priority: data.notification_priority
+              }
+            }).catch(error => {
+              console.error('❌ Failed to send location notification:', error);
             });
+          } else {
+            console.log('🔇 Location notification debounced - too soon since last notification');
           }
-          
-          // Show special endpoint notification with higher priority
-          setTimeout(() => {
-            Alert.alert(
-              '🏁 Route Endpoint Reached',
-              `Driver ${notification.data.jeepney_number} has completed the route at ${notification.data.current_location}. This driver is now available for the return route.`,
-              [{ text: 'OK' }],
-              { cancelable: true }
-            );
-          }, 500); // Small delay to ensure proper display
         }
       };
-
-      // Set up general location update polling
-      tripNotificationService.listenForDriverNotifications(
-        'general', // Use a general trip ID for location updates
-        handleLocationUpdate
-      ).then((cleanupFn) => {
-        cleanup = cleanupFn;
-      }).catch((error) => {
-        console.warn('⚠️ General notification service failed:', error);
-      });
-
+      
+      // Add WebSocket listener
+      webSocketService.on('driver-location-update', handleDriverLocationUpdate);
+      
       return () => {
-        if (cleanup) cleanup();
+        console.log('🔌 Cleaning up general location update listener...');
+        webSocketService.off('driver-location-update', handleDriverLocationUpdate);
       };
     }
   }, [isAuthenticated, lastNotificationTime]);
@@ -717,17 +898,18 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onBackButtonPress, onSho
       const handleTripCompletion = (notification: any) => {
         console.log('🔔 Received notification:', notification);
         
-        if (notification.type === 'driver_at_destination' && !notificationShown) {
-          // Driver has reached the destination - automatically complete the trip
-          setNotificationShown(true);
-          setTripStatus('completed');
-          setIsCompletingTrip(true);
-          
-          // Automatically complete the trip after a short delay
-          setTimeout(() => {
-            completeTrip(true);
-          }, 1000);
-        }
+        // DISABLED to prevent duplicate completions - handled by location-based completion
+        // if (notification.type === 'driver_at_destination' && !notificationShown) {
+        //   // Driver has reached the destination - automatically complete the trip
+        //   setNotificationShown(true);
+        //   setTripStatus('completed');
+        //   setIsCompletingTrip(true);
+        //   
+        //   // Automatically complete the trip after a short delay
+        //   setTimeout(() => {
+        //     completeTrip(true);
+        //   }, 1000);
+        // }
         // Location update and endpoint notifications are now handled by the general notification handler above
       };
 
@@ -823,11 +1005,11 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onBackButtonPress, onSho
         setTripStatus('completed');
         setIsCompletingTrip(true);
         
-        // Automatically complete the trip after a short delay
-        setTimeout(() => {
-          console.log('🏁 Auto-completing trip from LocationTrackingService event');
-          completeTrip(true);
-        }, 1000);
+        // DISABLED to prevent duplicate completions - handled by location-based completion
+        // setTimeout(() => {
+        //   console.log('🏁 Auto-completing trip from LocationTrackingService event');
+        //   completeTrip(true);
+        // }, 1000);
       }
     };
 
@@ -1088,12 +1270,6 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onBackButtonPress, onSho
           
         </View>
         
-        {/* Driver Location Tracking for Active Trip */}
-        <View style={styles.driverLocationSection}>
-          <DriverLocationCard 
-            routeId={routes.find(r => r.route_name === activeTrip.route)?.id.toString() || '1'} 
-          />
-        </View>
       </ScrollView>
     );
   }
@@ -1108,6 +1284,19 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onBackButtonPress, onSho
         <Text style={styles.headerTitle}>Welcome to LakbAI</Text>
         <Text style={styles.headerSubtitle}>Your smart jeepney companion</Text>
       </View>
+
+      {/* Debug Button - Only show in development */}
+      {__DEV__ && (
+        <View style={styles.debugSection}>
+          <TouchableOpacity 
+            style={styles.debugButton} 
+            onPress={clearAllTripData}
+          >
+            <Ionicons name="trash" size={16} color="#fff" />
+            <Text style={styles.debugButtonText}>Clear Trip Data (Debug)</Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
       {/* Main Grid Actions */}
       <View style={styles.gridContainer}>

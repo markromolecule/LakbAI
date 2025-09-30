@@ -654,6 +654,26 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: COLORS.blue800,
   },
+  
+  // Debug button styles
+  debugSection: {
+    marginBottom: SPACING.md,
+    alignItems: 'center',
+  },
+  debugButton: {
+    backgroundColor: '#ff4444',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    borderRadius: SPACING.sm,
+    gap: SPACING.xs,
+  },
+  debugButtonText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '600',
+  },
 
 });
 

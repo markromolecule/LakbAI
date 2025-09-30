@@ -14,6 +14,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getBaseUrl } from '../../config/apiConfig';
 import { localNotificationService } from './localNotificationService';
+import { webSocketService, DriverLocationUpdate } from './webSocketService';
 
 export interface DriverLocationInfo {
   driverId: string;
@@ -44,7 +45,7 @@ export interface LocationUpdate {
 class LocationTrackingService {
   private previousLocations: Map<string, DriverLocationInfo> = new Map();
   private isPassengerApp: boolean = false;
-  private refreshInterval: NodeJS.Timeout | null = null;
+  private refreshInterval: ReturnType<typeof setInterval> | null = null;
   private routeId: string = '1'; // Default route
   private sentNotifications: Set<string> = new Set(); // Track sent notifications to prevent duplicates
 
@@ -74,10 +75,61 @@ class LocationTrackingService {
     // Initial load
     this.checkForLocationUpdates();
     
-    // Check for updates every 2 seconds for faster response
+    // Set up WebSocket listener for real-time location updates
+    this.setupWebSocketLocationListener();
+    
+    // Fallback: Check for updates every 10 seconds (less frequent than before)
     this.refreshInterval = setInterval(() => {
-      this.checkForLocationUpdates();
-    }, 2000);
+      // Only use fallback if WebSocket is not connected
+      if (!webSocketService.isSocketConnected()) {
+        console.log('🔍 WebSocket not connected, using fallback location polling...');
+        this.checkForLocationUpdates();
+      }
+    }, 10000); // Reduced frequency for fallback
+  }
+
+  /**
+   * Set up WebSocket listener for real-time location updates
+   */
+  private setupWebSocketLocationListener(): void {
+    console.log('Setting up WebSocket listener for location updates...');
+    
+    const handleLocationUpdate = (data: DriverLocationUpdate) => {
+      console.log('Received real-time location update:', data);
+      
+      // Convert WebSocket data to our format
+      const locationInfo: DriverLocationInfo = {
+        driverId: data.driverId,
+        driverName: 'Driver', // We can enhance this later
+        jeepneyNumber: data.jeepneyNumber || 'Unknown',
+        plateNumber: 'Unknown',
+        shiftStatus: data.status === 'active' ? 'on_duty' : 'off_duty',
+        lastScannedCheckpoint: data.location,
+        estimatedArrival: 'Calculating...',
+        lastUpdate: data.timestamp,
+        minutesSinceUpdate: 0,
+        status: data.status,
+        statusMessage: `Driver is at ${data.location}`,
+        route: data.routeId,
+        coordinates: data.coordinates
+      };
+
+      // Check if this is a new location change
+      const previousLocation = this.previousLocations.get(data.driverId);
+      const hasLocationChanged = !previousLocation || 
+        previousLocation.lastScannedCheckpoint !== data.location;
+
+      if (hasLocationChanged) {
+        // Update stored location
+        this.previousLocations.set(data.driverId, locationInfo);
+        
+        // Trigger notification for location change
+        this.notifyLocationChange(previousLocation || null, locationInfo);
+      }
+    };
+
+    // Add WebSocket listener
+    webSocketService.on('driver-location-update', handleLocationUpdate);
   }
 
   /**
@@ -89,7 +141,11 @@ class LocationTrackingService {
       this.refreshInterval = null;
       console.log('⏹️ Location monitoring stopped');
     }
+    
+    // Remove WebSocket listeners
+    webSocketService.removeAllListeners('driver-location-update');
   }
+
 
   /**
    * Fetch current driver locations from API
@@ -131,7 +187,7 @@ class LocationTrackingService {
           jeepneyNumber: location.jeepney_number || 'Unknown',
           plateNumber: location.plate_number || 'Unknown',
           shiftStatus: location.shift_status || 'unknown',
-          lastScannedCheckpoint: location.current_location || 'Unknown Location', // Use current_location field
+          lastScannedCheckpoint: location.current_location || 'Unknown Location',
           estimatedArrival: location.estimated_arrival || 'Unknown',
           lastUpdate: location.last_update_formatted || new Date().toISOString(),
           minutesSinceUpdate: location.minutes_since_update || 0,
@@ -191,17 +247,17 @@ class LocationTrackingService {
             currentUpdate: currentLocation.lastUpdate
           });
           
-          // Trigger local notification for passengers
-          console.log('🔔 TRIGGERING NOTIFICATION: Driver moved from', previousLocation.lastScannedCheckpoint, 'to', currentLocation.lastScannedCheckpoint);
-          await this.notifyLocationChange(previousLocation, currentLocation);
+          // Trigger local notification for passengers - DISABLED to prevent duplicates with WebSocket
+          console.log('🔔 NOTIFICATION DISABLED: Driver moved from', previousLocation.lastScannedCheckpoint, 'to', currentLocation.lastScannedCheckpoint);
+          // await this.notifyLocationChange(previousLocation, currentLocation);
         } else if (previousLocation) {
           console.log('📍 No location change detected for driver:', currentLocation.driverId, '- same location:', currentLocation.lastScannedCheckpoint);
         } else {
           console.log('📍 First time seeing driver:', currentLocation.driverId, 'at location:', currentLocation.lastScannedCheckpoint);
           
-          // Send notification for new driver appearance (when driver starts shift)
-          console.log('🔔 TRIGGERING NOTIFICATION: New driver appeared at', currentLocation.lastScannedCheckpoint);
-          await this.notifyLocationChange(null, currentLocation);
+          // Send notification for new driver appearance (when driver starts shift) - DISABLED to prevent duplicates
+          console.log('🔔 NOTIFICATION DISABLED: New driver appeared at', currentLocation.lastScannedCheckpoint);
+          // await this.notifyLocationChange(null, currentLocation);
         }
         
         // Update previous location cache
@@ -273,9 +329,9 @@ class LocationTrackingService {
           jeepneyNumber: current.jeepneyNumber,
           route: current.route,
           currentLocation: current.lastScannedCheckpoint,
-          previousLocation: null,
+          previousLocation: undefined,
           coordinates: current.coordinates,
-          title: '🚌 Driver Started Shift',
+          title: 'Driver Started Shift',
           body: `${current.driverName} (${current.jeepneyNumber}) started their shift at ${current.lastScannedCheckpoint}`,
           data: {
             driverId: current.driverId,
@@ -322,7 +378,7 @@ class LocationTrackingService {
         currentLocation: current.lastScannedCheckpoint,
         previousLocation: previous.lastScannedCheckpoint,
         coordinates: current.coordinates,
-        title: '📍 Jeepney Location Update',
+        title: 'Jeepney Location Update',
         body: `${current.driverName} (${current.jeepneyNumber}) moved from ${previous.lastScannedCheckpoint} to ${current.lastScannedCheckpoint}`,
         data: {
           driverId: current.driverId,

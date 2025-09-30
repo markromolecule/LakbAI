@@ -1,6 +1,7 @@
 import { Alert } from 'react-native';
 // Removed old notificationService - using only localNotificationService for driver app notifications
 import { localNotificationService } from './localNotificationService';
+import { webSocketService } from './webSocketService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getBaseUrl } from '../../config/apiConfig';
 
@@ -40,6 +41,44 @@ class EarningsService {
   private listeners = new Set<(driverId: string) => void>();
   private lastResetDate: string = new Date().toDateString(); // Track last reset date
   private lastPaymentSender: Map<string, string> = new Map(); // Track last payment sender for each driver
+  private websocketInitialized = false;
+
+  /**
+   * Initialize WebSocket listener for real-time earnings updates
+   */
+  private initializeWebSocketListener(): void {
+    if (this.websocketInitialized) {
+      return;
+    }
+
+    console.log('🔌 Initializing WebSocket listener for earnings updates...');
+
+    // Listen for earnings updates from WebSocket
+    webSocketService.on('earnings-update', (data: any) => {
+      console.log('WebSocket earnings update received:', data);
+      
+      // Convert WebSocket data to our format
+      const earningsUpdate: EarningsUpdate = {
+        driverId: data.driverId,
+        amount: data.amount,
+        tripId: `websocket_${Date.now()}`,
+        passengerId: 'websocket_update',
+        timestamp: data.timestamp,
+        paymentMethod: 'xendit',
+        pickupLocation: 'Unknown',
+        destination: 'Unknown',
+        originalFare: data.amount,
+        finalFare: data.amount,
+        incrementTripCount: false
+      };
+
+      // Update earnings with WebSocket data
+      this.updateDriverEarnings(earningsUpdate, 'WebSocket Update');
+    });
+
+    this.websocketInitialized = true;
+    console.log('✅ WebSocket earnings listener initialized');
+  }
 
   /**
    * Store the last payment sender name for a driver
@@ -234,6 +273,9 @@ class EarningsService {
    * Initialize or get driver earnings (fallback to memory)
    */
   private getDriverEarnings(driverId: string): DriverEarnings {
+    // Initialize WebSocket listener when first accessed
+    this.initializeWebSocketListener();
+    
     // Only check for daily reset if we haven't checked today
     const currentDate = new Date().toDateString();
     if (this.lastResetDate !== currentDate) {
@@ -493,7 +535,7 @@ class EarningsService {
         });
         
         if (earningsIncrease > 0) {
-          const notificationTitle = '💰 Payment Received!';
+          const notificationTitle = 'Payment Received!';
           const notificationBody = storedSenderName 
             ? `${storedSenderName} paid ₱${earningsIncrease.toFixed(2)}. Today's earnings: ₱${newEarnings.todayEarnings.toFixed(2)}`
             : `You received ₱${earningsIncrease.toFixed(2)}. Today's earnings: ₱${newEarnings.todayEarnings.toFixed(2)}`;
