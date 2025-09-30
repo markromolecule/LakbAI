@@ -17,6 +17,7 @@ import { buildAuth0Url } from '../../../config/developerConfig';
 import { getBaseUrl } from '../../../config/apiConfig';
 import { usePassengerState } from '../hooks/usePassengerState';
 import { googleMapsService } from '../../../shared/services/googleMapsService';
+import { tripBookingService } from '../../../shared/services/tripBookingService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 
@@ -338,12 +339,31 @@ export const ScannerScreen: React.FC = () => {
       // Payment successful - show success message
       console.log('✅ Payment completed successfully - driver earnings updated');
       
+      // Book trip through the new API system
+      console.log('🚀 Booking trip through API...');
+      const tripBookingRequest = {
+        passenger_id: 21, // TODO: Get from auth context
+        driver_id: parseInt(bookingData.driver.id),
+        route_id: 1, // TODO: Get from route data
+        pickup_location: bookingData.pickupLocation,
+        destination: bookingData.destination,
+        fare: bookingData.discountedFare || bookingData.fare
+      };
+
+      const bookingResult = await tripBookingService.bookTrip(tripBookingRequest);
+      
+      if (bookingResult.status !== 'success') {
+        throw new Error(bookingResult.message || 'Failed to book trip');
+      }
+
+      console.log('✅ Trip booked successfully:', bookingResult.data);
+      
       // Set payment as completed and show success
       setPaymentCompleted(true);
       
       // Store active trip for home view
       const activeTrip = {
-        id: `trip_${Date.now()}`,
+        id: bookingResult.data?.trip_id || `trip_${Date.now()}`,
         driverId: bookingData.driver.id,
         driverName: bookingData.driver.name,
         jeepneyNumber: bookingData.driver.jeepneyNumber,

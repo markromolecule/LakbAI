@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import sessionManager from './sessionManager';
 import { getBaseUrl } from '../../config/apiConfig';
+import { webSocketService, TripUpdate, QRScanNotification } from './webSocketService';
 
 export interface TripNotification {
   id?: string;
@@ -28,36 +29,112 @@ class TripNotificationService {
   // Listen for driver QR scan notifications
   async listenForDriverNotifications(tripId: string, callback: (notification: TripNotification) => void) {
     try {
-      // In a real implementation, this would use WebSockets or push notifications
-      // For now, we'll use polling to check for driver updates
-      const interval = setInterval(async () => {
-        console.log('🔍 Polling for notifications...');
-        
-        // Check for trip completion notifications
-        const completionNotification = await this.checkForDriverUpdates(tripId);
-        if (completionNotification) {
-          console.log('🔔 Trip completion notification found:', completionNotification);
-          callback(completionNotification);
-        }
-        
-        // Check for location update notifications
-        const locationNotification = await this.checkForLocationUpdates(tripId);
-        if (locationNotification) {
-          console.log('🔔 Location update notification found:', locationNotification);
-          callback(locationNotification);
-        }
-        
-        // Check for endpoint reached notifications
-        const endpointNotification = await this.checkForEndpointNotifications(tripId);
-        if (endpointNotification) {
-          console.log('🔔 Endpoint notification found:', endpointNotification);
-          callback(endpointNotification);
-        }
-      }, 1500); // Check every 1.5 seconds for more responsive updates
+      console.log('🔌 Setting up WebSocket listeners for trip notifications...');
 
-      return () => clearInterval(interval);
+      // WebSocket event handlers
+      const handleTripCompleted = (data: TripUpdate) => {
+        console.log('🔔 WebSocket trip-completed event received:', data);
+        console.log('🔔 Checking trip ID match:', { receivedTripId: data.tripId, expectedTripId: tripId });
+        
+        if (data.tripId === tripId || !tripId) {
+          const notification: TripNotification = {
+            id: `trip_completed_${data.tripId}`,
+            type: 'trip_completed',
+            tripId: data.tripId,
+            driverId: data.driverId,
+            driverName: 'Driver', // We can enhance this later
+            jeepneyNumber: 'Unknown', // We can enhance this later
+            timestamp: data.timestamp,
+            message: `Trip completed. Earnings: ₱${data.earnings}`,
+            data: data
+          };
+          console.log('🔔 Trip completion notification created:', notification);
+          callback(notification);
+        } else {
+          console.log('🔔 Trip completion event ignored - trip ID mismatch');
+        }
+      };
+
+      const handleQRScanNotification = (data: QRScanNotification) => {
+        if (data.tripId === tripId || !tripId) {
+          const notification: TripNotification = {
+            id: `qr_scan_${data.timestamp}`,
+            type: 'driver_arrived',
+            tripId: data.tripId || '',
+            driverId: data.driverId,
+            driverName: 'Driver',
+            jeepneyNumber: 'Unknown',
+            checkpointName: data.checkpoint,
+            timestamp: data.timestamp,
+            message: `Driver scanned QR at ${data.checkpoint}. Amount: ₱${data.amount}`,
+            data: data
+          };
+          console.log('🔔 QR scan notification received:', notification);
+          callback(notification);
+        }
+      };
+
+      const handleDriverLocationUpdate = (data: any) => {
+        const notification: TripNotification = {
+          id: `location_update_${data.timestamp}`,
+          type: 'location_update',
+          tripId: tripId || '',
+          driverId: data.driverId,
+          driverName: 'Driver',
+          jeepneyNumber: data.jeepneyNumber || 'Unknown',
+          checkpointName: data.location,
+          timestamp: data.timestamp,
+          message: `Driver is now at ${data.location}`,
+          data: data
+        };
+        console.log('🔔 Location update notification received:', notification);
+        callback(notification);
+      };
+
+      // Set up WebSocket listeners
+      console.log('🔌 Setting up WebSocket listeners for trip notifications...');
+      webSocketService.on('trip-completed', handleTripCompleted);
+      // webSocketService.on('qr-scan-notification', handleQRScanNotification); // Disabled to prevent duplicate notifications
+      webSocketService.on('driver-location-update', handleDriverLocationUpdate);
+      console.log('✅ WebSocket listeners set up successfully');
+
+      // Fallback: Keep polling as backup for now (we can remove this later)
+      const fallbackInterval = setInterval(async () => {
+        // Only use fallback if WebSocket is not connected
+        if (!webSocketService.isSocketConnected()) {
+          console.log('🔍 WebSocket not connected, using fallback polling...');
+          
+          const completionNotification = await this.checkForDriverUpdates(tripId);
+          if (completionNotification) {
+            callback(completionNotification);
+          }
+          
+          const locationNotification = await this.checkForLocationUpdates(tripId);
+          if (locationNotification) {
+            callback(locationNotification);
+          }
+        }
+      }, 5000); // Less frequent fallback polling
+
+      // Return cleanup function
+      return () => {
+        console.log('🔌 Cleaning up trip notification listeners...');
+        webSocketService.off('trip-completed', handleTripCompleted);
+        // webSocketService.off('qr-scan-notification', handleQRScanNotification); // Disabled to prevent duplicate notifications
+        webSocketService.off('driver-location-update', handleDriverLocationUpdate);
+        clearInterval(fallbackInterval);
+      };
+
     } catch (error) {
       console.error('Error setting up driver notification listener:', error);
+      
+      // Fallback to polling if WebSocket setup fails
+      const interval = setInterval(async () => {
+        const completionNotification = await this.checkForDriverUpdates(tripId);
+        if (completionNotification) callback(completionNotification);
+      }, 3000);
+      
+      return () => clearInterval(interval);
     }
   }
 

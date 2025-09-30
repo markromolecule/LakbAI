@@ -17,6 +17,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
+// Include trip routes
+require_once __DIR__ . '/trip_routes.php';
+require_once __DIR__ . '/../controllers/TripController.php';
+
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
@@ -48,6 +52,7 @@ $fileUploadController = new FileUploadController($app->get('Database'));
 $discountController = new DiscountController($app->get('Database'));
 $notificationController = new NotificationController($app->get('PDO'));
 $fareMatrixController = new FareMatrixController($app->get('PDO'));
+$tripController = new TripController($app->get('PDO'));
 
 // Get the request method and path
 $method = $_SERVER['REQUEST_METHOD'];
@@ -1001,6 +1006,48 @@ if (count($pathParts) >= 2 && $pathParts[0] === 'search') {
 if (count($pathParts) >= 3 && $pathParts[0] === 'mobile' && $pathParts[1] === 'passenger' && $pathParts[2] === 'notifications') {
     include __DIR__ . '/passenger_notifications.php';
     exit;
+}
+
+// Trip Booking routes
+if (count($pathParts) >= 4 && $pathParts[0] === 'mobile' && $pathParts[1] === 'passenger') {
+    // POST /mobile/passenger/book-trip
+    if ($pathParts[2] === 'book-trip' && $method === 'POST') {
+        $input = json_decode(file_get_contents('php://input'), true);
+        $result = $tripController->bookTrip($input);
+        echo json_encode($result);
+        exit;
+    }
+    
+    // GET /mobile/passenger/active-trips
+    if ($pathParts[2] === 'active-trips' && $method === 'GET') {
+        $passengerId = $_GET['passenger_id'] ?? null;
+        if (!$passengerId) {
+            echo json_encode([
+                "status" => "error",
+                "message" => "Passenger ID is required"
+            ]);
+            exit;
+        }
+        $result = $tripController->getActiveTrips($passengerId);
+        echo json_encode($result);
+        exit;
+    }
+    
+    // POST /mobile/passenger/clear-trips
+    if ($pathParts[2] === 'clear-trips' && $method === 'POST') {
+        $input = json_decode(file_get_contents('php://input'), true);
+        $passengerId = $input['passenger_id'] ?? null;
+        if (!$passengerId) {
+            echo json_encode([
+                "status" => "error",
+                "message" => "Passenger ID is required"
+            ]);
+            exit;
+        }
+        $result = $tripController->clearActiveTrips($passengerId);
+        echo json_encode($result);
+        exit;
+    }
 }
     
     // Test route
