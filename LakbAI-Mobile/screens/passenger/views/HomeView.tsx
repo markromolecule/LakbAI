@@ -1286,7 +1286,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onBackButtonPress, onSho
       </View>
 
       {/* Debug Button - Only show in development */}
-      {__DEV__ && (
+      {/* {__DEV__ && (
         <View style={styles.debugSection}>
           <TouchableOpacity 
             style={styles.debugButton} 
@@ -1296,7 +1296,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onBackButtonPress, onSho
             <Text style={styles.debugButtonText}>Clear Trip Data (Debug)</Text>
           </TouchableOpacity>
         </View>
-      )}
+      )} */}
 
       {/* Main Grid Actions */}
       <View style={styles.gridContainer}>
