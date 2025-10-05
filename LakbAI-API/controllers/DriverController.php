@@ -267,6 +267,12 @@ class DriverController {
                     u.created_at,
                     u.is_verified,
                     u.drivers_license_verified,
+                    u.house_number,
+                    u.street_name,
+                    u.barangay,
+                    u.city_municipality,
+                    u.province,
+                    u.postal_code,
                     d.drivers_license_verified as driver_license_verified,
                     d.license_status,
                     j.id as jeepney_id,
@@ -289,6 +295,11 @@ class DriverController {
             $result = $stmt->fetch(PDO::FETCH_ASSOC);
 
             if ($result) {
+                // Build complete address
+                $address = trim($result['house_number'] . ' ' . $result['street_name'] . ', ' . 
+                           $result['barangay'] . ', ' . $result['city_municipality'] . ', ' . 
+                           $result['province'] . ' ' . $result['postal_code']);
+                
                 $profile = [
                     'id' => $result['id'],
                     'name' => $result['first_name'] . ' ' . $result['last_name'],
@@ -301,6 +312,13 @@ class DriverController {
                     'drivers_license_verified' => (bool)($result['driver_license_verified'] ?? $result['drivers_license_verified']),
                     'license_status' => $result['license_status'],
                     'is_verified' => (bool)$result['is_verified'],
+                    'address' => $address,
+                    'house_number' => $result['house_number'],
+                    'street_name' => $result['street_name'],
+                    'barangay' => $result['barangay'],
+                    'city_municipality' => $result['city_municipality'],
+                    'province' => $result['province'],
+                    'postal_code' => $result['postal_code'],
                     'assignedJeepney' => null
                 ];
 

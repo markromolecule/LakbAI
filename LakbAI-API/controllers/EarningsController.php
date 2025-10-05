@@ -215,6 +215,60 @@ class EarningsController {
     }
 
     /**
+     * Get daily earnings data for a driver
+     */
+    public function getDailyEarnings($driverId, $days = 30) {
+        try {
+            $days = (int) $days;
+            if ($days <= 0 || $days > 365) {
+                $days = 30; // Default to 30 days
+            }
+
+            $query = "
+                SELECT 
+                    DATE(transaction_date) as date,
+                    SUM(final_fare) as earnings,
+                    COUNT(CASE WHEN counts_as_trip = 1 THEN 1 END) as trips,
+                    AVG(final_fare) as average_fare
+                FROM driver_earnings 
+                WHERE driver_id = ? 
+                    AND transaction_date >= DATE_SUB(CURDATE(), INTERVAL ? DAY)
+                GROUP BY DATE(transaction_date)
+                ORDER BY date DESC
+            ";
+
+            $stmt = $this->db->prepare($query);
+            $stmt->execute([$driverId, $days]);
+            $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            // Format the results
+            $dailyEarnings = [];
+            foreach ($results as $row) {
+                $dailyEarnings[] = [
+                    'date' => $row['date'],
+                    'earnings' => (float) $row['earnings'],
+                    'trips' => (int) $row['trips'],
+                    'averageFare' => (float) $row['average_fare']
+                ];
+            }
+
+            return [
+                'status' => 'success',
+                'data' => $dailyEarnings,
+                'total_days' => count($dailyEarnings),
+                'period' => $days . ' days'
+            ];
+
+        } catch (Exception $e) {
+            error_log("Error getting daily earnings: " . $e->getMessage());
+            return [
+                'status' => 'error',
+                'message' => 'Failed to fetch daily earnings data'
+            ];
+        }
+    }
+
+    /**
      * Get passenger payment history
      */
     public function getPassengerPaymentHistory($passengerId, $limit = 50, $offset = 0) {

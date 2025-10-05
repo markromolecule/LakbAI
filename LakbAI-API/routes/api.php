@@ -330,6 +330,15 @@ try {
             exit;
         }
 
+        // GET /earnings/daily/{driverId} - Get daily earnings for a specific driver
+        if ($method === 'GET' && count($pathParts) === 3 && $pathParts[1] === 'daily' && is_numeric($pathParts[2])) {
+            $driverId = $pathParts[2];
+            $days = $_GET['days'] ?? 30; // Default to 30 days
+            $result = $earningsController->getDailyEarnings($driverId, $days);
+            echo json_encode($result);
+            exit;
+        }
+
         // POST /earnings/add
         if ($method === 'POST' && count($pathParts) === 2 && $pathParts[1] === 'add') {
             $input = json_decode(file_get_contents('php://input'), true);
