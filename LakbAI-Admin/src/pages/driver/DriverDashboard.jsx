@@ -3,6 +3,7 @@ import { Card, Row, Col, Button, Spinner, Alert } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import AuthService from '../../services/authService';
 import { API_CONFIG } from '../../config/apiConfig';
+import PDFDownloadButtons from '../../components/driver/PDFDownloadButtons';
 
 const DriverDashboard = () => {
   const navigate = useNavigate();
@@ -149,14 +150,14 @@ const DriverDashboard = () => {
         }
         .info-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-          gap: 1rem;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 0.75rem;
         }
         .info-item {
           background: white;
           border: 1px solid #e5e7eb;
           border-radius: 8px;
-          padding: 1rem;
+          padding: 0.75rem;
           text-align: center;
         }
         .info-label {
@@ -165,7 +166,7 @@ const DriverDashboard = () => {
           font-weight: 500;
           text-transform: uppercase;
           letter-spacing: 0.05em;
-          margin-bottom: 0.5rem;
+          margin-bottom: 0.25rem;
         }
         .info-value {
           font-size: 1rem;
@@ -193,6 +194,11 @@ const DriverDashboard = () => {
           margin: 0 auto;
           padding: 0 1rem;
         }
+        .logout-btn:hover {
+          background-color: transparent !important;
+          border-color: #e5e7eb !important;
+          color: #6b7280 !important;
+        }
       `}</style>
       {/* Compact Header */}
       <div className="bg-white border-bottom compact-header" style={{ borderColor: '#e5e7eb' }}>
@@ -215,6 +221,7 @@ const DriverDashboard = () => {
             <Button 
               variant="outline-secondary" 
               size="sm" 
+              className="logout-btn"
               onClick={handleLogout}
               style={{ 
                 borderColor: '#e5e7eb', 
@@ -270,8 +277,8 @@ const DriverDashboard = () => {
         {/* Driver Information - Simple Grid */}
         <Row className="mb-4">
           <Col lg={12}>
-            <div className="simple-card p-4">
-              <h5 className="mb-4 lakbai-primary fw-semibold">Driver Information</h5>
+            <div className="simple-card p-3">
+              <h5 className="mb-3 lakbai-primary fw-semibold">Driver Information</h5>
               {driverData ? (
                 <div className="info-grid">
                   <div className="info-item">
@@ -293,10 +300,16 @@ const DriverDashboard = () => {
                   </div>
                   <div className="info-item">
                     <div className="info-label">Status</div>
-                    <div className="info-value">
+                    <div className="info-value d-flex justify-content-center">
                       <span className={`badge ${driverData.is_verified ? 'bg-success' : 'bg-warning'}`}>
                         {driverData.is_verified ? 'Verified' : 'Pending'}
                       </span>
+                    </div>
+                  </div>
+                  <div className="info-item" style={{ gridColumn: '1 / -1', padding: '0.5rem' }}>
+                    <div className="info-label">Address</div>
+                    <div className="info-value" style={{ fontSize: '0.85rem', lineHeight: '1.3', marginTop: '0.25rem' }}>
+                      {driverData.address || 'Address not available'}
                     </div>
                   </div>
                 </div>
@@ -350,6 +363,22 @@ const DriverDashboard = () => {
                   <div className="text-muted small">Trips This Week</div>
                 </div>
               </div>
+            </div>
+          </Col>
+        </Row>
+
+        {/* PDF Download Section */}
+        <Row className="mt-4">
+          <Col lg={12}>
+            <div className="simple-card p-4">
+              <h5 className="mb-3 lakbai-primary fw-semibold">Download Reports</h5>
+              <p className="text-muted mb-3">
+                Generate and download PDF reports of your driver statistics and daily earnings.
+              </p>
+              <PDFDownloadButtons 
+                driverData={driverData} 
+                earningsData={earningsData} 
+              />
             </div>
           </Col>
         </Row>
