@@ -372,6 +372,24 @@ try {
             echo json_encode($result);
             exit;
         }
+
+        // GET /earnings/passenger/{passengerId} - Get passenger payment history
+        if ($method === 'GET' && count($pathParts) === 3 && $pathParts[0] === 'earnings' && $pathParts[1] === 'passenger' && !empty($pathParts[2])) {
+            $passengerId = $pathParts[2];
+            $limit = $_GET['limit'] ?? 50;
+            $offset = $_GET['offset'] ?? 0;
+            
+            // Temporary debug logging
+            error_log("🔍 Payment History API - Passenger ID: '$passengerId', Limit: $limit, Offset: $offset");
+            
+            $result = $earningsController->getPassengerPaymentHistory($passengerId, $limit, $offset);
+            
+            // Log the result
+            error_log("🔍 Payment History API - Status: {$result['status']}, Total: " . (isset($result['total']) ? $result['total'] : 'N/A'));
+            
+            echo json_encode($result);
+            exit;
+        }
     }
 
     // Shift management routes

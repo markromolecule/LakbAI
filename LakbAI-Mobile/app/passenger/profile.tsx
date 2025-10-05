@@ -105,6 +105,10 @@ export default function PassengerProfile() {
     setShowDiscountModal(true);
   };
 
+  const handleViewPaymentHistory = () => {
+    router.push('/passenger/payment-history');
+  };
+
   const handleDiscountSubmission = async (discountType: string, document: any) => {
     const application: DiscountApplication = {
       discountType,
@@ -152,6 +156,7 @@ export default function PassengerProfile() {
           passengerProfile={profileForDisplay}
           onEditProfile={handleEditProfile}
           onApplyForDiscount={handleApplyForDiscount}
+          onViewPaymentHistory={handleViewPaymentHistory}
         />
       </View>
       <Footer />

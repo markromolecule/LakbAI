@@ -373,6 +373,16 @@ class DriverController {
             $updateStmt->execute([$routeId, $driverId]);
             
             if ($updateStmt->rowCount() > 0) {
+                // Also update driver_status_tracking table to reflect the new route
+                try {
+                    $trackingStmt = $this->db->prepare("UPDATE driver_status_tracking SET route_id = ? WHERE driver_id = ?");
+                    $trackingStmt->execute([$routeId, $driverId]);
+                    error_log("✅ Updated driver_status_tracking route_id for driver $driverId to route $routeId");
+                } catch (Exception $e) {
+                    error_log("⚠️ Failed to update driver_status_tracking route_id: " . $e->getMessage());
+                    // Don't fail the main operation if this update fails
+                }
+                
                 return [
                     "status" => "success",
                     "message" => "Driver route updated successfully",

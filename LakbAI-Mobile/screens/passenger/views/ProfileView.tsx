@@ -1,6 +1,6 @@
 import React from 'react';
 import { ScrollView, View, Text, TouchableOpacity, Image } from 'react-native';
-import { User, Mail, Phone, MapPin, Edit, FileText, LogOut, CreditCard, Plus, CheckCircle, XCircle } from 'lucide-react-native';
+import { User, Mail, Phone, MapPin, Edit, FileText, LogOut, CreditCard, Plus, CheckCircle, XCircle, History } from 'lucide-react-native';
 import { PassengerProfile } from '../../../shared/types/authentication';
 import { passengerStyles, profileStyles, homeStyles } from '../styles/ProfileScreen.styles';
 import { useAuthContext } from '../../../shared/providers/AuthProvider';
@@ -10,12 +10,14 @@ interface ProfileViewProps {
   passengerProfile: PassengerProfile;
   onEditProfile?: () => void;
   onApplyForDiscount?: () => void;
+  onViewPaymentHistory?: () => void;
 }
 
 export const ProfileView: React.FC<ProfileViewProps> = ({
   passengerProfile,
   onEditProfile,
-  onApplyForDiscount
+  onApplyForDiscount,
+  onViewPaymentHistory
 }) => {
   const { logout } = useAuthContext();
   
@@ -335,6 +337,29 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           )}
         </View>
       </View>
+
+      {/* Payment History Section */}
+      {onViewPaymentHistory && (
+        <View style={profileStyles.paymentHistoryCard}>
+          <View style={homeStyles.sectionHeader}>
+            <History size={20} color="#3B82F6" />
+            <Text style={homeStyles.sectionTitle}>Payment History</Text>
+          </View>
+          
+          <TouchableOpacity 
+            style={profileStyles.paymentHistoryButton}
+            onPress={onViewPaymentHistory}
+            accessibilityLabel="View Payment History"
+            accessibilityHint="Tap to view your payment history"
+          >
+            <View style={profileStyles.paymentHistoryContent}>
+              <History size={18} color="#3B82F6" />
+              <Text style={profileStyles.paymentHistoryText}>View Payment History</Text>
+            </View>
+            <Text style={profileStyles.paymentHistorySubtext}>See all your past payments and trips</Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
       {/* Logout Section */}
       <View style={profileStyles.logoutCard}>

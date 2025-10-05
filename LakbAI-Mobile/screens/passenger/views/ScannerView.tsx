@@ -7,6 +7,7 @@ import { Button } from '../../../components/common/Button';
 import { InfoCard } from '../../../components/common/InfoCard';
 import { TripBookingView } from './TripBookingView';
 import { useCameraPermissions } from '../../../shared/helpers/useCameraPermission';
+import { useAuthContext } from '../../../shared/providers/AuthProvider';
 import { QRCodeData, QRDriverInfo, TripBookingData } from '../../../shared/types';
 import { COLORS, SPACING } from '../../../shared/styles';
 import { globalStyles } from '../../../shared/styles/globalStyles';
@@ -27,6 +28,7 @@ export const ScannerScreen: React.FC = () => {
   const hasPermission = useCameraPermissions();
   const router = useRouter();
   const { passengerProfile } = usePassengerState();
+  const { session, user } = useAuthContext(); // Move useAuthContext to component level
   const [showCamera, setShowCamera] = useState(false);
   const [scanned, setScanned] = useState(false);
   const [processing, setProcessing] = useState(false);
@@ -138,6 +140,43 @@ export const ScannerScreen: React.FC = () => {
       
       console.log('Creating Xendit payment with data:', paymentData);
       
+      // Get passenger ID from session with better fallback logic
+      let passengerId = 'unknown';
+      
+      // First try to get the database user ID
+      if (session?.dbUserData?.id) {
+        passengerId = session.dbUserData.id.toString();
+        console.log('✅ ScannerView - Using dbUserData.id:', passengerId);
+      } else if (session?.userId && session.userId !== 'guest') {
+        // If no dbUserData, try to sync with database to get the actual user ID
+        console.log('⚠️ ScannerView - No dbUserData.id, attempting to get actual user ID...');
+        try {
+          // Import sessionManager dynamically to avoid circular imports
+          const sessionManager = (await import('../../../shared/services/sessionManager')).default;
+          const syncResult = user ? await sessionManager.syncUserWithDatabase(user) : null;
+          if (syncResult?.status === 'success' && syncResult.data?.user?.id) {
+            passengerId = syncResult.data.user.id.toString();
+            console.log('✅ ScannerView - Got database user ID from sync:', passengerId);
+          } else {
+            console.log('❌ ScannerView - Failed to get database user ID, using session.userId as fallback');
+            passengerId = session.userId;
+          }
+        } catch (error) {
+          console.error('❌ ScannerView - Error syncing user data:', error);
+          passengerId = session.userId;
+        }
+      }
+      
+      console.log('🔍 ScannerView - Final passengerId for payment:', passengerId);
+      
+      // Alert to make sure the user sees the passenger ID being used
+      console.log('🚨 SCANNER DEBUG - Passenger ID:', passengerId);
+      console.log('🚨 SCANNER DEBUG - Session data:', {
+        'dbUserData.id': session?.dbUserData?.id,
+        'userId': session?.userId,
+        'userType': session?.userType
+      });
+      
       // Use the API configuration to get the base URL
       const { getBaseUrl } = require('../../../config/apiConfig');
       const baseUrl = getBaseUrl().replace('/routes/api.php', '');
@@ -145,10 +184,10 @@ export const ScannerScreen: React.FC = () => {
       
       console.log('Xendit API URL:', xenditUrl);
       
-      // Prepare payment data
+      // Prepare payment data with passenger ID
       const requestPayload = {
         amount: paymentData.amount || 25.00,
-        description: paymentData.description || `LakbAI Fare Payment for ${paymentData.jeepneyId || 'LKB-001'}`,
+        description: `LakbAI Fare Payment | Passenger: ${passengerId} | Jeepney: ${paymentData.jeepneyId || 'LKB-001'}`,
         customerEmail: paymentData.customerEmail || 'passenger@lakbai.com',
         customerName: paymentData.customerName || 'LakbAI Passenger',
         jeepneyId: paymentData.jeepneyId || 'LKB-001'
@@ -273,6 +312,35 @@ export const ScannerScreen: React.FC = () => {
     setPaymentCompleted(false);
     
     try {
+      // Get passenger ID from session with better fallback logic
+      let passengerId = 'unknown';
+      
+      // First try to get the database user ID
+      if (session?.dbUserData?.id) {
+        passengerId = session.dbUserData.id.toString();
+        console.log('✅ handleBookingComplete - Using dbUserData.id:', passengerId);
+      } else if (session?.userId && session.userId !== 'guest') {
+        // If no dbUserData, try to sync with database to get the actual user ID
+        console.log('⚠️ handleBookingComplete - No dbUserData.id, attempting to get actual user ID...');
+        try {
+          // Import sessionManager dynamically to avoid circular imports
+          const sessionManager = (await import('../../../shared/services/sessionManager')).default;
+          const syncResult = user ? await sessionManager.syncUserWithDatabase(user) : null;
+          if (syncResult?.status === 'success' && syncResult.data?.user?.id) {
+            passengerId = syncResult.data.user.id.toString();
+            console.log('✅ handleBookingComplete - Got database user ID from sync:', passengerId);
+          } else {
+            console.log('❌ handleBookingComplete - Failed to get database user ID, using session.userId as fallback');
+            passengerId = session.userId;
+          }
+        } catch (error) {
+          console.error('❌ handleBookingComplete - Error syncing user data:', error);
+          passengerId = session.userId;
+        }
+      }
+      
+      console.log('🔍 handleBookingComplete - Final passengerId for earnings:', passengerId);
+      
       // Get passenger name for notification
       const passengerName = passengerProfile?.firstName && passengerProfile?.lastName 
         ? `${passengerProfile.firstName} ${passengerProfile.lastName}`
@@ -291,7 +359,7 @@ export const ScannerScreen: React.FC = () => {
         driverId: bookingData.driver.id,
         amount: bookingData.discountedFare || bookingData.fare,
         tripId: `trip_${Date.now()}`,
-        passengerId: 'passenger_001', // In real app, this would come from auth
+        passengerId: passengerId, // Use the correctly extracted passenger ID
         timestamp: new Date().toISOString(),
         paymentMethod: 'xendit',
         pickupLocation: bookingData.pickupLocation,
@@ -313,6 +381,8 @@ export const ScannerScreen: React.FC = () => {
         
         // Send local notification to passenger app
         const { localNotificationService } = await import('../../../shared/services/localNotificationService');
+        
+        // Send payment confirmation notification
         await localNotificationService.notifyEarningsUpdate({
           type: 'earnings_update',
           driverId: bookingData.driver.id,
@@ -331,7 +401,32 @@ export const ScannerScreen: React.FC = () => {
           }
         });
         
+        // Send trip booking confirmation notification
+        await localNotificationService.notifyLocationUpdate({
+          type: 'location_update',
+          driverId: bookingData.driver.id,
+          driverName: bookingData.driver.name,
+          jeepneyNumber: bookingData.driver.jeepneyNumber,
+          route: bookingData.driver.route || '1',
+          currentLocation: bookingData.pickupLocation,
+          previousLocation: undefined,
+          coordinates: { latitude: 0, longitude: 0 },
+          title: '🎉 Trip Booked Successfully!',
+          body: `Your trip from ${bookingData.pickupLocation} to ${bookingData.destination} has been booked with ${bookingData.driver.name}`,
+          data: {
+            type: 'trip_booking_confirmation',
+            driverId: bookingData.driver.id,
+            driverName: bookingData.driver.name,
+            jeepneyNumber: bookingData.driver.jeepneyNumber,
+            pickupLocation: bookingData.pickupLocation,
+            destination: bookingData.destination,
+            fare: bookingData.discountedFare || bookingData.fare,
+            timestamp: new Date().toISOString()
+          }
+        });
+        
         console.log('💳 Payment confirmation notification sent to passenger app');
+        console.log('🎉 Trip booking confirmation notification sent to passenger app');
       } else {
         console.error('❌ Failed to update driver earnings:', earningsResult.error);
       }

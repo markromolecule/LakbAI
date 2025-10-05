@@ -99,30 +99,28 @@ function handleInvoicePaid($data, $pdo) {
     // Extract trip data from external_id or description
     $tripData = extractTripDataFromPayment($data);
     
-    // Update earnings table
+    // Update driver_earnings table
     $stmt = $pdo->prepare("
-        INSERT INTO earnings (
+        INSERT INTO driver_earnings (
             driver_id, 
             trip_id, 
             passenger_id, 
             original_fare, 
             final_fare, 
             discount_amount, 
-            amount_paid, 
+            amount, 
             counts_as_trip,
             payment_method, 
             pickup_location, 
             destination, 
-            trip_date, 
-            created_at,
-            xendit_invoice_id,
-            payment_status,
-            paid_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'xendit', ?, ?, CURDATE(), NOW(), ?, ?, ?)
+            transaction_date, 
+            created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'xendit', ?, ?, CURDATE(), NOW())
         ON DUPLICATE KEY UPDATE
-            payment_status = VALUES(payment_status),
-            paid_at = VALUES(paid_at),
-            xendit_invoice_id = VALUES(xendit_invoice_id)
+            amount = VALUES(amount),
+            final_fare = VALUES(final_fare),
+            discount_amount = VALUES(discount_amount),
+            updated_at = NOW()
     ");
     
     $stmt->execute([
@@ -135,10 +133,7 @@ function handleInvoicePaid($data, $pdo) {
         $amount,
         1, // counts_as_trip
         $tripData['pickup_location'] ?? 'Unknown',
-        $tripData['destination'] ?? 'Unknown',
-        $invoiceId,
-        $status,
-        $paidAt
+        $tripData['destination'] ?? 'Unknown'
     ]);
     
     // Send notification to driver and passenger
@@ -211,7 +206,7 @@ function extractTripDataFromPayment($data) {
     $description = $data['description'] ?? '';
     
     // Parse description for trip information
-    // Format: "LakbAI Jeepney Ride | Driver: Name | Jeepney: Number | Route: A → B"
+    // Format: "LakbAI Jeepney Ride | Passenger: ID | Driver: Name | Jeepney: Number | Route: A → B"
     $tripData = [
         'driver_id' => null,
         'passenger_id' => null,
@@ -220,6 +215,19 @@ function extractTripDataFromPayment($data) {
         'original_fare' => null,
         'discount_amount' => 0
     ];
+    
+    // Extract passenger ID from description
+    if (preg_match('/Passenger: ([^|]+)/', $description, $matches)) {
+        $tripData['passenger_id'] = trim($matches[1]);
+    }
+    
+    // Extract driver information from description
+    if (preg_match('/Driver: ([^|]+)/', $description, $matches)) {
+        // Try to get driver ID from driver name (this would need a database lookup in real implementation)
+        $driverName = trim($matches[1]);
+        // For now, we'll use a placeholder - in real implementation, you'd look up the driver ID
+        $tripData['driver_id'] = 'driver_placeholder';
+    }
     
     // Extract route information from description
     if (preg_match('/Route: (.+?) → (.+?)(?:\s*\||$)/', $description, $matches)) {

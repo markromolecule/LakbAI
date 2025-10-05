@@ -329,6 +329,7 @@ class NotificationController {
     public function getDriverLocationsForPassengers($routeId) {
         try {
             // First try to get from driver_status_tracking table
+            // Use jeepneys table as source of truth for route assignments
             // Include drivers who are on_shift OR recently scanned (within last 15 minutes) to handle endpoint scans
             $stmt = $this->db->prepare("
                 SELECT 
@@ -348,8 +349,8 @@ class NotificationController {
                 FROM driver_status_tracking dst
                 JOIN users u ON dst.driver_id = u.id
                 JOIN jeepneys j ON dst.driver_id = j.driver_id
-                JOIN routes r ON dst.route_id = r.id
-                WHERE dst.route_id = ? 
+                JOIN routes r ON j.route_id = r.id
+                WHERE j.route_id = ? 
                 AND dst.status != 'offline'
                 AND (
                     u.shift_status = 'on_shift' 

@@ -33,6 +33,29 @@ const CheckpointManagement = ({ visible, onClose }) => {
   const [lastUpdateTime, setLastUpdateTime] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
 
+  // Custom scrollbar styles
+  const scrollbarStyles = `
+    .checkpoint-table-container::-webkit-scrollbar {
+      width: 8px;
+    }
+    .checkpoint-table-container::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 4px;
+    }
+    .checkpoint-table-container::-webkit-scrollbar-thumb {
+      background: #c1c1c1;
+      border-radius: 4px;
+      transition: background 0.2s ease;
+    }
+    .checkpoint-table-container::-webkit-scrollbar-thumb:hover {
+      background: #a8a8a8;
+    }
+    .checkpoint-table-container {
+      scrollbar-width: thin;
+      scrollbar-color: #c1c1c1 #f1f1f1;
+    }
+  `;
+
   // Auto-dismiss success messages after 3 seconds
   useEffect(() => {
     if (success) {
@@ -364,6 +387,7 @@ const CheckpointManagement = ({ visible, onClose }) => {
 
   return (
     <>
+      <style>{scrollbarStyles}</style>
       <style>
         {`
           .checkpoint-modal .modal-dialog {
@@ -499,53 +523,92 @@ const CheckpointManagement = ({ visible, onClose }) => {
                   <Card.Title className="mb-0 fs-6">Route Checkpoints</Card.Title>
                 </Card.Header>
                 <Card.Body className="p-0" style={{ width: '100%', padding: '0' }}>
-                  <div className="checkpoint-table-container" style={{ width: '100%', display: 'flex', flexDirection: 'column' }}>
-                    <Table striped className="mb-0 w-100" style={{ 
-                      fontSize: '0.875rem', 
-                      tableLayout: 'fixed', 
-                      width: '100%', 
-                      minWidth: '100%',
-                      maxWidth: '100%',
-                      margin: '0',
-                      borderCollapse: 'collapse',
-                      borderSpacing: '0'
+                  <div className="checkpoint-table-container" style={{ 
+                    width: '100%', 
+                    display: 'flex', 
+                    flexDirection: 'column',
+                    height: '280px', // Fixed height: header (40px) + 6 rows (40px each) = 280px
+                    overflowY: 'auto', // Add vertical scrollbar
+                    border: '1px solid #dee2e6',
+                    borderRadius: '0.375rem'
+                  }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+                      {/* Fixed Header */}
+                      <div style={{ 
+                        backgroundColor: '#f8f9fa', 
+                        borderBottom: '1px solid #dee2e6',
+                        position: 'sticky',
+                        top: 0,
+                        zIndex: 10
+                      }}>
+                        <Table className="mb-0" style={{ 
+                          fontSize: '0.875rem', 
+                          tableLayout: 'fixed', 
+                          width: '100%'
+                        }}>
+                          <thead>
+                            <tr>
+                              <th className="py-2 px-2" style={{ fontSize: '0.8rem', fontWeight: '600', width: '10%', border: 'none' }}>Sequence</th>
+                              <th className="py-2 px-2" style={{ fontSize: '0.8rem', fontWeight: '600', width: '50%', border: 'none' }}>Checkpoint Name</th>
+                              <th className="py-2 px-2" style={{ fontSize: '0.8rem', fontWeight: '600', width: '15%', border: 'none' }}>Type</th>
+                              <th className="py-2 px-2" style={{ fontSize: '0.8rem', fontWeight: '600', width: '15%', border: 'none' }}>Fare</th>
+                              <th className="py-2 px-2" style={{ fontSize: '0.8rem', fontWeight: '600', width: '10%', border: 'none' }}>Actions</th>
+                            </tr>
+                          </thead>
+                        </Table>
+                      </div>
+                      
+                      {/* Scrollable Body - Limited to 6 rows */}
+                      <div style={{ 
+                        flex: 1, 
+                        overflowY: 'auto',
+                        maxHeight: '240px' // 6 rows × 40px = 240px
+                      }}>
+                        <Table striped className="mb-0" style={{ 
+                          fontSize: '0.875rem', 
+                          tableLayout: 'fixed', 
+                          width: '100%'
+                        }}>
+                          <tbody>
+                            {checkpoints.map(checkpoint => (
+                              <tr key={checkpoint.id}>
+                                <td className="py-2 px-2 align-middle" style={{ width: '10%' }}>{checkpoint.sequence_order}</td>
+                                <td className="py-2 px-2 align-middle" style={{ width: '50%' }}>{checkpoint.checkpoint_name}</td>
+                                <td className="py-2 px-2 align-middle" style={{ width: '15%' }}>
+                                  {checkpoint.is_origin == 1 && <Badge bg="success" className="me-1" style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }}>Origin</Badge>}
+                                  {checkpoint.is_destination == 1 && <Badge bg="danger" className="me-1" style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }}>Destination</Badge>}
+                                  {checkpoint.is_origin != 1 && checkpoint.is_destination != 1 && <Badge bg="secondary" style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }}>Stop</Badge>}
+                                </td>
+                                <td className="py-2 px-2 align-middle" style={{ width: '15%' }}>₱{checkpoint.fare_from_origin}</td>
+                                <td className="py-2 px-2 align-middle" style={{ width: '10%' }}>
+                                  <Button
+                                    size="sm"
+                                    variant="outline-primary"
+                                    onClick={() => generateSingleQR(checkpoint.id)}
+                                    disabled={loading}
+                                    title="Generate QR Code"
+                                    style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem' }}
+                                  >
+                                    <i className="bi bi-qr-code"></i>
+                                  </Button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </Table>
+                      </div>
+                    </div>
+                  {checkpoints.length > 6 && (
+                    <div className="text-center py-2" style={{ 
+                      backgroundColor: '#f8f9fa', 
+                      borderTop: '1px solid #dee2e6',
+                      fontSize: '0.75rem',
+                      color: '#6c757d'
                     }}>
-                    <thead>
-                      <tr>
-                        <th className="py-2 px-2" style={{ fontSize: '0.8rem', fontWeight: '600', width: '10%' }}>Sequence</th>
-                        <th className="py-2 px-2" style={{ fontSize: '0.8rem', fontWeight: '600', width: '50%' }}>Checkpoint Name</th>
-                        <th className="py-2 px-2" style={{ fontSize: '0.8rem', fontWeight: '600', width: '15%' }}>Type</th>
-                        <th className="py-2 px-2" style={{ fontSize: '0.8rem', fontWeight: '600', width: '15%' }}>Fare</th>
-                        <th className="py-2 px-2" style={{ fontSize: '0.8rem', fontWeight: '600', width: '10%' }}>Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {checkpoints.map(checkpoint => (
-                        <tr key={checkpoint.id}>
-                          <td className="py-2 px-2 align-middle" style={{ width: '10%' }}>{checkpoint.sequence_order}</td>
-                          <td className="py-2 px-2 align-middle" style={{ width: '50%' }}>{checkpoint.checkpoint_name}</td>
-                          <td className="py-2 px-2 align-middle" style={{ width: '15%' }}>
-                            {checkpoint.is_origin == 1 && <Badge bg="success" className="me-1" style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }}>Origin</Badge>}
-                            {checkpoint.is_destination == 1 && <Badge bg="danger" className="me-1" style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }}>Destination</Badge>}
-                            {checkpoint.is_origin != 1 && checkpoint.is_destination != 1 && <Badge bg="secondary" style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }}>Stop</Badge>}
-                          </td>
-                          <td className="py-2 px-2 align-middle" style={{ width: '15%' }}>₱{checkpoint.fare_from_origin}</td>
-                          <td className="py-2 px-2 align-middle" style={{ width: '10%' }}>
-                            <Button
-                              size="sm"
-                              variant="outline-primary"
-                              onClick={() => generateSingleQR(checkpoint.id)}
-                              disabled={loading}
-                              title="Generate QR Code"
-                              style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem' }}
-                            >
-                              <i className="bi bi-qr-code"></i>
-                            </Button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </Table>
+                      <i className="bi bi-arrow-down me-1"></i>
+                      Scroll to see more checkpoints ({checkpoints.length} total)
+                    </div>
+                  )}
                   </div>
                 </Card.Body>
               </Card>

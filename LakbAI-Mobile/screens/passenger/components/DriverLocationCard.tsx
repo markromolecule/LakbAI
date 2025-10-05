@@ -37,16 +37,18 @@ export const DriverLocationCard: React.FC<DriverLocationCardProps> = ({
       try {
         const serviceLocations = await locationTrackingService.fetchDriverLocations(routeId);
         
-        // Convert to UI format
-        const driverInfos: DriverLocationInfo[] = serviceLocations.map((location) => ({
-          driverId: location.driverId,
-          driverName: location.driverName,
-          jeepneyNumber: location.jeepneyNumber,
-          route: location.route,
-          currentLocation: location.lastScannedCheckpoint,
-          lastUpdate: location.lastUpdate,
-          isActive: location.shiftStatus === 'on_shift'
-        }));
+        // Convert to UI format and filter only active drivers
+        const driverInfos: DriverLocationInfo[] = serviceLocations
+          .filter(location => location.shiftStatus === 'on_shift') // Only include active drivers
+          .map((location) => ({
+            driverId: location.driverId,
+            driverName: location.driverName,
+            jeepneyNumber: location.jeepneyNumber,
+            route: location.route,
+            currentLocation: location.lastScannedCheckpoint,
+            lastUpdate: location.lastUpdate,
+            isActive: location.shiftStatus === 'on_shift'
+          }));
         
         setDrivers(driverInfos);
         setLastRefresh(new Date().toLocaleTimeString());
@@ -67,7 +69,7 @@ export const DriverLocationCard: React.FC<DriverLocationCardProps> = ({
     // The LocationTrackingService handles both auto-refresh and notifications
     // We sync with its data instead of making separate API calls
     const interval = setInterval(async () => {
-      console.log('🔄 Syncing UI with LocationTrackingService data...');
+      console.log('🔄 Syncing UI with LocationTrackingService data for route:', routeId);
       try {
         // Get data from LocationTrackingService (which handles change detection and notifications)
         const serviceLocations = await locationTrackingService.fetchDriverLocations(routeId);
@@ -77,20 +79,22 @@ export const DriverLocationCard: React.FC<DriverLocationCardProps> = ({
           console.log(`🔄 Driver ${location.driverId}: ${location.driverName} at ${location.lastScannedCheckpoint} (${location.lastUpdate})`);
         });
         
-        // Convert to UI format
-        const driverInfos: DriverLocationInfo[] = serviceLocations.map((location) => ({
-          driverId: location.driverId,
-          driverName: location.driverName,
-          jeepneyNumber: location.jeepneyNumber,
-          route: location.route,
-          currentLocation: location.lastScannedCheckpoint,
-          lastUpdate: location.lastUpdate,
-          isActive: location.shiftStatus === 'on_shift'
-        }));
+        // Convert to UI format and filter only active drivers
+        const driverInfos: DriverLocationInfo[] = serviceLocations
+          .filter(location => location.shiftStatus === 'on_shift') // Only include active drivers
+          .map((location) => ({
+            driverId: location.driverId,
+            driverName: location.driverName,
+            jeepneyNumber: location.jeepneyNumber,
+            route: location.route,
+            currentLocation: location.lastScannedCheckpoint,
+            lastUpdate: location.lastUpdate,
+            isActive: location.shiftStatus === 'on_shift'
+          }));
         
         setDrivers(driverInfos);
         setLastRefresh(new Date().toLocaleTimeString());
-        console.log('🔄 DriverLocationCard: Updated UI with', driverInfos.length, 'drivers');
+        console.log('🔄 DriverLocationCard: Updated UI with', driverInfos.length, 'active drivers for route', routeId);
       } catch (error) {
         console.error('❌ Failed to sync with LocationTrackingService:', error);
       }
@@ -99,28 +103,67 @@ export const DriverLocationCard: React.FC<DriverLocationCardProps> = ({
     return () => clearInterval(interval);
   }, [routeId]);
 
+  // Immediate refresh when route changes
+  useEffect(() => {
+    console.log('🔄 Route changed to:', routeId, '- triggering immediate refresh');
+    const immediateRefresh = async () => {
+      try {
+        // Re-initialize LocationTrackingService with new route
+        await locationTrackingService.initialize(true, routeId || '1');
+        
+        // Fetch fresh data for the new route
+        const serviceLocations = await locationTrackingService.fetchDriverLocations(routeId);
+        
+        // Convert to UI format and filter only active drivers
+        const driverInfos: DriverLocationInfo[] = serviceLocations
+          .filter(location => location.shiftStatus === 'on_shift') // Only include active drivers
+          .map((location) => ({
+            driverId: location.driverId,
+            driverName: location.driverName,
+            jeepneyNumber: location.jeepneyNumber,
+            route: location.route,
+            currentLocation: location.lastScannedCheckpoint,
+            lastUpdate: location.lastUpdate,
+            isActive: location.shiftStatus === 'on_shift'
+          }));
+        
+        setDrivers(driverInfos);
+        setLastRefresh(new Date().toLocaleTimeString());
+        console.log('🔄 Immediate refresh completed for route', routeId, 'with', driverInfos.length, 'active drivers');
+      } catch (error) {
+        console.error('❌ Failed to refresh data for new route:', error);
+      }
+    };
+    
+    immediateRefresh();
+  }, [routeId]);
+
   // Load driver locations from API
   const loadDriverLocations = async () => {
     try {
-      const response = await fetch(`${getBaseUrl()}/mobile/passenger/real-time-drivers/${routeId}?t=${Date.now()}`);
+      // Add cache-busting timestamp and route-specific cache key
+      const cacheKey = `${routeId}_${Date.now()}`;
+      const response = await fetch(`${getBaseUrl()}/mobile/passenger/real-time-drivers/${routeId}?t=${cacheKey}`);
       if (response.ok) {
         const data = await response.json();
         
         if (data.driver_locations && Array.isArray(data.driver_locations)) {
-          const driverInfos: DriverLocationInfo[] = data.driver_locations.map((location: any) => {
-            // Determine if driver is active based on shift_status from drivers table
-            const isActive = location.shift_status === 'on_shift';
-            
-            return {
-              driverId: location.driver_id.toString(),
-              driverName: `${location.first_name} ${location.last_name}` || 'Unknown Driver',
-              jeepneyNumber: location.jeepney_number || 'Unknown',
-              route: location.route_name || `Route ${routeId}`,
-              currentLocation: location.current_location || 'Unknown Location',
-              lastUpdate: location.last_update_formatted || 'Unknown',
-              isActive: isActive
-            };
-          });
+          const driverInfos: DriverLocationInfo[] = data.driver_locations
+            .filter((location: any) => location.shift_status === 'on_shift') // Only include active drivers
+            .map((location: any) => {
+              // Determine if driver is active based on shift_status from drivers table
+              const isActive = location.shift_status === 'on_shift';
+              
+              return {
+                driverId: location.driver_id.toString(),
+                driverName: `${location.first_name} ${location.last_name}` || 'Unknown Driver',
+                jeepneyNumber: location.jeepney_number || 'Unknown',
+                route: location.route_name || `Route ${routeId}`,
+                currentLocation: location.current_location || 'Unknown Location',
+                lastUpdate: location.last_update_formatted || 'Unknown',
+                isActive: isActive
+              };
+            });
           
           setDrivers(driverInfos);
           setLastRefresh(new Date().toLocaleTimeString());
@@ -139,16 +182,18 @@ export const DriverLocationCard: React.FC<DriverLocationCardProps> = ({
       // Use LocationTrackingService for both change detection and UI data
       const serviceLocations = await locationTrackingService.refreshLocations(routeId);
       
-      // Convert to UI format
-      const driverInfos: DriverLocationInfo[] = serviceLocations.map((location) => ({
-        driverId: location.driverId,
-        driverName: location.driverName,
-        jeepneyNumber: location.jeepneyNumber,
-        route: location.route,
-        currentLocation: location.lastScannedCheckpoint,
-        lastUpdate: location.lastUpdate,
-        isActive: location.shiftStatus === 'on_shift'
-      }));
+      // Convert to UI format and filter only active drivers
+      const driverInfos: DriverLocationInfo[] = serviceLocations
+        .filter(location => location.shiftStatus === 'on_shift') // Only include active drivers
+        .map((location) => ({
+          driverId: location.driverId,
+          driverName: location.driverName,
+          jeepneyNumber: location.jeepneyNumber,
+          route: location.route,
+          currentLocation: location.lastScannedCheckpoint,
+          lastUpdate: location.lastUpdate,
+          isActive: location.shiftStatus === 'on_shift'
+        }));
       
       setDrivers(driverInfos);
       setLastRefresh(new Date().toLocaleTimeString());
@@ -199,9 +244,9 @@ export const DriverLocationCard: React.FC<DriverLocationCardProps> = ({
         }
         showsVerticalScrollIndicator={false}
       >
-        {drivers.length > 0 ? (
+        {drivers.filter(driver => driver.isActive).length > 0 ? (
           <View style={styles.enhancedDriversList}>
-            {drivers.map((driver, index) => (
+            {drivers.filter(driver => driver.isActive).map((driver, index) => (
               <View key={driver.driverId} style={styles.enhancedDriverCard}>
                 <View style={styles.driverCardContent}>
                   {/* Driver info section */}
@@ -260,7 +305,7 @@ export const DriverLocationCard: React.FC<DriverLocationCardProps> = ({
               <Ionicons name="bus-outline" size={24} color={COLORS.gray400} />
             </View>
             <Text style={styles.noDataTitle}>No Active Jeepneys</Text>
-            <Text style={styles.noDataSubtitle}>Route {routeId} • Tap to refresh</Text>
+            <Text style={styles.noDataSubtitle}>No drivers are currently on shift for Route {routeId}</Text>
             <TouchableOpacity style={styles.enhancedRetryButton} onPress={onRefresh}>
               <Ionicons name="refresh" size={16} color={COLORS.white} />
               <Text style={styles.enhancedRetryText}>Refresh</Text>

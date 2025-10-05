@@ -249,7 +249,9 @@ export const getFareCalculationSummary = async (
 
     // Calculate discount amount from percentage
     const discountAmount = discountPercentage ? (actualFare * discountPercentage / 100) : 0;
-    const finalFare = calculateFareWithDiscount(actualFare, discountType as any, discountAmount);
+    const finalFare = discountPercentage ? 
+      Math.max(actualFare - discountAmount, 13.00) : 
+      actualFare;
     const savings = discountAmount > 0 ? actualFare - finalFare : 0;
 
     return {
