@@ -464,6 +464,44 @@ export const profileStyles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
   },
+
+  // Payment History Card Styles
+  paymentHistoryCard: {
+    backgroundColor: '#FFFFFF',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#E0E7FF',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  paymentHistoryButton: {
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 8,
+    padding: 12,
+    marginTop: 12,
+  },
+  paymentHistoryContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  paymentHistoryText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#3B82F6',
+    marginLeft: 8,
+  },
+  paymentHistorySubtext: {
+    fontSize: 14,
+    color: '#6B7280',
+  },
 });
 
 export const homeStyles = StyleSheet.create({

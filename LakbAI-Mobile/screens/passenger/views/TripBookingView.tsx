@@ -16,6 +16,7 @@ import MapView, { Marker, Polyline } from 'react-native-maps';
 import { Button } from '../../../components/common/Button';
 import { ModernLocationSelector } from '../../../components/common/ModernLocationSelector';
 import { usePassengerState } from '../hooks/usePassengerState';
+import { useAuthContext } from '../../../shared/providers/AuthProvider';
 import { QRDriverInfo, TripBookingData, QRCodeData } from '../../../shared/types';
 import { calculateFare, getFareInfo, getFareCalculationSummary, formatFareAmount } from '../../../shared/utils/fareCalculator';
 import { googleMapsService, Coordinates } from '../../../shared/services/googleMapsService';
@@ -39,6 +40,7 @@ export const TripBookingView: React.FC<TripBookingViewProps> = ({
   onBookingComplete,
 }) => {
   const { passengerProfile } = usePassengerState();
+  const { session } = useAuthContext();
   const [pickupLocation, setPickupLocation] = useState<string>('');
   const [destination, setDestination] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
@@ -184,9 +186,9 @@ export const TripBookingView: React.FC<TripBookingViewProps> = ({
             setDiscountedFare(summary.finalFare);
           } else {
             // Fallback to old calculation method
-            if (calculatedFare && hasApprovedDiscount) {
-              const discount = passengerProfile.fareDiscount.percentage;
-              const discounted = calculatedFare * (1 - discount / 100);
+            if (calculatedFare && hasApprovedDiscount && discountPercentage) {
+              const discountAmount = calculatedFare * (discountPercentage / 100);
+              const discounted = Math.max(calculatedFare - discountAmount, 13.00);
               setDiscountedFare(Math.round(discounted * 100) / 100); // Round to 2 decimal places
             } else {
               setDiscountedFare(null);
@@ -204,9 +206,9 @@ export const TripBookingView: React.FC<TripBookingViewProps> = ({
             console.log('💰 Fallback calculated fare:', calculatedFare);
             setFare(calculatedFare);
             
-            if (calculatedFare && hasApprovedDiscount) {
-              const discount = passengerProfile.fareDiscount.percentage;
-              const discounted = calculatedFare * (1 - discount / 100);
+            if (calculatedFare && hasApprovedDiscount && discountPercentage) {
+              const discountAmount = calculatedFare * (discountPercentage / 100);
+              const discounted = Math.max(calculatedFare - discountAmount, 13.00);
               setDiscountedFare(Math.round(discounted * 100) / 100); // Round to 2 decimal places
             } else {
               setDiscountedFare(null);
@@ -407,11 +409,48 @@ export const TripBookingView: React.FC<TripBookingViewProps> = ({
       const originalFare = tripData.fare;
       const discountAmount = originalFare - finalFare;
       
-      // Construct detailed payment description with all trip information
-      const description = `LakbAI Jeepney Ride | Driver: ${tripData.driver.name} | Jeepney: ${tripData.driver.jeepneyNumber} | Route: ${tripData.pickupLocation} → ${tripData.destination} | Distance: ${tripData.distance} | Time: ${tripData.estimatedTime}${discountAmount > 0 ? ` | Original: ₱${originalFare} | Discount: ₱${discountAmount}` : ''}`;
+      // Get passenger ID from session with better fallback logic
+      let passengerId = 'unknown';
       
-      // Generate unique booking/external ID
-      const externalId = `lakbai_trip_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      // First try to get the database user ID
+      if (session?.dbUserData?.id) {
+        passengerId = session.dbUserData.id.toString();
+        console.log('✅ Using dbUserData.id:', passengerId);
+      } else if (session?.userId && session.userId !== 'guest') {
+        // If no dbUserData, try to sync with database to get the actual user ID
+        console.log('⚠️ No dbUserData.id, attempting to get actual user ID...');
+        try {
+          // Import sessionManager dynamically to avoid circular imports
+          const sessionManager = (await import('../../../shared/services/sessionManager')).default;
+          const syncResult = await sessionManager.syncUserWithDatabase(user);
+          if (syncResult.status === 'success' && syncResult.data?.user?.id) {
+            passengerId = syncResult.data.user.id.toString();
+            console.log('✅ Got database user ID from sync:', passengerId);
+          } else {
+            console.log('❌ Failed to get database user ID, using session.userId as fallback');
+            passengerId = session.userId;
+          }
+        } catch (error) {
+          console.error('❌ Error syncing user data:', error);
+          passengerId = session.userId;
+        }
+      }
+      
+      console.log('🔍 Final passengerId for payment:', passengerId);
+      
+      // Alert to make sure the user sees the passenger ID being used
+      console.log('🚨 PAYMENT DEBUG - Passenger ID:', passengerId);
+      console.log('🚨 PAYMENT DEBUG - Session data:', {
+        'dbUserData.id': session?.dbUserData?.id,
+        'userId': session?.userId,
+        'userType': session?.userType
+      });
+      
+      // Construct detailed payment description with all trip information including passenger ID
+      const description = `LakbAI Jeepney Ride | Passenger: ${passengerId} | Driver: ${tripData.driver.name} | Jeepney: ${tripData.driver.jeepneyNumber} | Route: ${tripData.pickupLocation} → ${tripData.destination} | Distance: ${tripData.distance} | Time: ${tripData.estimatedTime}${discountAmount > 0 ? ` | Original: ₱${originalFare} | Discount: ₱${discountAmount}` : ''}`;
+      
+      // Generate unique booking/external ID with passenger ID
+      const externalId = `lakbai_trip_${passengerId}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       
       // Log payment creation for debugging
       console.log('💳 Creating Xendit payment:', {

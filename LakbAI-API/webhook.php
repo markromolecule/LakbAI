@@ -53,7 +53,12 @@ if (!$webhookData) {
 }
 
 // Log the webhook for debugging
-error_log('Xendit webhook received: ' . json_encode($webhookData));
+error_log('🔍 Xendit webhook received: ' . json_encode($webhookData));
+
+// Log the description specifically for passenger ID debugging
+if (isset($webhookData['description'])) {
+    error_log('🔍 Webhook description: ' . $webhookData['description']);
+}
 
 try {
     // Load database connection
@@ -70,45 +75,47 @@ try {
     error_log("Processing webhook: Event=$eventType, ExternalID=$externalId, Amount=$amount, Status=$status");
     
     if ($eventType === 'invoice.paid' || $status === 'PAID') {
+        // Extract trip data from payment information
+        $tripData = extractTripDataFromPayment($webhookData);
+        
+        // Log the extracted trip data for debugging
+        error_log('🔍 Extracted trip data: ' . json_encode($tripData));
+        
         // Handle successful payment
         $stmt = $pdo->prepare("
-            INSERT INTO earnings (
+            INSERT INTO driver_earnings (
                 driver_id, 
                 trip_id, 
                 passenger_id, 
                 original_fare, 
                 final_fare, 
                 discount_amount, 
-                amount_paid, 
+                amount, 
                 counts_as_trip,
                 payment_method, 
                 pickup_location, 
                 destination, 
-                trip_date, 
-                created_at,
-                xendit_invoice_id,
-                payment_status,
-                paid_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'xendit', ?, ?, CURDATE(), NOW(), ?, ?, NOW())
+                transaction_date, 
+                created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'xendit', ?, ?, CURDATE(), NOW())
             ON DUPLICATE KEY UPDATE
-                payment_status = VALUES(payment_status),
-                paid_at = VALUES(paid_at),
-                xendit_invoice_id = VALUES(xendit_invoice_id)
+                amount = VALUES(amount),
+                final_fare = VALUES(final_fare),
+                discount_amount = VALUES(discount_amount),
+                updated_at = NOW()
         ");
         
         $stmt->execute([
-            'driver_webhook', // driver_id - placeholder
+            $tripData['driver_id'] ?? 'unknown', // driver_id
             $externalId,      // trip_id
-            'passenger_webhook', // passenger_id - placeholder
-            $amount,          // original_fare
+            $tripData['passenger_id'] ?? 'unknown', // passenger_id
+            $tripData['original_fare'] ?? $amount, // original_fare
             $amount,          // final_fare
-            0,                // discount_amount
-            $amount,          // amount_paid
+            $tripData['discount_amount'] ?? 0, // discount_amount
+            $amount,          // amount
             1,                // counts_as_trip
-            'Webhook Location', // pickup_location
-            'Webhook Destination', // destination
-            $invoiceId,       // xendit_invoice_id
-            'PAID',           // payment_status
+            $tripData['pickup_location'] ?? 'Unknown', // pickup_location
+            $tripData['destination'] ?? 'Unknown', // destination
         ]);
         
         error_log("Payment recorded successfully: $externalId - $amount");
@@ -150,5 +157,54 @@ try {
     error_log('Xendit webhook error: ' . $e->getMessage());
     http_response_code(500);
     echo json_encode(['error' => 'Internal server error', 'message' => $e->getMessage()]);
+}
+
+/**
+ * Extract trip data from payment information
+ */
+function extractTripDataFromPayment($data) {
+    // Try to extract from description or custom data
+    $description = $data['description'] ?? '';
+    
+    // Parse description for trip information
+    // Format: "LakbAI Jeepney Ride | Passenger: ID | Driver: Name | Jeepney: Number | Route: A → B"
+    $tripData = [
+        'driver_id' => null,
+        'passenger_id' => null,
+        'pickup_location' => null,
+        'destination' => null,
+        'original_fare' => null,
+        'discount_amount' => 0
+    ];
+    
+    // Extract passenger ID from description
+    if (preg_match('/Passenger: ([^|]+)/', $description, $matches)) {
+        $tripData['passenger_id'] = trim($matches[1]);
+    }
+    
+    // Extract driver information from description
+    if (preg_match('/Driver: ([^|]+)/', $description, $matches)) {
+        // Try to get driver ID from driver name (this would need a database lookup in real implementation)
+        $driverName = trim($matches[1]);
+        // For now, we'll use a placeholder - in real implementation, you'd look up the driver ID
+        $tripData['driver_id'] = 'driver_placeholder';
+    }
+    
+    // Extract route information from description
+    if (preg_match('/Route: (.+?) → (.+?)(?:\s*\||$)/', $description, $matches)) {
+        $tripData['pickup_location'] = trim($matches[1]);
+        $tripData['destination'] = trim($matches[2]);
+    }
+    
+    // Extract original fare and discount
+    if (preg_match('/Original: ₱([0-9.]+)/', $description, $matches)) {
+        $tripData['original_fare'] = (float) $matches[1];
+    }
+    
+    if (preg_match('/Discount: ₱([0-9.]+)/', $description, $matches)) {
+        $tripData['discount_amount'] = (float) $matches[1];
+    }
+    
+    return $tripData;
 }
 ?>

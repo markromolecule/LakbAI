@@ -62,7 +62,7 @@ class EarningsService {
         driverId: data.driverId,
         amount: data.amount,
         tripId: `websocket_${Date.now()}`,
-        passengerId: 'websocket_update',
+        passengerId: data.passengerId || 'websocket_update',
         timestamp: data.timestamp,
         paymentMethod: 'xendit',
         pickupLocation: 'Unknown',
@@ -742,11 +742,30 @@ class EarningsService {
       // In real implementation, this would come from the payment description or external_id
       const tripInfo = this.parsePaymentDescription(paymentData.description || '');
 
+      console.log('💰 Processing Xendit payment with trip info:', tripInfo);
+
+      // Validate that we have required information
+      if (!tripInfo.passengerId) {
+        console.error('❌ No passenger ID found in payment description:', paymentData.description);
+        return {
+          success: false,
+          error: 'Missing passenger ID in payment description',
+        };
+      }
+
+      if (!tripInfo.driverId) {
+        console.error('❌ No driver ID found in payment description:', paymentData.description);
+        return {
+          success: false,
+          error: 'Missing driver ID in payment description',
+        };
+      }
+
       const earningsUpdate: EarningsUpdate = {
-        driverId: tripInfo.driverId || 'driver_001',
+        driverId: tripInfo.driverId,
         amount: paymentData.amount,
         tripId: paymentData.external_id,
-        passengerId: tripInfo.passengerId || 'passenger_001',
+        passengerId: tripInfo.passengerId,
         timestamp: paymentData.paid_at || new Date().toISOString(),
         paymentMethod: 'xendit',
         pickupLocation: tripInfo.pickup || 'Unknown',
@@ -787,10 +806,22 @@ class EarningsService {
     // Simple parsing logic - in real app, this would be more sophisticated
     const info: any = {};
 
+    console.log('🔍 Parsing payment description:', description);
+
+    // Extract passenger ID from description (format: "Passenger: {id}")
+    if (description.includes('Passenger:')) {
+      const passengerMatch = description.match(/Passenger:\s*([^|]+)/);
+      if (passengerMatch) {
+        info.passengerId = passengerMatch[1].trim();
+        console.log('✅ Extracted passenger ID:', info.passengerId);
+      }
+    }
+
     if (description.includes('LKB-')) {
       const jeepneyMatch = description.match(/LKB-(\d+)/);
       if (jeepneyMatch) {
         info.driverId = `driver_${jeepneyMatch[1]}`;
+        console.log('✅ Extracted driver ID:', info.driverId);
       }
     }
 
@@ -799,21 +830,23 @@ class EarningsService {
       if (routeMatch) {
         info.pickup = routeMatch[1].trim();
         info.destination = routeMatch[2].trim();
+        console.log('✅ Extracted route:', info.pickup, '→', info.destination);
       }
     }
 
+    console.log('🔍 Parsed payment info:', info);
     return info;
   }
 
   /**
    * Get mock earnings data for testing
    */
-  getMockEarningsUpdate(): EarningsUpdate {
+  getMockEarningsUpdate(passengerId?: string): EarningsUpdate {
     return {
       driverId: 'driver_001',
       amount: 25,
       tripId: `trip_${Date.now()}`,
-      passengerId: 'passenger_001',
+      passengerId: passengerId || 'mock_passenger',
       timestamp: new Date().toISOString(),
       paymentMethod: 'xendit',
       pickupLocation: 'Robinson Galleria Cebu',

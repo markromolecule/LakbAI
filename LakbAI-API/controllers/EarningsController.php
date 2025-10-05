@@ -215,6 +215,64 @@ class EarningsController {
     }
 
     /**
+     * Get passenger payment history
+     */
+    public function getPassengerPaymentHistory($passengerId, $limit = 50, $offset = 0) {
+        try {
+            // Ensure limit and offset are integers
+            $limit = (int) $limit;
+            $offset = (int) $offset;
+            
+            // Try to find payments with different passenger ID formats
+            $query = "
+                SELECT 
+                    de.id, de.trip_id, de.driver_id, de.passenger_id, de.amount, de.original_fare, 
+                    de.discount_amount, de.final_fare, de.payment_method, 
+                    de.pickup_location, de.destination, de.transaction_date, de.created_at,
+                    u.first_name as driver_first_name,
+                    u.last_name as driver_last_name,
+                    j.jeepney_number
+                FROM driver_earnings de
+                LEFT JOIN users u ON de.driver_id = u.id
+                LEFT JOIN jeepneys j ON u.id = j.driver_id
+                WHERE (de.passenger_id = ? OR de.passenger_id = ? OR de.passenger_id = ?)
+                ORDER BY de.created_at DESC 
+                LIMIT $limit OFFSET $offset
+            ";
+
+            // Try multiple formats: original ID, passenger_ prefix, and user_ prefix
+            $passengerIdFormats = [
+                $passengerId, // Original format
+                'passenger_' . $passengerId, // passenger_21
+                'user_' . $passengerId // user_21
+            ];
+
+            $stmt = $this->db->prepare($query);
+            $stmt->execute([$passengerIdFormats[0], $passengerIdFormats[1], $passengerIdFormats[2]]);
+            $payments = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            // Get total count for pagination
+            $countQuery = "SELECT COUNT(*) as total FROM driver_earnings WHERE (passenger_id = ? OR passenger_id = ? OR passenger_id = ?)";
+            $countStmt = $this->db->prepare($countQuery);
+            $countStmt->execute([$passengerIdFormats[0], $passengerIdFormats[1], $passengerIdFormats[2]]);
+            $totalCount = $countStmt->fetch(PDO::FETCH_ASSOC)['total'];
+
+            return [
+                "status" => "success",
+                "payments" => $payments,
+                "total" => (int)$totalCount,
+                "limit" => $limit,
+                "offset" => $offset
+            ];
+        } catch (Exception $e) {
+            return [
+                "status" => "error",
+                "message" => "Failed to get passenger payment history: " . $e->getMessage()
+            ];
+        }
+    }
+
+    /**
      * Get total aggregated earnings for all drivers (all-time)
      */
     public function getTotalAggregatedEarnings() {
