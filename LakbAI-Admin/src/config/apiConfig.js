@@ -5,7 +5,7 @@
 
 // Developer configurations - each developer should update their IP here
 const DEVELOPER_CONFIGS = {
-  joseph: '192.168.254.101',
+  joseph: '192.168.8.114',
   jiro: '192.168.254.111',
   localhost: 'localhost'
 };
