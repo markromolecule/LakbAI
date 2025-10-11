@@ -160,6 +160,20 @@ const BiyaBot = () => {
   };
 
   const getBotResponse = async (userMessage) => {
+    // Try the enhanced AI service first
+    try {
+      if (typeof biyaBotService.processMessage === 'function') {
+        console.log('🤖 Using AI-enhanced service...');
+        const aiResponse = await biyaBotService.processMessage(userMessage);
+        if (aiResponse && aiResponse.trim()) {
+          return aiResponse;
+        }
+      }
+    } catch (error) {
+      console.warn('⚠️ AI service failed, falling back to rule-based logic:', error);
+    }
+
+    // Fallback to original logic
     const message = userMessage.toLowerCase();
     const detectedLang = detectLanguage(userMessage);
     

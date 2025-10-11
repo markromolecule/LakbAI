@@ -1,7 +1,163 @@
-// BiyaBot Service - Handles API calls for the smart chatbot
+// BiyaBot Service - AI-Enhanced Smart Chatbot
+import GeminiService from './geminiService.js';
+
 const API_BASE_URL = 'http://localhost/LakbAI/LakbAI-API/routes/api.php';
 
+// Environment configuration for Gemini API
+let GEMINI_API_KEY = '';
+try {
+  // Check for environment variable or configuration
+  GEMINI_API_KEY = process.env.REACT_APP_GEMINI_API_KEY || 
+                   window.ENV?.GEMINI_API_KEY || 
+                   localStorage.getItem('GEMINI_API_KEY') || '';
+} catch (error) {
+  console.warn('⚠️ Gemini API key not configured');
+}
+
 class BiyaBotService {
+  constructor() {
+    this.geminiService = null;
+    this.useAI = false;
+    this.cache = new Map();
+    this.CACHE_DURATION = 30 * 1000; // 30 seconds cache
+    this.initializeGeminiService();
+  }
+
+  /**
+   * Initialize Gemini AI service if API key is available
+   */
+  initializeGeminiService() {
+    if (GEMINI_API_KEY && GEMINI_API_KEY.trim().length > 0) {
+      try {
+        this.geminiService = new GeminiService(GEMINI_API_KEY);
+        this.useAI = true;
+        console.log('🤖✨ Admin Gemini AI service initialized successfully');
+      } catch (error) {
+        console.error('❌ Failed to initialize Admin Gemini service:', error);
+        this.useAI = false;
+      }
+    } else {
+      console.log('ℹ️ Gemini API key not provided for admin, using rule-based responses only');
+      this.useAI = false;
+    }
+  }
+
+  /**
+   * Process message with AI enhancement
+   */
+  async processMessage(message) {
+    try {
+      console.log('🤖 Admin BiyaBot processing message:', message);
+
+      // Try AI response first if available
+      if (this.useAI && this.geminiService) {
+        try {
+          console.log('🤖✨ Attempting AI response...');
+          const context = await this.gatherSystemContext();
+          const aiResponse = await this.geminiService.generateResponse(message, context);
+          
+          if (aiResponse && aiResponse.message && aiResponse.type !== 'error') {
+            console.log('✅ AI response generated successfully');
+            return aiResponse.message;
+          } else {
+            console.log('⚠️ AI response was empty or error, falling back to rule-based');
+          }
+        } catch (error) {
+          console.warn('⚠️ AI service failed, falling back to rule-based logic:', error);
+        }
+      }
+
+      // Fallback to rule-based logic would go here
+      // For now, return a simple acknowledgment
+      return `I received your message: "${message}". I'm currently using rule-based responses. For AI-powered responses, please configure the Gemini API key.`;
+
+    } catch (error) {
+      console.error('❌ Error processing message:', error);
+      return 'Sorry, I encountered an error. Please try again!';
+    }
+  }
+
+  /**
+   * Gather system context for AI responses
+   */
+  async gatherSystemContext() {
+    try {
+      const context = {
+        availableLocations: [],
+        routes: [],
+        activeJeepneys: [],
+        jeepneyLocations: [],
+        fareMatrix: [],
+        currentTime: new Date().toLocaleString('en-PH', { timeZone: 'Asia/Manila' }),
+        systemInfo: 'LakbAI Jeepney Transportation System - Admin Panel - Cavite, Philippines'
+      };
+
+      // Try to fetch real-time data
+      try {
+        // Fetch routes
+        const routesData = await this.getRoutes();
+        if (routesData && routesData.status === 'success' && Array.isArray(routesData.routes)) {
+          context.routes = routesData.routes;
+        } else {
+          console.warn('⚠️ Routes data is not valid:', routesData);
+        }
+
+        // Fetch jeepneys
+        const jeepneysData = await this.getJeepneys();
+        if (jeepneysData && jeepneysData.status === 'success' && Array.isArray(jeepneysData.jeepneys)) {
+          context.activeJeepneys = jeepneysData.jeepneys;
+        } else {
+          console.warn('⚠️ Jeepneys data is not valid:', jeepneysData);
+        }
+
+        // Fetch checkpoints
+        const checkpointsData = await this.getAllCheckpoints();
+        if (checkpointsData && checkpointsData.status === 'success' && Array.isArray(checkpointsData.checkpoints)) {
+          context.availableLocations = checkpointsData.checkpoints.map(cp => cp.checkpoint_name || 'Unknown');
+        } else {
+          console.warn('⚠️ Checkpoints data is not valid:', checkpointsData);
+        }
+
+        // Get system stats
+        const statsData = await this.getSystemStats();
+        if (statsData && statsData.status === 'success') {
+          context.systemStats = statsData.stats;
+        }
+
+      } catch (error) {
+        console.warn('⚠️ Some context data could not be fetched:', error);
+      }
+
+      return context;
+    } catch (error) {
+      console.error('❌ Failed to gather system context:', error);
+      return {
+        availableLocations: [],
+        routes: [],
+        activeJeepneys: [],
+        jeepneyLocations: [],
+        fareMatrix: [],
+        currentTime: new Date().toLocaleString('en-PH', { timeZone: 'Asia/Manila' }),
+        systemInfo: 'LakbAI Jeepney Transportation System - Admin Panel - Cavite, Philippines'
+      };
+    }
+  }
+
+  /**
+   * Cache management
+   */
+  getFromCache(key) {
+    const cached = this.cache.get(key);
+    if (cached && Date.now() - cached.timestamp < this.CACHE_DURATION) {
+      return cached.data;
+    }
+    return null;
+  }
+
+  setCache(key, data) {
+    this.cache.set(key, { data, timestamp: Date.now() });
+  }
+
   // Get all routes
   async getRoutes() {
     try {
@@ -201,4 +357,6 @@ class BiyaBotService {
   }
 }
 
-export default new BiyaBotService();
+// Create and export the enhanced service instance
+const biyaBotServiceInstance = new BiyaBotService();
+export default biyaBotServiceInstance;

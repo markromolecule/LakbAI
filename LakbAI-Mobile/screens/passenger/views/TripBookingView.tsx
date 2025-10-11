@@ -40,7 +40,7 @@ export const TripBookingView: React.FC<TripBookingViewProps> = ({
   onBookingComplete,
 }) => {
   const { passengerProfile } = usePassengerState();
-  const { session } = useAuthContext();
+  const { session, user } = useAuthContext();
   const [pickupLocation, setPickupLocation] = useState<string>('');
   const [destination, setDestination] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
@@ -239,7 +239,6 @@ export const TripBookingView: React.FC<TripBookingViewProps> = ({
       'SM Dasmariñas → SM Epza': 2,
       'Route 1': 1,
       'Route 2': 2,
-      // Handle any route that goes from SM Epza to SM Dasmariñas
       'Epza → Dasmariñas': 1,
       'Dasmariñas → Epza': 2,
     };
@@ -468,12 +467,33 @@ export const TripBookingView: React.FC<TripBookingViewProps> = ({
       
       console.log('Xendit API URL:', xenditUrl);
       
+      // Format address from object to string
+      const formatAddress = (address: any): string | null => {
+        if (!address) return null;
+        const parts = [
+          address.houseNumber,
+          address.streetName,
+          address.barangay,
+          address.cityMunicipality,
+          address.province,
+          address.postalCode
+        ].filter(part => part && part.trim() !== '');
+        
+        return parts.length > 0 ? parts.join(', ') : null;
+      };
+
+      const formattedAddress = formatAddress(passengerProfile.address);
+      console.log('📍 Formatted Address:', formattedAddress);
+      console.log('📍 Original Address Object:', passengerProfile.address);
+
       // Prepare payment data for API call
       const requestPayload = {
         amount: finalFare,
         description: description,
         customerEmail: passengerProfile.email || 'passenger@lakbai.com',
         customerName: `${passengerProfile.firstName} ${passengerProfile.lastName}` || 'LakbAI Passenger',
+        customerPhone: passengerProfile.phoneNumber || null,
+        customerAddress: formattedAddress,
         jeepneyId: tripData.driver.jeepneyNumber || 'LKB-001'
       };
       

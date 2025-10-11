@@ -681,32 +681,45 @@ class FareMatrixController {
             // Get opposite route ID (1 <-> 2)
             $oppositeRouteId = ($data['route_id'] == 1) ? 2 : 1;
             
-            // Get checkpoint names for current route
-            $stmt = $this->db->prepare("
+            // Get checkpoint names for current route - use separate statements
+            $stmt1 = $this->db->prepare("
                 SELECT checkpoint_name FROM checkpoints WHERE id = ?
             ");
-            $stmt->execute([$data['from_checkpoint_id']]);
-            $fromCheckpointName = $stmt->fetchColumn();
+            $stmt1->execute([$data['from_checkpoint_id']]);
+            $fromCheckpointName = $stmt1->fetchColumn();
             
-            $stmt->execute([$data['to_checkpoint_id']]);
-            $toCheckpointName = $stmt->fetchColumn();
+            $stmt2 = $this->db->prepare("
+                SELECT checkpoint_name FROM checkpoints WHERE id = ?
+            ");
+            $stmt2->execute([$data['to_checkpoint_id']]);
+            $toCheckpointName = $stmt2->fetchColumn();
             
             // Debug: Log checkpoint names
             error_log("DEBUG: Updating opposite route. From: $fromCheckpointName, To: $toCheckpointName, Route: {$data['route_id']} -> $oppositeRouteId");
             
+            if (!$fromCheckpointName || !$toCheckpointName) {
+                error_log("ERROR: Could not find checkpoint names for IDs: {$data['from_checkpoint_id']}, {$data['to_checkpoint_id']}");
+                return;
+            }
+            
             // Find corresponding checkpoint IDs in opposite route
-            $stmt = $this->db->prepare("
+            // IMPORTANT: In opposite route, from becomes to and to becomes from (reverse direction)
+            $stmt3 = $this->db->prepare("
                 SELECT id FROM checkpoints 
                 WHERE route_id = ? AND checkpoint_name = ?
             ");
-            $stmt->execute([$oppositeRouteId, $toCheckpointName]);
-            $oppositeFromCheckpointId = $stmt->fetchColumn();
+            $stmt3->execute([$oppositeRouteId, $toCheckpointName]);
+            $oppositeFromCheckpointId = $stmt3->fetchColumn();
             
-            $stmt->execute([$oppositeRouteId, $fromCheckpointName]);
-            $oppositeToCheckpointId = $stmt->fetchColumn();
+            $stmt4 = $this->db->prepare("
+                SELECT id FROM checkpoints 
+                WHERE route_id = ? AND checkpoint_name = ?
+            ");
+            $stmt4->execute([$oppositeRouteId, $fromCheckpointName]);
+            $oppositeToCheckpointId = $stmt4->fetchColumn();
             
             // Debug: Log found checkpoint IDs
-            error_log("DEBUG: Found opposite checkpoints. From: $oppositeFromCheckpointId, To: $oppositeToCheckpointId");
+            error_log("DEBUG: Found opposite checkpoints. From: $oppositeFromCheckpointId ($toCheckpointName), To: $oppositeToCheckpointId ($fromCheckpointName)");
             
             if ($oppositeFromCheckpointId && $oppositeToCheckpointId) {
                 // Update or create fare in opposite route (find most recent active entry)
@@ -741,6 +754,7 @@ class FareMatrixController {
                         $data['status'],
                         $existingOppositeEntry['id']
                     ]);
+                    error_log("DEBUG: Updated existing opposite route entry ID: {$existingOppositeEntry['id']} with fare: {$data['fare_amount']}");
                 } else {
                     // Create new opposite entry
                     $stmt = $this->db->prepare("
@@ -758,11 +772,14 @@ class FareMatrixController {
                         $data['expiry_date'],
                         $data['status']
                     ]);
+                    error_log("DEBUG: Created new opposite route entry with fare: {$data['fare_amount']}");
                 }
+            } else {
+                error_log("ERROR: Could not find opposite checkpoint IDs. OppositeFrom: $oppositeFromCheckpointId, OppositeTo: $oppositeToCheckpointId");
             }
         } catch (Exception $e) {
             // Log error but don't fail the main operation
-            error_log("Failed to update opposite route fare: " . $e->getMessage());
+            error_log("ERROR: Failed to update opposite route fare: " . $e->getMessage());
         }
     }
 
@@ -774,26 +791,45 @@ class FareMatrixController {
             // Get opposite route ID (1 <-> 2)
             $oppositeRouteId = ($data['route_id'] == 1) ? 2 : 1;
             
-            // Get checkpoint names for current route
-            $stmt = $this->db->prepare("
+            // Get checkpoint names for current route - use separate statements
+            $stmt1 = $this->db->prepare("
                 SELECT checkpoint_name FROM checkpoints WHERE id = ?
             ");
-            $stmt->execute([$data['from_checkpoint_id']]);
-            $fromCheckpointName = $stmt->fetchColumn();
+            $stmt1->execute([$data['from_checkpoint_id']]);
+            $fromCheckpointName = $stmt1->fetchColumn();
             
-            $stmt->execute([$data['to_checkpoint_id']]);
-            $toCheckpointName = $stmt->fetchColumn();
+            $stmt2 = $this->db->prepare("
+                SELECT checkpoint_name FROM checkpoints WHERE id = ?
+            ");
+            $stmt2->execute([$data['to_checkpoint_id']]);
+            $toCheckpointName = $stmt2->fetchColumn();
+            
+            // Debug: Log checkpoint names
+            error_log("DEBUG: Creating opposite route fare. From: $fromCheckpointName, To: $toCheckpointName, Route: {$data['route_id']} -> $oppositeRouteId");
+            
+            if (!$fromCheckpointName || !$toCheckpointName) {
+                error_log("ERROR: Could not find checkpoint names for IDs: {$data['from_checkpoint_id']}, {$data['to_checkpoint_id']}");
+                return;
+            }
             
             // Find corresponding checkpoint IDs in opposite route
-            $stmt = $this->db->prepare("
+            // IMPORTANT: In opposite route, from becomes to and to becomes from (reverse direction)
+            $stmt3 = $this->db->prepare("
                 SELECT id FROM checkpoints 
                 WHERE route_id = ? AND checkpoint_name = ?
             ");
-            $stmt->execute([$oppositeRouteId, $toCheckpointName]);
-            $oppositeFromCheckpointId = $stmt->fetchColumn();
+            $stmt3->execute([$oppositeRouteId, $toCheckpointName]);
+            $oppositeFromCheckpointId = $stmt3->fetchColumn();
             
-            $stmt->execute([$oppositeRouteId, $fromCheckpointName]);
-            $oppositeToCheckpointId = $stmt->fetchColumn();
+            $stmt4 = $this->db->prepare("
+                SELECT id FROM checkpoints 
+                WHERE route_id = ? AND checkpoint_name = ?
+            ");
+            $stmt4->execute([$oppositeRouteId, $fromCheckpointName]);
+            $oppositeToCheckpointId = $stmt4->fetchColumn();
+            
+            // Debug: Log found checkpoint IDs
+            error_log("DEBUG: Found opposite checkpoints for creation. From: $oppositeFromCheckpointId ($toCheckpointName), To: $oppositeToCheckpointId ($fromCheckpointName)");
             
             if ($oppositeFromCheckpointId && $oppositeToCheckpointId) {
                 // Check if opposite entry already exists (find most recent active entry)
@@ -831,11 +867,29 @@ class FareMatrixController {
                         $data['expiry_date'],
                         $data['status']
                     ]);
+                    error_log("DEBUG: Created new opposite route entry with fare: {$data['fare_amount']}");
+                } else {
+                    // Entry already exists, update it instead
+                    $stmt = $this->db->prepare("
+                        UPDATE fare_matrix 
+                        SET fare_amount = ?, is_base_fare = ?, expiry_date = ?, status = ?, updated_at = CURRENT_TIMESTAMP
+                        WHERE id = ?
+                    ");
+                    $stmt->execute([
+                        $data['fare_amount'],
+                        $data['is_base_fare'],
+                        $data['expiry_date'],
+                        $data['status'],
+                        $existingOppositeEntry['id']
+                    ]);
+                    error_log("DEBUG: Updated existing opposite route entry ID: {$existingOppositeEntry['id']} with fare: {$data['fare_amount']}");
                 }
+            } else {
+                error_log("ERROR: Could not find opposite checkpoint IDs during creation. OppositeFrom: $oppositeFromCheckpointId, OppositeTo: $oppositeToCheckpointId");
             }
         } catch (Exception $e) {
             // Log error but don't fail the main operation
-            error_log("Failed to create opposite route fare: " . $e->getMessage());
+            error_log("ERROR: Failed to create opposite route fare: " . $e->getMessage());
         }
     }
 }

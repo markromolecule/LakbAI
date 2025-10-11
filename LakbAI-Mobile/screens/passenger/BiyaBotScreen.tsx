@@ -233,6 +233,7 @@ export const BiyaBotScreen: React.FC = () => {
           questions={quickQuestions}
           onQuestionPress={handleQuickQuestionPress}
           isVisible={showQuickQuestions && messages.length <= 1}
+          isUserTyping={inputMessage.length > 0} // Hide when user is typing
         />
 
         {/* Chat Input */}

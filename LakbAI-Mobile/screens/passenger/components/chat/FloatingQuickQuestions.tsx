@@ -7,18 +7,23 @@ interface FloatingQuickQuestionsProps {
   questions: QuickQuestion[];
   onQuestionPress: (question: string) => void;
   isVisible?: boolean;
+  isUserTyping?: boolean; // New prop to hide when user is typing
 }
 
 export const FloatingQuickQuestions: React.FC<FloatingQuickQuestionsProps> = ({
   questions,
   onQuestionPress,
-  isVisible = true
+  isVisible = true,
+  isUserTyping = false
 }) => {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
 
   useEffect(() => {
-    if (isVisible) {
+    // Hide when user is typing, show when not typing and visible
+    const shouldShow = isVisible && !isUserTyping;
+    
+    if (shouldShow) {
       Animated.parallel([
         Animated.timing(fadeAnim, {
           toValue: 1,
@@ -45,9 +50,9 @@ export const FloatingQuickQuestions: React.FC<FloatingQuickQuestionsProps> = ({
         })
       ]).start();
     }
-  }, [fadeAnim, slideAnim, isVisible]);
+  }, [fadeAnim, slideAnim, isVisible, isUserTyping]);
 
-  if (!isVisible || questions.length === 0) {
+  if ((!isVisible || isUserTyping) && questions.length === 0) {
     return null;
   }
 
@@ -78,10 +83,7 @@ export const FloatingQuickQuestions: React.FC<FloatingQuickQuestionsProps> = ({
         {questions.map((question, index) => (
           <TouchableOpacity
             key={question.id}
-            style={[
-              styles.questionButton,
-              { backgroundColor: getCategoryColor(question.category) }
-            ]}
+            style={styles.questionButton}
             onPress={() => onQuestionPress(question.text)}
             activeOpacity={0.8}
           >
@@ -96,21 +98,6 @@ export const FloatingQuickQuestions: React.FC<FloatingQuickQuestionsProps> = ({
       </ScrollView>
     </Animated.View>
   );
-};
-
-const getCategoryColor = (category?: string): string => {
-  switch (category) {
-    case 'fare':
-      return COLORS.primary;
-    case 'route':
-      return '#4CAF50';
-    case 'time':
-      return '#FF9800';
-    case 'emergency':
-      return '#F44336';
-    default:
-      return COLORS.primary;
-  }
 };
 
 const getCategoryIcon = (category?: string): string => {
@@ -193,6 +180,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+    backgroundColor: COLORS.primary, // Single color for all questions
   },
   categoryIcon: {
     fontSize: 16,

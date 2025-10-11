@@ -8,7 +8,6 @@ const AuthPage = () => {
   return (
     <div className={styles.authPageContainer}>
       <div className={styles.authContent}>
-        {/* Desktop: Side by Side Layout */}
         <div className={styles.desktopLayout}>
           <div className={styles.loginSection}>
             <LoginForm />
@@ -17,8 +16,6 @@ const AuthPage = () => {
             <RegisterForm />
           </div>
         </div>
-
-        {/* Mobile: Tabbed Layout */}
         <div className={styles.mobileLayout}>
           <div className={styles.mobileTabNavigation}>
             <button 

@@ -59,23 +59,26 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, isTyping = fa
 const styles = StyleSheet.create({
   container: {
     marginBottom: SPACING.md,
-    maxWidth: '85%',
+    maxWidth: '88%',
     flexDirection: 'row',
     alignItems: 'flex-end',
+    paddingHorizontal: SPACING.xs,
   },
   userMessage: {
     alignSelf: 'flex-end',
     flexDirection: 'row',
+    marginRight: SPACING.xs,
   },
   botMessage: {
     alignSelf: 'flex-start',
     flexDirection: 'row',
+    marginLeft: SPACING.xs,
   },
   messageBubble: {
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.sm,
     borderRadius: 20,
-    maxWidth: '100%',
+    flex: 1,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -89,7 +92,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary,
     borderBottomRightRadius: 6,
     marginLeft: SPACING.xs,
-    marginRight: SPACING.sm,
+    marginRight: 0,
   },
   botBubble: {
     backgroundColor: COLORS.white,
@@ -102,6 +105,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 20,
     fontWeight: '400',
+    flexShrink: 1,
   },
   userText: {
     color: COLORS.white,
@@ -130,6 +134,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: SPACING.xs,
+    flexShrink: 0,
   },
   botAvatarText: {
     fontSize: 12,
@@ -141,7 +146,8 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.gray300,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: SPACING.sm,
+    marginLeft: SPACING.xs,
+    flexShrink: 0,
   },
   userAvatarText: {
     fontSize: 12,

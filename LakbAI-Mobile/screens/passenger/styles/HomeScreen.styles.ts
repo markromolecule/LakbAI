@@ -150,6 +150,18 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginRight: SPACING.sm,
   },
+  discountBadge: {
+    fontSize: 10,
+    color: COLORS.orange,
+    fontWeight: '500',
+    backgroundColor: COLORS.orangeLight,
+    paddingHorizontal: SPACING.xs,
+    paddingVertical: 2,
+    borderRadius: SPACING.xs,
+    marginRight: SPACING.xs,
+    textAlign: 'center',
+    overflow: 'hidden',
+  },
   originalFare: {
     fontSize: 12,
     color: COLORS.gray500,

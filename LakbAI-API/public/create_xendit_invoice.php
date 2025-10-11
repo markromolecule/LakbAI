@@ -65,6 +65,8 @@ $amount = (float) ($input['amount'] ?? 0);
 $description = $input['description'] ?? 'LakbAI Payment';
 $customerEmail = $input['customerEmail'] ?? 'passenger@lakbai.com';
 $customerName = $input['customerName'] ?? 'LakbAI Passenger';
+$customerPhone = $input['customerPhone'] ?? null;
+$customerAddress = $input['customerAddress'] ?? null;
 $jeepneyId = $input['jeepneyId'] ?? 'LKB-001';
 
 if ($amount <= 0) {
@@ -87,7 +89,9 @@ try {
         'invoice_duration' => 86400, // 24 hours
         'customer' => [
             'given_names' => $customerName,
-            'email' => $customerEmail
+            'email' => $customerEmail,
+            'mobile_number' => $customerPhone,
+            'address' => $customerAddress
         ],
         'customer_notification_preference' => [
             'invoice_created' => ['email'],

@@ -61,21 +61,58 @@ class TripController {
     }
 
     /**
-     * Complete a trip when driver reaches destination
+     * Complete a trip when driver reaches destination or passes it
      */
     public function completeTrip($driverId, $checkpointName) {
         try {
-            // Find active trips for this driver with matching destination
+            // Get the sequence order of the scanned checkpoint
+            $stmt = $this->db->prepare("
+                SELECT sequence_order, route_id FROM checkpoints 
+                WHERE checkpoint_name = ? 
+                LIMIT 1
+            ");
+            $stmt->execute([$checkpointName]);
+            $scannedCheckpoint = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if (!$scannedCheckpoint) {
+                error_log("❌ Could not find checkpoint: $checkpointName");
+                return [
+                    "status" => "error",
+                    "message" => "Checkpoint not found"
+                ];
+            }
+            
+            $scannedSequence = $scannedCheckpoint['sequence_order'];
+            $scannedRouteId = $scannedCheckpoint['route_id'];
+            
+            error_log("🔍 Scanned checkpoint: $checkpointName (Seq: $scannedSequence, Route: $scannedRouteId)");
+            
+            // Find active trips for this driver
+            // Complete trip if: 
+            // 1. Exact destination match OR
+            // 2. Scanned checkpoint is AFTER destination (sequence_order >= destination's sequence_order)
             $stmt = $this->db->prepare("
                 SELECT 
                     t.*,
                     u.first_name,
                     u.last_name,
-                    u.email
+                    u.email,
+                    c.sequence_order as dest_sequence,
+                    c.route_id as dest_route_id
                 FROM active_trips t
                 JOIN users u ON t.passenger_id = u.id
+                LEFT JOIN checkpoints c ON (
+                    c.checkpoint_name = t.destination 
+                    OR (c.checkpoint_name LIKE 'SM Das%' AND t.destination LIKE 'SM Das%')
+                    OR (c.checkpoint_name LIKE 'Robinson Das%' AND t.destination LIKE 'Robinson Das%')
+                    OR (c.checkpoint_name LIKE 'SM Epza%' AND t.destination LIKE 'SM Epza%')
+                    OR (c.checkpoint_name LIKE 'Lancaster%' AND t.destination LIKE 'Lancaster%')
+                    OR (c.checkpoint_name LIKE 'Monterey%' AND t.destination LIKE 'Monterey%')
+                )
                 WHERE t.driver_id = ? 
                 AND t.status IN ('booked', 'in_progress')
+                AND t.route_id = ?
+                AND t.booked_at >= DATE_SUB(NOW(), INTERVAL 4 HOUR)
                 AND (
                     t.destination = ? 
                     OR (? LIKE 'SM Das%' AND t.destination LIKE 'SM Das%')
@@ -83,27 +120,60 @@ class TripController {
                     OR (? LIKE 'SM Epza%' AND t.destination LIKE 'SM Epza%')
                     OR (? LIKE 'Lancaster%' AND t.destination LIKE 'Lancaster%')
                     OR (? LIKE 'Monterey%' AND t.destination LIKE 'Monterey%')
+                    OR (c.sequence_order IS NOT NULL AND ? >= c.sequence_order)
                 )
-                AND t.booked_at >= DATE_SUB(NOW(), INTERVAL 4 HOUR)
                 ORDER BY t.booked_at DESC
             ");
             
             $stmt->execute([
                 $driverId,
+                $scannedRouteId,
                 $checkpointName,
                 $checkpointName,
                 $checkpointName,
                 $checkpointName,
                 $checkpointName,
-                $checkpointName
+                $checkpointName,
+                $scannedSequence
             ]);
             
             $activeTrips = $stmt->fetchAll(PDO::FETCH_ASSOC);
             
-            error_log("🏁 Found " . count($activeTrips) . " active trips to complete for driver $driverId at $checkpointName");
+            error_log("🏁 Found " . count($activeTrips) . " active trips to check for completion at $checkpointName");
             
             $completedCount = 0;
             foreach ($activeTrips as $trip) {
+                $destSequence = $trip['dest_sequence'] ?? null;
+                $destRouteId = $trip['dest_route_id'] ?? null;
+                
+                // Determine if trip should be completed
+                $shouldComplete = false;
+                $completionReason = '';
+                
+                // Check if exact destination match
+                if ($trip['destination'] === $checkpointName) {
+                    $shouldComplete = true;
+                    $completionReason = 'Exact destination match';
+                } 
+                // Check if driver has passed the destination (same route, scanned checkpoint is after destination)
+                elseif ($destSequence !== null && $destRouteId == $scannedRouteId && $scannedSequence >= $destSequence) {
+                    $shouldComplete = true;
+                    $completionReason = sprintf(
+                        'Driver passed destination (Dest: %s[Seq:%d] -> Scanned: %s[Seq:%d])',
+                        $trip['destination'],
+                        $destSequence,
+                        $checkpointName,
+                        $scannedSequence
+                    );
+                }
+                
+                if (!$shouldComplete) {
+                    error_log("⏭️ Skipping trip {$trip['trip_id']} - not yet at/past destination");
+                    continue;
+                }
+                
+                error_log("🎯 Completing trip {$trip['trip_id']}: $completionReason");
+                
                 try {
                     // Update trip status to completed
                     $updateStmt = $this->db->prepare("

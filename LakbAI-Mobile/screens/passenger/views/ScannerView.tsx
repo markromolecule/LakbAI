@@ -184,12 +184,34 @@ export const ScannerScreen: React.FC = () => {
       
       console.log('Xendit API URL:', xenditUrl);
       
+      // Format address from object to string
+      const formatAddress = (address: any): string | null => {
+        if (!address) return null;
+        if (typeof address === 'string') return address; // Already a string
+        const parts = [
+          address.houseNumber,
+          address.streetName,
+          address.barangay,
+          address.cityMunicipality,
+          address.province,
+          address.postalCode
+        ].filter(part => part && part.trim() !== '');
+        
+        return parts.length > 0 ? parts.join(', ') : null;
+      };
+
+      const formattedAddress = formatAddress(paymentData.customerAddress);
+      console.log('📍 Formatted Address:', formattedAddress);
+      console.log('📍 Original Address:', paymentData.customerAddress);
+
       // Prepare payment data with passenger ID
       const requestPayload = {
         amount: paymentData.amount || 25.00,
         description: `LakbAI Fare Payment | Passenger: ${passengerId} | Jeepney: ${paymentData.jeepneyId || 'LKB-001'}`,
         customerEmail: paymentData.customerEmail || 'passenger@lakbai.com',
         customerName: paymentData.customerName || 'LakbAI Passenger',
+        customerPhone: paymentData.customerPhone || null,
+        customerAddress: formattedAddress,
         jeepneyId: paymentData.jeepneyId || 'LKB-001'
       };
       
@@ -288,7 +310,13 @@ export const ScannerScreen: React.FC = () => {
           }},
           { 
             text: 'Pay Now', 
-            onPress: () => createXenditPayment(parsedQrData)
+            onPress: () => createXenditPayment({
+              ...parsedQrData,
+              customerEmail: passengerProfile?.email,
+              customerName: passengerProfile ? `${passengerProfile.firstName} ${passengerProfile.lastName}` : undefined,
+              customerPhone: passengerProfile?.phoneNumber,
+              customerAddress: passengerProfile?.address
+            })
           }
         ]
       );

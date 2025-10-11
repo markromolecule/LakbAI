@@ -1322,23 +1322,16 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onBackButtonPress, onSho
                 {selectedRoute.route_name}
               </Text>
               <Text style={styles.compactRouteDetails} numberOfLines={1}>
-                Base fare: ₱{selectedRoute.fare_base || '13.00'}
-                {passengerProfile?.fareDiscount?.status === 'approved' && 
-                  ` • ${passengerProfile.fareDiscount.percentage || 20}% discount applied`
-                } • Tap to change route
+                Base fare: ₱{selectedRoute.fare_base || '13.00'} • Tap to change route
               </Text>
             </View>
             <View style={styles.compactRouteActions}>
               <Text style={styles.compactRouteFare}>
-                ₱{
-                  passengerProfile?.fareDiscount?.status === 'approved' 
-                    ? ((Number(selectedRoute.fare_base) || 13) * (1 - (passengerProfile.fareDiscount.percentage || 20) / 100)).toFixed(2)
-                    : (selectedRoute.fare_base || '13.00')
-                }
+                ₱{selectedRoute.fare_base || '13.00'}
               </Text>
               {passengerProfile?.fareDiscount?.status === 'approved' && (
-                <Text style={styles.originalFare}>
-                  ₱{selectedRoute.fare_base || '13.00'}
+                <Text style={styles.discountBadge}>
+                  {passengerProfile.fareDiscount.percentage || 20}% discount available
                 </Text>
               )}
               <TouchableOpacity 
@@ -1365,12 +1358,6 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onBackButtonPress, onSho
       )}
 
       {/* Quick Tips Section */}
-      <View style={styles.tipsSection}>
-        <Text style={styles.tipsText}>
-          💡 Scan QR codes inside jeepneys for instant fare info and track driver locations in real-time.
-        </Text>
-      </View>
-
 
 
       {/* Route Selection Modal */}

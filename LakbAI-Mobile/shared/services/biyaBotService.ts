@@ -1,8 +1,37 @@
 /**
- * BiyaBot Service - Intelligent Multilingual Assistant
+ * BiyaBot Service - AI-Enhanced Multilingual Assistant
+ * Enhanced with Gemini AI integration for intelligent responses
  */
 
 import { getBaseUrl } from '../../config/apiConfig';
+import { GeminiService } from './geminiService';
+import { getGeminiApiKey } from '../config/geminiConfig';
+
+// Environment variable for Gemini API key - Multiple approaches
+let GEMINI_API_KEY: string = '';
+
+// Method 1: Try @env module
+try {
+  const env = require('@env');
+  GEMINI_API_KEY = env?.GEMINI_API_KEY || '';
+  console.log('🔑 Method 1 (@env):', GEMINI_API_KEY ? `SET (${GEMINI_API_KEY.length} chars)` : 'NOT SET');
+} catch (error: any) {
+  console.warn('⚠️ @env module not available:', error.message);
+}
+
+// Method 2: Try process.env fallback
+if (!GEMINI_API_KEY && typeof process !== 'undefined' && process.env) {
+  GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
+  console.log('🔑 Method 2 (process.env):', GEMINI_API_KEY ? `SET (${GEMINI_API_KEY.length} chars)` : 'NOT SET');
+}
+
+// Method 3: Use config file fallback
+if (!GEMINI_API_KEY) {
+  GEMINI_API_KEY = getGeminiApiKey();
+  console.log('🔑 Method 3 (config file):', GEMINI_API_KEY ? `SET (${GEMINI_API_KEY.length} chars)` : 'NOT SET');
+}
+
+console.log('🔑 Final API Key status:', GEMINI_API_KEY ? `LOADED (${GEMINI_API_KEY.length} chars)` : 'NOT LOADED');
 
 interface BotResponse {
   message: string;
@@ -66,14 +95,41 @@ class BiyaBotService {
   private baseUrl: string;
   private cache: Map<string, { data: any; timestamp: number }> = new Map();
   private readonly CACHE_DURATION = 30 * 1000; // 30 seconds for real-time updates
+  private geminiService: GeminiService | null = null;
+  private useAI: boolean = false;
 
   constructor() {
     this.baseUrl = getBaseUrl();
+    this.initializeGeminiService();
     console.log('🤖 BiyaBot initialized with base URL:', this.baseUrl);
   }
 
   /**
-   * Main message processing function
+   * Initialize Gemini AI service if API key is available
+   */
+  private initializeGeminiService(): void {
+    console.log('🔧 Initializing Gemini service...');
+    console.log('🔑 API Key status:', GEMINI_API_KEY ? `SET (${GEMINI_API_KEY.length} chars)` : 'NOT SET');
+    console.log('🔑 API Key value preview:', GEMINI_API_KEY ? GEMINI_API_KEY.substring(0, 20) + '...' : 'undefined');
+    
+    if (GEMINI_API_KEY && GEMINI_API_KEY.trim().length > 0) {
+      try {
+        this.geminiService = new GeminiService(GEMINI_API_KEY);
+        this.useAI = true;
+        console.log('🤖✨ Gemini AI service initialized successfully');
+      } catch (error) {
+        console.error('❌ Failed to initialize Gemini service:', error);
+        this.useAI = false;
+      }
+    } else {
+      console.log('ℹ️ Gemini API key not provided, using rule-based responses only');
+      console.log('ℹ️ GEMINI_API_KEY variable:', GEMINI_API_KEY);
+      this.useAI = false;
+    }
+  }
+
+  /**
+   * Main message processing function - Hybrid AI + Database
    */
   async processMessage(message: string): Promise<BotResponse> {
     try {
@@ -84,22 +140,39 @@ class BiyaBotService {
       
       console.log('🌐 Detected language:', isTagalog ? 'Tagalog' : 'English');
 
-      // Determine intent and respond accordingly
-      if (this.isFareQuery(cleanMessage)) {
-        return await this.handleFareQuery(cleanMessage, isTagalog);
-      } else if (this.isRouteQuery(cleanMessage)) {
-        return await this.handleRouteQuery(cleanMessage, isTagalog);
-      } else if (this.isJeepneyQuery(cleanMessage)) {
-        return await this.handleJeepneyQuery(cleanMessage, isTagalog);
-      } else if (this.isTimeQuery(cleanMessage)) {
-        return await this.handleTimeQuery(cleanMessage, isTagalog);
-      } else if (this.isEmergencyQuery(cleanMessage)) {
-        return this.handleEmergencyQuery(cleanMessage, isTagalog);
-      } else if (this.isGreeting(cleanMessage)) {
-        return this.handleGreeting(cleanMessage, isTagalog);
-      } else {
-        return this.handleGeneralQuery(cleanMessage, isTagalog);
+      // Check if this is a specific data query that needs database access
+      const needsDatabase = this.isFareQuery(cleanMessage) || 
+                           this.isRouteQuery(cleanMessage) || 
+                           this.isJeepneyQuery(cleanMessage);
+
+      if (needsDatabase) {
+        console.log('📊 Query needs database access, using direct database response (no AI)');
+        // Use direct database logic for fast, accurate responses
+        return await this.processWithRules(cleanMessage, isTagalog);
       }
+
+      // For general conversation, use AI
+      if (this.useAI && this.geminiService) {
+        try {
+          console.log('🤖✨ Using AI for general conversation...');
+          const context = await this.gatherSystemContext();
+          const aiResponse = await this.geminiService.generateResponse(message, context);
+          
+          if (aiResponse && aiResponse.message && aiResponse.type !== 'error') {
+            console.log('✅ AI response generated successfully');
+            return aiResponse;
+          } else {
+            console.log('⚠️ AI response was empty or error, falling back to rule-based');
+          }
+        } catch (error) {
+          console.warn('⚠️ AI service failed, falling back to rule-based logic:', error);
+        }
+      }
+
+      // Fallback to existing rule-based logic
+      console.log('🔄 Using rule-based response logic');
+      return await this.processWithRules(cleanMessage, isTagalog);
+      
     } catch (error) {
       console.error('❌ Error processing message:', error);
       return {
@@ -110,9 +183,99 @@ class BiyaBotService {
   }
 
   /**
+   * Rule-based message processing (original logic)
+   */
+  private async processWithRules(cleanMessage: string, isTagalog: boolean): Promise<BotResponse> {
+    // Determine intent and respond accordingly
+    if (this.isFareQuery(cleanMessage)) {
+      return await this.handleFareQuery(cleanMessage, isTagalog);
+    } else if (this.isRouteQuery(cleanMessage)) {
+      return await this.handleRouteQuery(cleanMessage, isTagalog);
+    } else if (this.isJeepneyQuery(cleanMessage)) {
+      return await this.handleJeepneyQuery(cleanMessage, isTagalog);
+    } else if (this.isTimeQuery(cleanMessage)) {
+      return await this.handleTimeQuery(cleanMessage, isTagalog);
+    } else if (this.isEmergencyQuery(cleanMessage)) {
+      return this.handleEmergencyQuery(cleanMessage, isTagalog);
+    } else if (this.isGreeting(cleanMessage)) {
+      return this.handleGreeting(cleanMessage, isTagalog);
+    } else {
+      return this.handleGeneralQuery(cleanMessage, isTagalog);
+    }
+  }
+
+  /**
+   * Gather system context for AI responses
+   */
+  private async gatherSystemContext(): Promise<any> {
+    try {
+      const context = {
+        availableLocations: CHECKPOINTS,
+        routes: [] as any[],
+        activeJeepneys: [] as any[],
+        jeepneyLocations: [] as any[],
+        fareMatrix: [] as any[],
+        currentTime: new Date().toLocaleString('en-PH', { timeZone: 'Asia/Manila' }),
+        systemInfo: 'LakbAI Jeepney Transportation System - Cavite, Philippines'
+      };
+
+      // Try to fetch real-time data
+      try {
+        // Fetch routes
+        const routesData = await this.fetchRoutes();
+        if (Array.isArray(routesData)) {
+          context.routes = routesData;
+        } else {
+          console.warn('⚠️ Routes data is not an array:', routesData);
+        }
+
+        // Fetch active jeepneys
+        const jeepneysData = await this.fetchJeepneys();
+        if (Array.isArray(jeepneysData)) {
+          context.activeJeepneys = jeepneysData;
+        } else {
+          console.warn('⚠️ Jeepneys data is not an array:', jeepneysData);
+        }
+
+        // Fetch jeepney locations
+        const locationsData = await this.fetchJeepneyLocations();
+        if (Array.isArray(locationsData)) {
+          context.jeepneyLocations = locationsData;
+        } else {
+          console.warn('⚠️ Locations data is not an array:', locationsData);
+        }
+
+        // Fetch fare matrix sample
+        const fareData = await this.fetchFareMatrix();
+        if (Array.isArray(fareData)) {
+          context.fareMatrix = fareData;
+        } else {
+          console.warn('⚠️ Fare data is not an array:', fareData);
+        }
+
+      } catch (error) {
+        console.warn('⚠️ Some context data could not be fetched:', error);
+      }
+
+      return context;
+    } catch (error) {
+      console.error('❌ Failed to gather system context:', error);
+      return {
+        availableLocations: CHECKPOINTS,
+        routes: [] as any[],
+        activeJeepneys: [] as any[],
+        jeepneyLocations: [] as any[],
+        fareMatrix: [] as any[],
+        currentTime: new Date().toLocaleString('en-PH', { timeZone: 'Asia/Manila' }),
+        systemInfo: 'LakbAI Jeepney Transportation System - Cavite, Philippines'
+      };
+    }
+  }
+
+  /**
    * Enhanced language detection for Taglish and constructed Tagalog
    */
-  private detectLanguage(message: string): boolean {
+  public detectLanguage(message: string): boolean {
     const lowerMessage = message.toLowerCase();
     let tagalogScore = 0;
     let totalWords = message.split(' ').length;
@@ -171,18 +334,31 @@ class BiyaBotService {
         const fare = await this.calculateFare(locations.from, locations.to);
         console.log('💵 Calculated fare:', fare);
         
-        if (fare) {
-          // Natural bilingual response (Taglish style)
+        if (fare && fare > 0) {
+          // Simple, direct response with fare
           const responseMessage = isTagalog 
-            ? `Pamasahe from ${locations.from} to ${locations.to} is ₱${fare.toFixed(2)}. Gusto mo bang makita ang route details?`
-            : `Fare from ${locations.from} to ${locations.to} is ₱${fare.toFixed(2)}. Want to see the route details?`;
+            ? `₱${fare.toFixed(2)} ang pamasahe from ${locations.from} to ${locations.to}! 🚌`
+            : `₱${fare.toFixed(2)} fare from ${locations.from} to ${locations.to}! 🚌`;
 
           return {
             message: responseMessage,
             type: 'data',
             suggestions: isTagalog 
-              ? ['Route details', 'Available jeepneys', 'Mga oras ng jeep']
-              : ['Route details', 'Available jeepneys', 'Jeepney schedules']
+              ? ['Route details', 'Available jeepneys', 'Jeep schedule']
+              : ['Route details', 'Available jeepneys', 'Jeep schedule']
+          };
+        } else {
+          // Fare calculation failed
+          const responseMessage = isTagalog
+            ? `Pasensya, hindi ko mahanap ang fare mula ${locations.from} hanggang ${locations.to}. Available ba ang ruta?`
+            : `Sorry, I couldn't find the fare from ${locations.from} to ${locations.to}. Is this route available?`;
+          
+          return {
+            message: responseMessage,
+            type: 'error',
+            suggestions: isTagalog
+              ? ['Show routes', 'Available jeepneys', 'Help']
+              : ['Show routes', 'Available jeepneys', 'Help']
           };
         }
       }
@@ -228,39 +404,54 @@ class BiyaBotService {
   }
 
   /**
-   * Extract location names from message
+   * Extract location names from message with enhanced Tagalog support
    */
   private extractLocations(message: string): { from?: string; to?: string } {
     const result: { from?: string; to?: string } = {};
+    const cleanMessage = message.toLowerCase().trim();
+    console.log(`🔍 Extracting locations from: "${cleanMessage}"`);
     
     // Enhanced patterns for better extraction (English and Tagalog)
     const patterns = [
-      // "Magkano from X to Y" or "How much from X to Y"
-      /(?:magkano|how much|fare).*?(?:from|mula)\s+([^\s]+(?:\s+[^\s]+)*?)\s+(?:to|hanggang|papunta(?:\s+sa)?)\s+(.+?)(?:\?|$)/i,
+      // "Magkano mula X hanggang Y" - Enhanced Tagalog pattern
+      /(?:magkano|pamasahe|how much|fare).*?(?:mula|from)\s+([^\s]+(?:\s+[^\s]+)*?)\s+(?:hanggang|papunta\s+sa|to)\s+(.+?)(?:\?|$)/i,
       
-      // "Magkano mula X hanggang Y" or "From X to Y"
-      /(?:from|mula)\s+([^\s]+(?:\s+[^\s]+)*?)\s+(?:to|hanggang|papunta(?:\s+sa)?)\s+(.+?)(?:\?|$)/i,
+      // "From X hanggang Y" or "From X to Y"  
+      /(?:from|mula)\s+([^\s]+(?:\s+[^\s]+)*?)\s+(?:hanggang|papunta\s+sa|to)\s+(.+?)(?:\?|$)/i,
+      
+      // "X hanggang Y" or "X to Y" - Direct location pattern
+      /([a-zA-Z]+(?:\s+[a-zA-Z]+)*?)\s+(?:hanggang|papunta\s+sa|to)\s+(.+?)(?:\?|$)/i,
       
       // "Magkano X papuntang Y" - common Tagalog pattern
-      /(?:magkano|pamasahe)\s+([^\s]+(?:\s+[^\s]+)*?)\s+(?:papunta(?:\s+sa)?|papuntang)\s+(.+?)(?:\?|$)/i,
+      /(?:magkano|pamasahe|fare)\s+([^\s]+(?:\s+[^\s]+)*?)\s+(?:papunta(?:\s+sa)?|papuntang)\s+(.+?)(?:\?|$)/i,
       
-      // "X to Y" or "X hanggang Y"
-      /([^\s]+(?:\s+[^\s]+)*?)\s+(?:to|hanggang|papunta(?:\s+sa)?|papuntang)\s+(.+?)(?:\?|$)/i
+      // "Hanggang Y mula X" - Reverse order pattern
+      /(?:hanggang|to)\s+(.+?)\s+(?:mula|from)\s+([^\s]+(?:\s+[^\s]+)*?)(?:\?|$)/i
     ];
     
     for (const pattern of patterns) {
-      const match = message.match(pattern);
+      const match = cleanMessage.match(pattern);
       if (match) {
-        let [, fromLoc, toLoc] = match;
+        let fromLoc: string, toLoc: string;
+        
+        // Handle reverse order pattern
+        if (pattern.source.includes('hanggang.*mula')) {
+          [, toLoc, fromLoc] = match;
+        } else {
+          [, fromLoc, toLoc] = match;
+        }
         
         // Clean up the extracted locations
         fromLoc = fromLoc.replace(/^(magkano|how much|fare|pamasahe)\s*/i, '').trim();
         toLoc = toLoc.replace(/\?$/, '').trim();
         
+        console.log(`🎯 Pattern match: "${fromLoc}" → "${toLoc}"`);
+        
         result.from = this.findBestLocationMatch(fromLoc);
         result.to = this.findBestLocationMatch(toLoc);
         
         if (result.from && result.to) {
+          console.log(`✅ Final locations: "${result.from}" → "${result.to}"`);
           break;
         }
       }
@@ -270,92 +461,176 @@ class BiyaBotService {
   }
 
   /**
-   * Find the best matching location from available checkpoints
+   * Find the best matching location from available checkpoints with enhanced fuzzy matching
    */
   private findBestLocationMatch(location: string): string | undefined {
     const cleanLoc = location.toLowerCase().trim();
+    console.log(`🔍 Finding location match for: "${cleanLoc}"`);
     
     // Enhanced aliases for common abbreviations and variations
     const locationAliases: { [key: string]: string } = {
-      'sm': 'SM Epza',
-      'sm epza': 'SM Epza',
-      'epza': 'SM Epza',
-      'robinson': 'Robinson Tejero',  
-      'rob': 'Robinson Tejero',
-      'tejero': 'Robinson Tejero',
-      'lancaster': 'Lancaster New City',
-      'dasmariñas': 'SM Dasmariñas',
-      'dasma': 'SM Dasmariñas',
-      'sm dasma': 'SM Dasmariñas',
-      'sm dasmariñas': 'SM Dasmariñas',
-      'monterey': 'Monterey',
-      'pabahay': 'Pabahay',
-      'langkaan': 'Langkaan',
-      'tierra vista': 'Tierra Vista',
-      'country meadow': 'Country Meadow',
-      'san francisco': 'San Francisco',
-      'bella vista': 'Bella Vista',
-      'santiago': 'Santiago',
-      'open canal': 'Open Canal',
-      'pasong camachile': 'Pasong Camachile I',
-      'pascam' : 'Pasong Camachile I',
-      'camachile': 'Pasong Camachile I',
-      'riverside': 'Riverside',
-      'malabon': 'Malabon'
+      // SM variations
+      'sm': 'SM Epza', 'sm epza': 'SM Epza', 'epza': 'SM Epza', 'epz': 'SM Epza',
+      'sm dasma': 'SM Dasmariñas', 'sm dasmariñas': 'SM Dasmariñas', 
+      'dasma': 'SM Dasmariñas', 'dasmariñas': 'SM Dasmariñas', 'dasmarinas': 'SM Dasmariñas',
+      
+      // Robinson variations
+      'robinson': 'Robinson Tejero', 'rob': 'Robinson Tejero', 'tejero': 'Robinson Tejero',
+      'robinson tejero': 'Robinson Tejero', 'rob tejero': 'Robinson Tejero',
+      'robinson dasmariñas': 'Robinson Dasmariñas', 'robinson dasma': 'Robinson Dasmariñas',
+      'rob dasma': 'Robinson Dasmariñas', 'rob dasmariñas': 'Robinson Dasmariñas',
+      'rob dasmarinas': 'Robinson Dasmariñas',
+      
+      // Lancaster variations
+      'lancaster': 'Lancaster New City', 'lanc': 'Lancaster New City', 'lnc': 'Lancaster New City',
+      'lancaster new city': 'Lancaster New City', 'lancaster city': 'Lancaster New City',
+      'new city': 'Lancaster New City',
+      
+      // Pasong Camachile variations (very common shorthand)
+      'pascam': 'Pasong Camachile I', 'pasong camachile': 'Pasong Camachile I',
+      'camachile': 'Pasong Camachile I', 'pas cam': 'Pasong Camachile I',
+      'pasong': 'Pasong Camachile I', 'pascam 1': 'Pasong Camachile I',
+      'pasong camachile 1': 'Pasong Camachile I', 'pasong cam': 'Pasong Camachile I',
+      
+      // Other locations with common shortcuts
+      'monterey': 'Monterey', 'mont': 'Monterey', 'monte': 'Monterey',
+      'pabahay': 'Pabahay', 'bgy pabahay': 'Pabahay',
+      'langkaan': 'Langkaan', 'lang': 'Langkaan', 'langka': 'Langkaan',
+      'tierra vista': 'Tierra Vista', 'tierra': 'Tierra Vista', 'tv': 'Tierra Vista',
+      'country meadow': 'Country Meadow', 'country': 'Country Meadow', 'cm': 'Country Meadow',
+      'san francisco': 'San Francisco', 'san fran': 'San Francisco', 'sf': 'San Francisco',
+      'bella vista': 'Bella Vista', 'bella': 'Bella Vista', 'bv': 'Bella Vista',
+      'santiago': 'Santiago', 'santi': 'Santiago', 'sant': 'Santiago',
+      'open canal': 'Open Canal', 'canal': 'Open Canal', 'oc': 'Open Canal',
+      'malabon': 'Malabon', 'mal': 'Malabon', 'malaban': 'Malabon',
+      'riverside': 'Riverside', 'river': 'Riverside', 'rs': 'Riverside', 'riverside park': 'Riverside',
     };
     
     // Check aliases first
     if (locationAliases[cleanLoc]) {
+      console.log(`✅ Alias match found: "${cleanLoc}" → "${locationAliases[cleanLoc]}"`);
       return locationAliases[cleanLoc];
     }
     
     // Exact match
     let match = CHECKPOINTS.find(cp => cp.toLowerCase() === cleanLoc);
-    if (match) return match;
+    if (match) {
+      console.log(`✅ Exact checkpoint match: "${cleanLoc}" → "${match}"`);
+      return match;
+    }
     
-    // Partial match - prioritize matches that start with the search term
+    // Fuzzy matching - starts with
     match = CHECKPOINTS.find(cp => cp.toLowerCase().startsWith(cleanLoc));
-    if (match) return match;
+    if (match) {
+      console.log(`✅ Starts-with match: "${cleanLoc}" → "${match}"`);
+      return match;
+    }
     
-    // Check if the search term is contained within any checkpoint name
+    // Fuzzy matching - contains (for partial words)
     match = CHECKPOINTS.find(cp => cp.toLowerCase().includes(cleanLoc));
-    if (match) return match;
+    if (match) {
+      console.log(`✅ Contains match: "${cleanLoc}" → "${match}"`);
+      return match;
+    }
     
-    // Broader partial match (reverse - checkpoint name contained in search term)
+    // Reverse fuzzy matching - search term contains checkpoint name
     match = CHECKPOINTS.find(cp => cleanLoc.includes(cp.toLowerCase()));
-    if (match) return match;
+    if (match) {
+      console.log(`✅ Reverse contains match: "${cleanLoc}" → "${match}"`);
+      return match;
+    }
     
+    // Advanced fuzzy matching - remove common Filipino stop words and try again
+    const cleanedInput = cleanLoc.replace(/\b(sa|ang|ng|mga|na|pa|at|ay|si|ni|kay)\b/g, '').trim();
+    if (cleanedInput !== cleanLoc && cleanedInput.length > 2) {
+      console.log(`🔄 Trying cleaned input: "${cleanedInput}"`);
+      return this.findBestLocationMatch(cleanedInput);
+    }
+    
+    console.log(`❌ No match found for: "${cleanLoc}"`);
+    console.log(`📋 Available: ${CHECKPOINTS.slice(0, 5).join(', ')}...`);
     return undefined;
   }
 
   /**
-   * Calculate fare between two locations using the same method as fare calculator
+   * Calculate fare using the EXACT same logic as fareCalculator.ts
    */
   private async calculateFare(from: string, to: string): Promise<number | null> {
     try {
-      // Import the fare calculator to ensure consistency
-      const { calculateFare } = await import('../utils/fareCalculator');
+      console.log(`🔍 Calculating fare from "${from}" to "${to}"`);
       
-      // Use the same calculation method as the fare calculator
+      // Use the actual fare calculator to ensure consistency
+      const { calculateFare } = await import('../utils/fareCalculator');
       const fare = await calculateFare(from, to, 1); // Route 1 by default
       
-      console.log(`🎯 BiyaBot calculated fare from ${from} to ${to}: ₱${fare}`);
-      return fare;
+      console.log(`🎯 FareCalculator returned: ₱${fare} for ${from} → ${to}`);
+      
+      if (fare && fare > 0) {
+        return fare;
+      }
+      
+      return null;
+      
     } catch (error) {
-      console.error('Error calculating fare:', error);
-      
-      // Fallback to simple calculation if import fails
-      const fromIndex = CHECKPOINTS.indexOf(from);
-      const toIndex = CHECKPOINTS.indexOf(to);
-      
-      if (fromIndex === -1 || toIndex === -1) return null;
-      
-      const distance = Math.abs(fromIndex - toIndex);
-      const baseFare = 13;
-      const additionalFare = Math.max(0, (distance - 1) * 2);
-      
-      return baseFare + additionalFare;
+      console.error('❌ Error using fare calculator:', error);
+      return null;
     }
+  }
+
+  /**
+   * Get checkpoint ID by name - matches database mapping
+   */
+  private getCheckpointIdByName(checkpointName: string, routeId: number = 1): number | null {
+    // Route 1: SM Epza → SM Dasmariñas (sequence 1-17)
+    const route1Map: { [key: string]: number } = {
+      'SM Epza': 1,
+      'Robinson Tejero': 2,
+      'Malabon': 3,
+      'Riverside': 4,
+      'Lancaster New City': 5,
+      'Pasong Camachile I': 6,
+      'Open Canal': 7,
+      'Santiago': 8,
+      'Bella Vista': 9,
+      'San Francisco': 10,
+      'Country Meadow': 11,
+      'Pabahay': 12,
+      'Monterey': 13,
+      'Langkaan': 14,
+      'Tierra Vista': 15,
+      'Robinson Dasmariñas': 16,
+      'SM Dasmariñas': 17,
+    };
+    
+    const id = route1Map[checkpointName] || null;
+    console.log(`📍 Checkpoint sequence: "${checkpointName}" → ${id}`);
+    return id;
+  }
+
+  /**
+   * Calculate fare using exact database formula: 13.00 + (ABS(sequence_diff) * 2.5)
+   */
+  private calculateDatabaseFare(from: string, to: string): number | null {
+    const fromSeq = this.getCheckpointIdByName(from, 1);
+    const toSeq = this.getCheckpointIdByName(to, 1);
+    
+    if (!fromSeq || !toSeq) {
+      console.log(`❌ Cannot calculate fare: ${from} (${fromSeq}) → ${to} (${toSeq})`);
+      return null;
+    }
+    
+    if (fromSeq === toSeq) {
+      // Same checkpoint - base fare
+      console.log(`✅ Same checkpoint fare: ₱13.00`);
+      return 13.00;
+    }
+    
+    // Database formula: 13.00 + (ABS(sequence_order_diff) * 2.5)
+    const distance = Math.abs(toSeq - fromSeq);
+    const fare = 13.00 + (distance * 2.5);
+    
+    console.log(`✅ Database fare calculation: |${toSeq} - ${fromSeq}| = ${distance} stops → ₱${fare}`);
+    return fare;
   }
 
   /**
@@ -820,32 +1095,119 @@ class BiyaBotService {
   }
 
   /**
-   * Get quick questions for the interface
+   * Fetch routes data from API
    */
-  getQuickQuestions(language: 'en' | 'tl'): QuickQuestion[] {
-    if (language === 'tl') {
-      return [
-        { id: '1', text: 'Magkano SM to Robinson?', category: 'fare' },
-        { id: '2', text: 'Magkano SM Epza papuntang Monterey?', category: 'fare' },
-        { id: '3', text: 'Magkano Lancaster to Dasma?', category: 'fare' },
-        { id: '4', text: 'Anong routes available?', category: 'route' },
-        { id: '5', text: 'May jeep ba ngayon? (refresh)', category: 'route' },
-        { id: '6', text: 'Anong oras ang jeep?', category: 'time' },
-        { id: '7', text: 'Emergency contacts', category: 'emergency' },
-        { id: '8', text: 'Nasaan ang jeep sa SM ngayon?', category: 'route' }
-      ];
+  private async fetchRoutes(): Promise<any[]> {
+    try {
+      const cached = this.getFromCache('routes');
+      if (cached) return Array.isArray(cached) ? cached : [];
+
+      const response = await fetch(`${this.baseUrl}/routes`);
+      if (response.ok) {
+        const data = await response.json();
+        // Handle different API response formats
+        let routes = [];
+        if (Array.isArray(data)) {
+          routes = data;
+        } else if (data && Array.isArray(data.routes)) {
+          routes = data.routes;
+        } else if (data && Array.isArray(data.data)) {
+          routes = data.data;
+        }
+        this.setCache('routes', routes);
+        return routes;
+      }
+    } catch (error) {
+      console.warn('⚠️ Failed to fetch routes:', error);
     }
-    
-    return [
-      { id: '1', text: 'How much SM to Robinson?', category: 'fare' },
-      { id: '2', text: 'How much SM Epza to Monterey?', category: 'fare' },
-      { id: '3', text: 'How much Lancaster to Dasma?', category: 'fare' },
-      { id: '4', text: 'What routes available?', category: 'route' },
-        { id: '5', text: 'Are there jeeps now? (refresh)', category: 'route' },
-      { id: '6', text: 'What time do jeeps run?', category: 'time' },
-      { id: '7', text: 'Emergency contacts', category: 'emergency' },
-        { id: '8', text: 'Where\'s the jeep at SM now?', category: 'route' }
-    ];
+    return [];
+  }
+
+  /**
+   * Fetch active jeepneys data from API
+   */
+  private async fetchJeepneys(): Promise<any[]> {
+    try {
+      const cached = this.getFromCache('jeepneys');
+      if (cached) return Array.isArray(cached) ? cached : [];
+
+      const response = await fetch(`${this.baseUrl}/jeepney/all`);
+      if (response.ok) {
+        const data = await response.json();
+        // Handle different API response formats
+        let jeepneys = [];
+        if (Array.isArray(data)) {
+          jeepneys = data;
+        } else if (data && Array.isArray(data.jeepneys)) {
+          jeepneys = data.jeepneys;
+        } else if (data && Array.isArray(data.data)) {
+          jeepneys = data.data;
+        }
+        this.setCache('jeepneys', jeepneys);
+        return jeepneys;
+      }
+    } catch (error) {
+      console.warn('⚠️ Failed to fetch jeepneys:', error);
+    }
+    return [];
+  }
+
+  /**
+   * Fetch jeepney locations data from API
+   */
+  private async fetchJeepneyLocations(): Promise<any[]> {
+    try {
+      const cached = this.getFromCache('jeepney_locations');
+      if (cached) return Array.isArray(cached) ? cached : [];
+
+      const response = await fetch(`${this.baseUrl}/jeepney/locations`);
+      if (response.ok) {
+        const data = await response.json();
+        // Handle different API response formats
+        let locations = [];
+        if (Array.isArray(data)) {
+          locations = data;
+        } else if (data && Array.isArray(data.locations)) {
+          locations = data.locations;
+        } else if (data && Array.isArray(data.data)) {
+          locations = data.data;
+        }
+        this.setCache('jeepney_locations', locations);
+        return locations;
+      }
+    } catch (error) {
+      console.warn('⚠️ Failed to fetch jeepney locations:', error);
+    }
+    return [];
+  }
+
+  /**
+   * Fetch fare matrix data from API
+   */
+  private async fetchFareMatrix(): Promise<any[]> {
+    try {
+      const cached = this.getFromCache('fare_matrix');
+      if (cached) return Array.isArray(cached) ? cached : [];
+
+      const response = await fetch(`${this.baseUrl}/fare-matrix`);
+      if (response.ok) {
+        const data = await response.json();
+        // Handle different API response formats
+        let fareMatrix = [];
+        if (Array.isArray(data)) {
+          fareMatrix = data;
+        } else if (data && Array.isArray(data.fare_matrix)) {
+          fareMatrix = data.fare_matrix;
+        } else if (data && Array.isArray(data.data)) {
+          fareMatrix = data.data;
+        }
+        this.setCache('fare_matrix', fareMatrix);
+        return fareMatrix;
+      }
+    } catch (error) {
+      console.warn('⚠️ Failed to fetch fare matrix:', error);
+    }
+    return [];
   }
 
   /**
@@ -905,6 +1267,32 @@ class BiyaBotService {
     const lowerMessage = message.toLowerCase();
     return locationKeywords.some(keyword => lowerMessage.includes(keyword)) ||
            locationPhrases.some(phrase => lowerMessage.includes(phrase));
+  }
+
+  /**
+   * Get quick questions based on language
+   */
+  public getQuickQuestions(language: 'en' | 'tl' | boolean): QuickQuestion[] {
+    // Handle legacy boolean parameter
+    const lang = typeof language === 'boolean' ? (language ? 'tl' : 'en') : language;
+    
+    if (lang === 'tl') {
+      return [
+        { id: 'fare-tl', text: 'Magkano pamasahe mula SM Epza to Robinson Dasmariñas?', category: 'fare' },
+        { id: 'route-tl', text: 'Paano pumunta sa Lancaster?', category: 'route' },
+        { id: 'time-tl', text: 'Anong oras ang huling jeep?', category: 'time' },
+        { id: 'location-tl', text: 'Nasaan ang jeep ngayon?', category: 'fare' },
+        { id: 'help-tl', text: 'Tulong - Emergency', category: 'emergency' }
+      ];
+    } else {
+      return [
+        { id: 'fare-en', text: 'How much fare from SM Epza to Robinson Dasmariñas?', category: 'fare' },
+        { id: 'route-en', text: 'How to get to Lancaster?', category: 'route' },
+        { id: 'time-en', text: 'What time is the last jeep?', category: 'time' },
+        { id: 'location-en', text: 'Where are the jeepneys now?', category: 'fare' },
+        { id: 'help-en', text: 'Help - Emergency', category: 'emergency' }
+      ];
+    }
   }
 }
 

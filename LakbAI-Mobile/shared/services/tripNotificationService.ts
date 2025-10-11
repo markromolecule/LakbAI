@@ -94,7 +94,7 @@ class TripNotificationService {
       // Set up WebSocket listeners
       console.log('🔌 Setting up WebSocket listeners for trip notifications...');
       webSocketService.on('trip-completed', handleTripCompleted);
-      // webSocketService.on('qr-scan-notification', handleQRScanNotification); // Disabled to prevent duplicate notifications
+      webSocketService.on('qr-scan-notification', handleQRScanNotification); // Disabled to prevent duplicate notifications
       webSocketService.on('driver-location-update', handleDriverLocationUpdate);
       console.log('✅ WebSocket listeners set up successfully');
 
