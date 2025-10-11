@@ -4,14 +4,26 @@ import GeminiService from './geminiService.js';
 const API_BASE_URL = 'http://localhost/LakbAI/LakbAI-API/routes/api.php';
 
 // Environment configuration for Gemini API
+// Guaranteed fallback API key
+const FALLBACK_GEMINI_API_KEY = 'AIzaSyD20q0ucYolbJ6E3hhZQgKbnWy38-DVGec';
+
 let GEMINI_API_KEY = '';
 try {
   // Check for environment variable or configuration
   GEMINI_API_KEY = process.env.REACT_APP_GEMINI_API_KEY || 
                    window.ENV?.GEMINI_API_KEY || 
-                   localStorage.getItem('GEMINI_API_KEY') || '';
+                   localStorage.getItem('GEMINI_API_KEY') || 
+                   FALLBACK_GEMINI_API_KEY || ''; // Use fallback as last resort
+  
+  console.log('🔑 Admin BiyaBot - API Key loading attempts:');
+  console.log('  - process.env.REACT_APP_GEMINI_API_KEY:', process.env.REACT_APP_GEMINI_API_KEY ? 'Found' : 'Not found');
+  console.log('  - window.ENV?.GEMINI_API_KEY:', window.ENV?.GEMINI_API_KEY ? 'Found' : 'Not found');
+  console.log('  - localStorage.getItem:', localStorage.getItem('GEMINI_API_KEY') ? 'Found' : 'Not found');
+  console.log('  - Fallback key:', FALLBACK_GEMINI_API_KEY ? 'Available' : 'Not available');
+  console.log('  - Final GEMINI_API_KEY length:', GEMINI_API_KEY.length);
 } catch (error) {
-  console.warn('⚠️ Gemini API key not configured');
+  console.warn('⚠️ Error loading Gemini API key, using fallback:', error);
+  GEMINI_API_KEY = FALLBACK_GEMINI_API_KEY;
 }
 
 class BiyaBotService {
@@ -43,38 +55,151 @@ class BiyaBotService {
   }
 
   /**
-   * Process message with AI enhancement
+   * Process message with HYBRID approach (Database + AI)
    */
   async processMessage(message) {
     try {
       console.log('🤖 Admin BiyaBot processing message:', message);
 
-      // Try AI response first if available
+      const lowerMessage = message.toLowerCase();
+      
+      // STEP 1: Check if it's a specific data request (fare, route, jeepney)
+      const isFareQuery = lowerMessage.includes('magkano') || lowerMessage.includes('fare') || 
+                          lowerMessage.includes('pamasahe') || lowerMessage.includes('how much') ||
+                          lowerMessage.includes('bayad');
+      
+      const isRouteQuery = lowerMessage.includes('route') || lowerMessage.includes('ruta') ||
+                           lowerMessage.includes('paano') || lowerMessage.includes('papunta') ||
+                           lowerMessage.includes('how to get');
+      
+      const isJeepneyQuery = lowerMessage.includes('jeep') || lowerMessage.includes('sasakyan') ||
+                             lowerMessage.includes('where') || lowerMessage.includes('nasaan') ||
+                             lowerMessage.includes('location');
+
+      // STEP 2: If it's a data request, fetch from database FIRST
+      if (isFareQuery || isRouteQuery || isJeepneyQuery) {
+        console.log('📊 Detected data query, fetching from database...');
+        
+        // Try to extract locations for fare calculation
+        if (isFareQuery) {
+          const locations = this.extractLocations(message);
+          if (locations.from && locations.to) {
+            console.log(`💰 Calculating fare: ${locations.from} → ${locations.to}`);
+            try {
+              const fareResult = await this.calculateFareByNames(locations.from, locations.to);
+              if (fareResult && fareResult.status === 'success' && fareResult.fare_info) {
+                const info = fareResult.fare_info;
+                // Return database result with friendly formatting
+                const tagalogResponse = `💰 Pamasahe mula ${info.from_checkpoint} papunta ${info.to_checkpoint}:\n\n💵 ₱${info.fare_amount}\n\n🚌 Ruta: ${info.route_name}\n\nIto po ang eksaktong presyo base sa aming database! 🎯`;
+                const englishResponse = `💰 Fare from ${info.from_checkpoint} to ${info.to_checkpoint}:\n\n💵 ₱${info.fare_amount}\n\n🚌 Route: ${info.route_name}\n\nThis is the exact price from our database! 🎯`;
+                
+                return lowerMessage.includes('magkano') || lowerMessage.includes('pamasahe') ? 
+                       tagalogResponse : englishResponse;
+              }
+            } catch (error) {
+              console.error('❌ Error calculating fare:', error);
+            }
+          }
+        }
+      }
+
+      // STEP 3: For general queries or if data fetch failed, use AI with context
       if (this.useAI && this.geminiService) {
         try {
-          console.log('🤖✨ Attempting AI response...');
+          console.log('🤖✨ Using AI for response...');
           const context = await this.gatherSystemContext();
           const aiResponse = await this.geminiService.generateResponse(message, context);
           
           if (aiResponse && aiResponse.message && aiResponse.type !== 'error') {
             console.log('✅ AI response generated successfully');
             return aiResponse.message;
-          } else {
-            console.log('⚠️ AI response was empty or error, falling back to rule-based');
           }
         } catch (error) {
-          console.warn('⚠️ AI service failed, falling back to rule-based logic:', error);
+          console.warn('⚠️ AI service failed:', error);
         }
       }
 
-      // Fallback to rule-based logic would go here
-      // For now, return a simple acknowledgment
-      return `I received your message: "${message}". I'm currently using rule-based responses. For AI-powered responses, please configure the Gemini API key.`;
+      // STEP 4: Final fallback
+      return `I received your message: "${message}". Please try asking about fares, routes, or jeepney locations! 🚌`;
 
     } catch (error) {
       console.error('❌ Error processing message:', error);
       return 'Sorry, I encountered an error. Please try again!';
     }
+  }
+
+  /**
+   * Extract location names from message (similar to mobile version)
+   */
+  extractLocations(message) {
+    const result = { from: null, to: null };
+    const cleanMessage = message.toLowerCase().trim();
+    
+    // Enhanced patterns for better extraction (English and Tagalog)
+    const patterns = [
+      // "Magkano mula X hanggang Y"
+      /(?:magkano|pamasahe|how much|fare).*?(?:mula|from)\s+([^\s]+(?:\s+[^\s]+)*?)\s+(?:hanggang|papunta\s+sa|to)\s+(.+?)(?:\?|$)/i,
+      // "From X to Y"  
+      /(?:from|mula)\s+([^\s]+(?:\s+[^\s]+)*?)\s+(?:hanggang|papunta\s+sa|to)\s+(.+?)(?:\?|$)/i,
+      // "X to Y"
+      /([a-zA-Z\s]+)\s+(?:hanggang|to|papunta)\s+(.+?)(?:\?|$)/i,
+    ];
+    
+    for (const pattern of patterns) {
+      const match = cleanMessage.match(pattern);
+      if (match) {
+        let fromLoc = match[1].replace(/^(magkano|how much|fare|pamasahe)\s*/i, '').trim();
+        let toLoc = match[2].replace(/\?$/, '').trim();
+        
+        result.from = this.findBestLocationMatch(fromLoc);
+        result.to = this.findBestLocationMatch(toLoc);
+        
+        if (result.from && result.to) {
+          console.log(`✅ Extracted locations: "${result.from}" → "${result.to}"`);
+          break;
+        }
+      }
+    }
+    
+    return result;
+  }
+
+  /**
+   * Find best matching checkpoint name
+   */
+  findBestLocationMatch(location) {
+    const cleanLoc = location.toLowerCase().trim();
+    
+    // Common checkpoint names
+    const checkpoints = [
+      'SM Epza', 'Robinson Tejero', 'Malabon', 'Riverside', 'Lancaster New City',
+      'Pasong Camachile I', 'Open Canal', 'Santiago', 'Bella Vista', 'San Francisco',
+      'Country Meadow', 'Pabahay', 'Monterey', 'Langkaan', 'Tierra Vista',
+      'Robinson Dasmariñas', 'SM Dasmariñas'
+    ];
+    
+    // Enhanced aliases
+    const aliases = {
+      'sm': 'SM Epza', 'sm epza': 'SM Epza', 'epza': 'SM Epza',
+      'sm dasma': 'SM Dasmariñas', 'dasma': 'SM Dasmariñas', 'sm dasmariñas': 'SM Dasmariñas',
+      'lancaster': 'Lancaster New City', 'lanc': 'Lancaster New City',
+      'pascam': 'Pasong Camachile I', 'pasong camachile': 'Pasong Camachile I',
+      'rob tejero': 'Robinson Tejero', 'robinson': 'Robinson Tejero',
+      'monterey': 'Monterey', 'mont': 'Monterey'
+    };
+    
+    // Check aliases first
+    if (aliases[cleanLoc]) return aliases[cleanLoc];
+    
+    // Exact match
+    let match = checkpoints.find(cp => cp.toLowerCase() === cleanLoc);
+    if (match) return match;
+    
+    // Fuzzy matching
+    match = checkpoints.find(cp => cp.toLowerCase().includes(cleanLoc) || cleanLoc.includes(cp.toLowerCase()));
+    if (match) return match;
+    
+    return null;
   }
 
   /**
